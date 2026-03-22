@@ -125,15 +125,23 @@ export const applyElectronEnvParams = () => {
 }
 
 export const setUserDataPath = () => {
+  let isPortable = false
   // windows平台下如果应用目录下存在 portable 文件夹则将数据存在此文件下
   if (process.platform == 'win32') {
     const portablePath = path.join(path.dirname(app.getPath('exe')), '/portable')
     if (existsSync(portablePath)) {
+      isPortable = true
       app.setPath('appData', portablePath)
       const appDataPath = path.join(portablePath, '/userData')
       if (!existsSync(appDataPath)) mkdirSync(appDataPath)
       app.setPath('userData', appDataPath)
     }
+  }
+
+  if (!isPortable) {
+    const userDataPath = path.join(app.getPath('appData'), 'LX-TA')
+    if (!existsSync(userDataPath)) mkdirSync(userDataPath, { recursive: true })
+    app.setPath('userData', userDataPath)
   }
 
   const userDataPath = app.getPath('userData')

@@ -9,8 +9,8 @@ const afterPack = require('./build-after-pack')
 * @see https://www.electron.build/configuration/configuration
 */
 const options = {
-  appId: 'cn.toside.music.desktop',
-  productName: 'lx-music-desktop',
+  appId: 'com.tabrisayanami.lxta',
+  productName: 'LX-TA',
   beforePack,
   afterPack,
   protocols: {
@@ -47,8 +47,8 @@ const options = {
   publish: [
     {
       provider: 'github',
-      owner: 'lyswhut',
-      repo: 'lx-music-desktop',
+      owner: 'Tabris-Ayanami',
+      repo: 'LX-Music-TAchanged',
     },
   ],
 }
@@ -59,7 +59,8 @@ const options = {
 const winOptions = {
   win: {
     icon: './resources/icons/icon.ico',
-    legalTrademarks: 'lyswhut',
+    legalTrademarks: 'Tabris-Ayanami',
+    executableName: 'LX-TA',
     // artifactName: '${productName}-v${version}-${env.ARCH}-${env.TARGET}.${ext}',
   },
   nsis: {
@@ -68,7 +69,7 @@ const winOptions = {
     allowToChangeInstallationDirectory: true,
     // differentialPackage: true,
     license: './licenses/license.rtf',
-    shortcutName: 'LX Music',
+    shortcutName: 'LX-TA',
   },
 }
 /**

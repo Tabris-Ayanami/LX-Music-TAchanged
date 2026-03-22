@@ -1,10 +1,9 @@
-import { createMainWorker, createDownloadWorker } from './utils'
+import { createMainWorkerProxy, createDownloadWorkerProxy } from './utils'
 
 
 export default () => {
   return {
-    main: createMainWorker(),
-    download: createDownloadWorker(),
+    main: createMainWorkerProxy(),
+    download: createDownloadWorkerProxy(),
   }
 }
-

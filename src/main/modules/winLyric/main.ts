@@ -3,7 +3,6 @@ import { BrowserWindow } from 'electron'
 import { debounce, getPlatform, isLinux, isWin } from '@common/utils'
 import { initWindowSize, minHeight, minWidth } from './utils'
 import { mainSend } from '@common/mainIpc'
-import { encodePath } from '@common/utils/electron'
 
 // require('./event')
 // require('./rendererEvent')
@@ -143,8 +142,16 @@ export const createWindow = () => {
     },
   })
 
-  const winURL = process.env.NODE_ENV !== 'production' ? 'http://localhost:9081/lyric.html' : `file://${path.join(encodePath(__dirname), 'lyric.html')}`
-  void browserWindow.loadURL(winURL + `?os=${getPlatform()}&dark=${shouldUseDarkColors}&theme=${encodeURIComponent(JSON.stringify(theme))}`)
+  const query = {
+    os: getPlatform(),
+    dark: String(shouldUseDarkColors),
+    theme: JSON.stringify(theme),
+  }
+  if (process.env.NODE_ENV !== 'production') {
+    void browserWindow.loadURL(`http://localhost:9081/lyric.html?os=${query.os}&dark=${query.dark}&theme=${encodeURIComponent(query.theme)}`)
+  } else {
+    void browserWindow.loadFile(path.join(__dirname, 'lyric.html'), { query })
+  }
 
   winEvent()
   // browserWindow.webContents.openDevTools()

@@ -19,7 +19,7 @@ const defaultSetting: LX.AppSetting = {
   'common.isAgreePact': false,
   'common.controlBtnPosition': isMac ? 'left' : 'right',
   'common.playBarProgressStyle': 'mini',
-  'common.transparentWindow': !isMac,
+  'common.transparentWindow': false,
   'common.tryAutoUpdate': true,
   'common.showChangeLog': true,
 
@@ -168,4 +168,3 @@ if (new Date().getMonth() < 2) {
 
 
 export default defaultSetting
-

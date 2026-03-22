@@ -37,7 +37,7 @@
           :class="$style.row"
           @click="playTrack(item.index)"
         >
-          <span :class="[$style.cell, $style.numCell]">{{ rowIndex + 1 }}</span>
+          <span :class="[$style.cell, $style.numCell]">{{ Number(rowIndex) + 1 }}</span>
           <span :class="[$style.cell, $style.nameCell]" :title="item.track.name">{{ item.track.name }}</span>
           <span :class="[$style.cell, $style.singerCell]" :title="item.track.singer">{{ item.track.singer || '--' }}</span>
           <span :class="[$style.cell, $style.albumCell]" :title="item.track.meta.albumName">{{ item.track.meta.albumName || '--' }}</span>

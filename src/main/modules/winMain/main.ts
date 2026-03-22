@@ -1,11 +1,10 @@
 import { BrowserWindow, dialog, session } from 'electron'
 import path from 'node:path'
 import { createTaskBarButtons, getWindowSizeInfo } from './utils'
-import { getPlatform, isLinux, isWin } from '@common/utils'
+import { getPlatform, isLinux, isWin, log } from '@common/utils'
 import { getProxy, openDevTools as handleOpenDevTools } from '@main/utils'
 import { mainSend } from '@common/mainIpc'
 import { sendFocus, sendTaskbarButtonClick } from './rendererEvent'
-import { encodePath } from '@common/utils/electron'
 
 let browserWindow: Electron.BrowserWindow | null = null
 
@@ -58,6 +57,21 @@ const winEvent = () => {
   browserWindow.on('hide', () => {
     global.lx.event_app.main_window_hide()
   })
+
+  browserWindow.webContents.on('did-finish-load', () => {
+    log.info(`[winMain] did-finish-load ${browserWindow?.webContents.getURL() ?? ''}`)
+  })
+  browserWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    log.error(`[winMain] did-fail-load code=${errorCode} description=${errorDescription} url=${validatedURL} mainFrame=${isMainFrame}`)
+  })
+  browserWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    const payload = `[winMain][console:${level}] ${message} @ ${sourceId}:${line}`
+    if (level >= 2) log.error(payload)
+    else log.info(payload)
+  })
+  browserWindow.webContents.on('render-process-gone', (event, details) => {
+    log.error(`[winMain] render-process-gone reason=${details.reason} exitCode=${details.exitCode}`)
+  })
 }
 
 
@@ -106,8 +120,17 @@ export const createWindow = () => {
   }
   browserWindow = new BrowserWindow(options)
 
-  const winURL = process.env.NODE_ENV !== 'production' ? 'http://localhost:9080' : `file://${path.join(encodePath(__dirname), 'index.html')}`
-  void browserWindow.loadURL(winURL + `?os=${getPlatform()}&dt=${global.envParams.cmdParams.dt}&dark=${shouldUseDarkColors}&theme=${encodeURIComponent(JSON.stringify(theme))}`)
+  const query = {
+    os: getPlatform(),
+    dt: String(global.envParams.cmdParams.dt),
+    dark: String(shouldUseDarkColors),
+    theme: JSON.stringify(theme),
+  }
+  if (process.env.NODE_ENV !== 'production') {
+    void browserWindow.loadURL(`http://localhost:9080?os=${query.os}&dt=${query.dt}&dark=${query.dark}&theme=${encodeURIComponent(query.theme)}`)
+  } else {
+    void browserWindow.loadFile(path.join(__dirname, 'index.html'), { query })
+  }
 
   winEvent()
 
