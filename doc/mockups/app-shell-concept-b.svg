@@ -1,0 +1,73 @@
+<svg width="1600" height="980" viewBox="0 0 1600 980" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgB" x1="170" y1="70" x2="1450" y2="910" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#141414"/>
+      <stop offset="1" stop-color="#0A0A0A"/>
+    </linearGradient>
+    <radialGradient id="greenB" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1220 180) rotate(139) scale(420 260)">
+      <stop stop-color="#1ED760" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#1ED760" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blueB" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(390 780) rotate(17) scale(520 300)">
+      <stop stop-color="#4171FF" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#4171FF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="980" rx="32" fill="url(#bgB)"/>
+  <rect width="1600" height="980" rx="32" fill="url(#greenB)"/>
+  <rect width="1600" height="980" rx="32" fill="url(#blueB)"/>
+
+  <rect x="36" y="36" width="248" height="908" rx="34" fill="#000000" fill-opacity="0.58"/>
+  <text x="72" y="108" fill="#FFFFFF" font-size="34" font-family="Segoe UI, Arial" font-weight="700">LXMUSIC</text>
+  <text x="72" y="168" fill="#AEB5BE" font-size="19" font-family="Segoe UI, Arial" font-weight="600">MAIN</text>
+  <rect x="56" y="188" width="208" height="58" rx="18" fill="#FFFFFF"/>
+  <text x="94" y="225" fill="#0F1318" font-size="25" font-family="Segoe UI, Arial" font-weight="700">Home</text>
+  <text x="94" y="286" fill="#D3D8DE" font-size="25" font-family="Segoe UI, Arial">Search</text>
+  <text x="94" y="340" fill="#D3D8DE" font-size="25" font-family="Segoe UI, Arial">New Releases</text>
+  <text x="94" y="394" fill="#D3D8DE" font-size="25" font-family="Segoe UI, Arial">Charts</text>
+
+  <text x="72" y="484" fill="#AEB5BE" font-size="19" font-family="Segoe UI, Arial" font-weight="600">YOUR MUSIC</text>
+  <rect x="56" y="506" width="208" height="224" rx="24" fill="#161A1F"/>
+  <text x="82" y="556" fill="#FFFFFF" font-size="28" font-family="Segoe UI, Arial" font-weight="700">Local Music</text>
+  <text x="82" y="592" fill="#97A2AE" font-size="20" font-family="Segoe UI, Arial">Folders, imports, favorites</text>
+  <rect x="82" y="622" width="156" height="18" rx="9" fill="#26313B"/>
+  <rect x="82" y="622" width="88" height="18" rx="9" fill="#1ED760"/>
+  <text x="82" y="688" fill="#FFFFFF" font-size="22" font-family="Segoe UI, Arial">Recently added</text>
+  <text x="82" y="722" fill="#97A2AE" font-size="18" font-family="Segoe UI, Arial">J-pop Collection</text>
+  <text x="82" y="750" fill="#97A2AE" font-size="18" font-family="Segoe UI, Arial">Offline Essentials</text>
+
+  <rect x="314" y="36" width="1250" height="632" rx="34" fill="#0E1217" fill-opacity="0.68"/>
+  <rect x="314" y="694" width="1250" height="250" rx="34" fill="#0A0D11" fill-opacity="0.84"/>
+
+  <text x="362" y="114" fill="#FFFFFF" font-size="64" font-family="Segoe UI, Arial" font-weight="700">Built for momentum</text>
+  <text x="364" y="162" fill="#B7C0C8" font-size="28" font-family="Segoe UI, Arial">Spotify-style rhythm, denser shelves, darker focus</text>
+
+  <rect x="362" y="202" width="516" height="402" rx="28" fill="#1A1F26"/>
+  <rect x="910" y="202" width="288" height="188" rx="28" fill="#181D23"/>
+  <rect x="1222" y="202" width="288" height="188" rx="28" fill="#181D23"/>
+  <rect x="910" y="416" width="600" height="188" rx="28" fill="#181D23"/>
+
+  <rect x="398" y="238" width="210" height="210" rx="24" fill="#2D8B7D"/>
+  <rect x="632" y="246" width="194" height="22" rx="11" fill="#2C3440"/>
+  <rect x="632" y="286" width="158" height="18" rx="9" fill="#252D37"/>
+  <rect x="632" y="368" width="176" height="16" rx="8" fill="#252D37"/>
+  <rect x="632" y="398" width="138" height="16" rx="8" fill="#252D37"/>
+  <circle cx="648" cy="534" r="24" fill="#252D37"/>
+  <circle cx="722" cy="534" r="38" fill="#1ED760"/>
+  <circle cx="808" cy="534" r="24" fill="#252D37"/>
+
+  <text x="944" y="258" fill="#7D8794" font-size="20" font-family="Segoe UI, Arial" font-weight="600">LOCAL PINS</text>
+  <text x="944" y="470" fill="#7D8794" font-size="20" font-family="Segoe UI, Arial" font-weight="600">QUICK MIXES</text>
+
+  <text x="362" y="746" fill="#B2BAC4" font-size="22" font-family="Segoe UI, Arial" font-weight="600">MORE TO EXPLORE</text>
+  <rect x="362" y="774" width="262" height="132" rx="22" fill="#151A20"/>
+  <rect x="646" y="774" width="262" height="132" rx="22" fill="#151A20"/>
+  <rect x="930" y="774" width="262" height="132" rx="22" fill="#151A20"/>
+  <rect x="1214" y="774" width="262" height="132" rx="22" fill="#151A20"/>
+  <text x="394" y="864" fill="#FFFFFF" font-size="30" font-family="Segoe UI, Arial" font-weight="700">Imported Albums</text>
+  <text x="678" y="864" fill="#FFFFFF" font-size="30" font-family="Segoe UI, Arial" font-weight="700">Made For You</text>
+  <text x="962" y="864" fill="#FFFFFF" font-size="30" font-family="Segoe UI, Arial" font-weight="700">Daily Drive</text>
+  <text x="1246" y="864" fill="#FFFFFF" font-size="30" font-family="Segoe UI, Arial" font-weight="700">Weekend Chill</text>
+
+  <text x="330" y="948" fill="#7C8793" font-size="24" font-family="Segoe UI, Arial">Concept B  Dark Pulse</text>
+</svg>

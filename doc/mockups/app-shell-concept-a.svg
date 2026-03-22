@@ -1,0 +1,82 @@
+<svg width="1600" height="980" viewBox="0 0 1600 980" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgA" x1="100" y1="80" x2="1450" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F7F2EA"/>
+      <stop offset="0.45" stop-color="#E7EEF2"/>
+      <stop offset="1" stop-color="#CFD7DE"/>
+    </linearGradient>
+    <radialGradient id="glowA1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(360 180) rotate(37) scale(520 320)">
+      <stop stop-color="#FFCF8F" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#FFCF8F" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowA2" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1210 730) rotate(12) scale(560 340)">
+      <stop stop-color="#7CB6FF" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#7CB6FF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="panelA" x1="290" y1="120" x2="1330" y2="910" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.82"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.38"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="980" rx="32" fill="url(#bgA)"/>
+  <rect width="1600" height="980" rx="32" fill="url(#glowA1)"/>
+  <rect width="1600" height="980" rx="32" fill="url(#glowA2)"/>
+
+  <rect x="42" y="42" width="210" height="896" rx="34" fill="#FAFBFC" fill-opacity="0.78"/>
+  <text x="82" y="112" fill="#19202A" font-size="34" font-family="Segoe UI, Arial" font-weight="700">LXMUSIC</text>
+  <circle cx="86" cy="182" r="14" fill="#F46C6C"/>
+  <circle cx="86" cy="236" r="14" fill="#93B6FF"/>
+  <circle cx="86" cy="290" r="14" fill="#88D0B7"/>
+  <circle cx="86" cy="344" r="14" fill="#B39DFF"/>
+  <text x="118" y="190" fill="#1D2530" font-size="26" font-family="Segoe UI, Arial" font-weight="600">Home</text>
+  <text x="118" y="244" fill="#6E7682" font-size="26" font-family="Segoe UI, Arial">Browse</text>
+  <text x="118" y="298" fill="#6E7682" font-size="26" font-family="Segoe UI, Arial">Radio</text>
+  <text x="118" y="352" fill="#6E7682" font-size="26" font-family="Segoe UI, Arial">Library</text>
+
+  <rect x="62" y="466" width="170" height="184" rx="28" fill="#FFFFFF" fill-opacity="0.88"/>
+  <text x="82" y="516" fill="#55606E" font-size="21" font-family="Segoe UI, Arial" font-weight="600">LOCAL MUSIC</text>
+  <text x="82" y="556" fill="#1A222D" font-size="34" font-family="Segoe UI, Arial" font-weight="700">3,248</text>
+  <text x="82" y="590" fill="#778190" font-size="20" font-family="Segoe UI, Arial">songs imported</text>
+  <rect x="82" y="616" width="130" height="18" rx="9" fill="#D7DFE8"/>
+  <rect x="82" y="616" width="76" height="18" rx="9" fill="#6C8BFF"/>
+
+  <rect x="286" y="42" width="1272" height="896" rx="42" fill="url(#panelA)"/>
+  <rect x="316" y="78" width="620" height="372" rx="34" fill="#F6F0E8" fill-opacity="0.9"/>
+  <rect x="966" y="78" width="562" height="372" rx="34" fill="#FFFFFF" fill-opacity="0.42"/>
+  <rect x="316" y="478" width="1212" height="428" rx="34" fill="#FFFFFF" fill-opacity="0.28"/>
+
+  <text x="360" y="146" fill="#3A4654" font-size="22" font-family="Segoe UI, Arial" font-weight="600">FOR YOU</text>
+  <text x="360" y="224" fill="#111826" font-size="68" font-family="Segoe UI, Arial" font-weight="700">Editorial + Atmosphere</text>
+  <text x="360" y="274" fill="#55606E" font-size="28" font-family="Segoe UI, Arial">Apple Music style hero, glass panels, softer motion</text>
+  <rect x="360" y="316" width="178" height="54" rx="27" fill="#141B26"/>
+  <text x="404" y="350" fill="#FFFFFF" font-size="24" font-family="Segoe UI, Arial" font-weight="600">Play now</text>
+  <rect x="584" y="316" width="198" height="54" rx="27" fill="#FFFFFF" fill-opacity="0.82"/>
+  <text x="636" y="350" fill="#1B2430" font-size="24" font-family="Segoe UI, Arial" font-weight="600">Local music</text>
+
+  <rect x="614" y="134" width="246" height="246" rx="28" fill="#DDBFA0"/>
+  <rect x="634" y="154" width="206" height="206" rx="22" fill="#967B63"/>
+  <circle cx="738" cy="257" r="48" fill="#E9D8C2"/>
+  <circle cx="738" cy="257" r="16" fill="#967B63"/>
+
+  <text x="1006" y="138" fill="#3A4654" font-size="22" font-family="Segoe UI, Arial" font-weight="600">NOW PLAYING</text>
+  <rect x="1006" y="170" width="180" height="180" rx="24" fill="#9EB9CF"/>
+  <rect x="1210" y="176" width="268" height="22" rx="11" fill="#DCE3EA"/>
+  <rect x="1210" y="216" width="228" height="18" rx="9" fill="#E8EDF2"/>
+  <rect x="1210" y="274" width="240" height="16" rx="8" fill="#E8EDF2"/>
+  <rect x="1210" y="304" width="196" height="16" rx="8" fill="#E8EDF2"/>
+  <circle cx="1230" cy="378" r="24" fill="#FFFFFF"/>
+  <circle cx="1304" cy="378" r="34" fill="#141B26"/>
+  <circle cx="1392" cy="378" r="24" fill="#FFFFFF"/>
+
+  <text x="360" y="544" fill="#3A4654" font-size="22" font-family="Segoe UI, Arial" font-weight="600">SHELVES</text>
+  <rect x="360" y="574" width="264" height="288" rx="28" fill="#FFF8F0" fill-opacity="0.92"/>
+  <rect x="648" y="574" width="264" height="288" rx="28" fill="#EEF4FB" fill-opacity="0.92"/>
+  <rect x="936" y="574" width="264" height="288" rx="28" fill="#F3F0FF" fill-opacity="0.92"/>
+  <rect x="1224" y="574" width="264" height="288" rx="28" fill="#F4F7F3" fill-opacity="0.92"/>
+  <text x="388" y="816" fill="#17202C" font-size="34" font-family="Segoe UI, Arial" font-weight="700">Local Favorites</text>
+  <text x="676" y="816" fill="#17202C" font-size="34" font-family="Segoe UI, Arial" font-weight="700">Recent Mixes</text>
+  <text x="964" y="816" fill="#17202C" font-size="34" font-family="Segoe UI, Arial" font-weight="700">Focus Flow</text>
+  <text x="1252" y="816" fill="#17202C" font-size="34" font-family="Segoe UI, Arial" font-weight="700">Spatial Pop</text>
+
+  <text x="330" y="948" fill="#5B6675" font-size="24" font-family="Segoe UI, Arial">Concept A  Frosted Editorial</text>
+</svg>

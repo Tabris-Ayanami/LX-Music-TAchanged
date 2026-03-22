@@ -1,0 +1,74 @@
+<svg width="1600" height="980" viewBox="0 0 1600 980" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg3" x1="120" y1="40" x2="1460" y2="920" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EEF1F4"/>
+      <stop offset="0.45" stop-color="#E7EDF5"/>
+      <stop offset="1" stop-color="#D1D9E4"/>
+    </linearGradient>
+    <radialGradient id="amber3" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1260 150) rotate(150) scale(420 240)">
+      <stop stop-color="#FFC07A" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#FFC07A" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blue3" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(430 820) rotate(15) scale(540 300)">
+      <stop stop-color="#7EAAFF" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#7EAAFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="980" rx="32" fill="url(#bg3)"/>
+  <rect width="1600" height="980" rx="32" fill="url(#amber3)"/>
+  <rect width="1600" height="980" rx="32" fill="url(#blue3)"/>
+
+  <rect x="44" y="44" width="1512" height="892" rx="40" fill="#FFFFFF" fill-opacity="0.42"/>
+  <rect x="72" y="72" width="240" height="754" rx="28" fill="#FFFFFF" fill-opacity="0.52"/>
+  <text x="106" y="132" fill="#17202D" font-size="34" font-family="Segoe UI, Arial" font-weight="700">LXMUSIC</text>
+  <text x="136" y="212" fill="#17202D" font-size="24" font-family="Segoe UI, Arial" font-weight="700">Listen now</text>
+  <text x="136" y="266" fill="#556373" font-size="24" font-family="Segoe UI, Arial">Browse</text>
+  <text x="136" y="320" fill="#556373" font-size="24" font-family="Segoe UI, Arial">Search</text>
+  <text x="136" y="374" fill="#556373" font-size="24" font-family="Segoe UI, Arial">Library</text>
+  <rect x="96" y="460" width="192" height="216" rx="24" fill="#F8FAFC" fill-opacity="0.84"/>
+  <text x="118" y="506" fill="#657283" font-size="18" font-family="Segoe UI, Arial" font-weight="700">LOCAL MUSIC</text>
+  <text x="118" y="554" fill="#15202D" font-size="34" font-family="Segoe UI, Arial" font-weight="700">Pinned collection</text>
+  <text x="118" y="596" fill="#677586" font-size="19" font-family="Segoe UI, Arial">Fast access from the left rail</text>
+
+  <text x="352" y="126" fill="#405061" font-size="22" font-family="Segoe UI, Arial" font-weight="600">FLOATING ISLAND VARIANT</text>
+  <text x="352" y="198" fill="#101927" font-size="62" font-family="Segoe UI, Arial" font-weight="700">The player becomes a floating dock</text>
+  <text x="352" y="244" fill="#5C6979" font-size="28" font-family="Segoe UI, Arial">Lighter page chrome, stronger bottom presence, closer to a modern desktop media app</text>
+
+  <rect x="352" y="286" width="1172" height="516" rx="32" fill="#FFFFFF" fill-opacity="0.38"/>
+  <rect x="384" y="318" width="728" height="210" rx="28" fill="#FFFFFF" fill-opacity="0.52"/>
+  <rect x="1140" y="318" width="352" height="210" rx="28" fill="#F4F7FB" fill-opacity="0.7"/>
+  <rect x="384" y="554" width="1108" height="214" rx="28" fill="#FFFFFF" fill-opacity="0.36"/>
+
+  <rect x="416" y="350" width="210" height="146" rx="22" fill="#A3B8D3"/>
+  <text x="656" y="390" fill="#15202D" font-size="38" font-family="Segoe UI, Arial" font-weight="700">Main page stays clean and browsable</text>
+  <text x="656" y="430" fill="#5A6878" font-size="22" font-family="Segoe UI, Arial">Playback controls live in a dedicated floating dock so content never gets pushed</text>
+  <rect x="656" y="464" width="186" height="48" rx="24" fill="#17202D"/>
+  <text x="710" y="494" fill="#FFFFFF" font-size="22" font-family="Segoe UI, Arial" font-weight="600">Preferred</text>
+
+  <text x="1172" y="360" fill="#5C6978" font-size="20" font-family="Segoe UI, Arial" font-weight="700">RIGHT PANEL</text>
+  <rect x="1172" y="392" width="280" height="16" rx="8" fill="#D7E0EA"/>
+  <rect x="1172" y="424" width="240" height="16" rx="8" fill="#E0E7EF"/>
+  <rect x="1172" y="468" width="196" height="16" rx="8" fill="#E0E7EF"/>
+
+  <text x="416" y="610" fill="#445365" font-size="22" font-family="Segoe UI, Arial" font-weight="600">SECTIONS</text>
+  <rect x="416" y="640" width="246" height="92" rx="20" fill="#F8FAFD" fill-opacity="0.86"/>
+  <rect x="688" y="640" width="246" height="92" rx="20" fill="#F8FAFD" fill-opacity="0.86"/>
+  <rect x="960" y="640" width="246" height="92" rx="20" fill="#F8FAFD" fill-opacity="0.86"/>
+  <rect x="1232" y="640" width="246" height="92" rx="20" fill="#F8FAFD" fill-opacity="0.86"/>
+  <text x="448" y="699" fill="#17202D" font-size="27" font-family="Segoe UI, Arial" font-weight="700">Recently Added</text>
+  <text x="720" y="699" fill="#17202D" font-size="27" font-family="Segoe UI, Arial" font-weight="700">Library</text>
+  <text x="992" y="699" fill="#17202D" font-size="27" font-family="Segoe UI, Arial" font-weight="700">Charts</text>
+  <text x="1264" y="699" fill="#17202D" font-size="27" font-family="Segoe UI, Arial" font-weight="700">Browse</text>
+
+  <rect x="332" y="838" width="1210" height="92" rx="46" fill="#FFFFFF" fill-opacity="0.78"/>
+  <rect x="352" y="856" width="58" height="58" rx="16" fill="#A6BDD8"/>
+  <text x="430" y="878" fill="#15202D" font-size="28" font-family="Segoe UI, Arial" font-weight="700">Starry Sea</text>
+  <text x="430" y="906" fill="#677486" font-size="18" font-family="Segoe UI, Arial">Local Music • FLAC • 03:26</text>
+  <circle cx="1044" cy="884" r="18" fill="#E8EDF4"/>
+  <circle cx="1102" cy="884" r="28" fill="#17202D"/>
+  <circle cx="1172" cy="884" r="18" fill="#E8EDF4"/>
+  <rect x="1220" y="878" width="196" height="10" rx="5" fill="#D6DFEA"/>
+  <rect x="1220" y="878" width="98" height="10" rx="5" fill="#6E90FF"/>
+
+  <text x="330" y="950" fill="#5B6675" font-size="24" font-family="Segoe UI, Arial">Floating Island C  Dock-first Day</text>
+</svg>
