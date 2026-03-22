@@ -1,4 +1,4 @@
-import { createUserList } from '@renderer/store/list/action'
+import { createUserList, getUserLists } from '@renderer/store/list/action'
 import { userLists } from '@renderer/store/list/state'
 
 export const LOCAL_MUSIC_LIST_ID = 'userlist_local_music'
@@ -24,6 +24,7 @@ export interface LocalMusicGroup {
 
 const groupCoverCache = new Map<string, string>()
 let localTrackCache: LX.Music.MusicInfoLocal[] = []
+let ensureLocalMusicListPromise: Promise<LX.List.UserListInfo> | null = null
 
 const getText = (value: string | null | undefined, fallback: string) => {
   const text = value?.trim()
@@ -48,20 +49,55 @@ export const setCachedLocalTracks = (tracks: LX.Music.MusicInfoLocal[]) => {
   localTrackCache = tracks
 }
 
-export const ensureLocalMusicList = async() => {
+const isDuplicateListError = (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes('UNIQUE constraint failed') && message.includes('my_list.id')
+}
+
+const loadLocalMusicList = async(): Promise<LX.List.UserListInfo> => {
   let list = userLists.find(item => item.id == LOCAL_MUSIC_LIST_ID)
   if (list) return list
 
-  await createUserList({
-    id: LOCAL_MUSIC_LIST_ID,
-    name: LOCAL_MUSIC_LIST_NAME,
-  })
+  try {
+    await getUserLists()
+  } catch {
+    // Ignore transient list refresh failures and fall back to create/retry below.
+  }
+
+  list = userLists.find(item => item.id == LOCAL_MUSIC_LIST_ID)
+  if (list) return list
+
+  try {
+    await createUserList({
+      id: LOCAL_MUSIC_LIST_ID,
+      name: LOCAL_MUSIC_LIST_NAME,
+    })
+  } catch (error) {
+    if (!isDuplicateListError(error)) throw error
+  }
+
+  try {
+    await getUserLists()
+  } catch {
+    // If the refresh fails here, return a fallback object so the page can keep working.
+  }
 
   list = userLists.find(item => item.id == LOCAL_MUSIC_LIST_ID)
   return list ?? {
     id: LOCAL_MUSIC_LIST_ID,
     name: LOCAL_MUSIC_LIST_NAME,
+    locationUpdateTime: null,
   }
+}
+
+export const ensureLocalMusicList = async() => {
+  if (ensureLocalMusicListPromise) return ensureLocalMusicListPromise
+
+  ensureLocalMusicListPromise = loadLocalMusicList().finally(() => {
+    ensureLocalMusicListPromise = null
+  })
+
+  return ensureLocalMusicListPromise
 }
 
 export const buildLocalAlbumGroups = (tracks: LX.Music.MusicInfoLocal[]): LocalMusicGroup[] => {
