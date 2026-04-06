@@ -16,10 +16,25 @@ dd
 dd
   h3#basic_theme {{ $t('setting__basic_theme') }}
   div
+    .gap-top(:class="$style.themeComposer")
+      span(:class="$style.themePreview" :style="{ '--theme-preview': themePreviewColor }")
+      base-input(v-model="typedThemeColor" :class="$style.themeInput" placeholder="#73BCFC / rgb(115, 188, 252)" @submit="applyTypedTheme")
+      base-btn.btn(min :disabled="!typedThemeColorNormalized" @click="applyTypedTheme") 应用
     ul(:class="$style.theme")
-      li(v-for="theme in themeList" :key="theme.id" :aria-label="theme.name" :style="theme.styles" :class="[$style.themeItem, {[$style.active]: themeId == theme.id}]" @click="toggleTheme(theme)")
+      li(
+        v-for="theme in themeList"
+        :key="theme.id"
+        :aria-label="theme.isDraft ? '新建主题颜色' : theme.label || theme.name"
+        :style="theme.styles"
+        :class="[$style.themeItem, {[$style.active]: selectedThemeCardId == theme.id}, {[$style.themeDraft]: theme.isDraft}]"
+        @click="toggleTheme(theme)"
+        @contextmenu.prevent="handleThemeContextMenu(theme)"
+      )
         div(:class="$style.bg")
-        span(:class="$style.label") {{ theme.name }}
+        span(:class="$style.label") {{ theme.label }}
+      li(:class="[$style.themeItem, $style.themeAdd]" aria-label="新建主题颜色" @click="createEmptyTheme")
+        div(:class="$style.bg")
+        span(:class="$style.label") +
 
 dd
   h3#basic_source {{ $t('setting__basic_source') }}
@@ -70,41 +85,24 @@ dd
     base-checkbox.gap-left(
       v-for="item in sourceNameTypes" :id="`setting_abasic_sourcename_${item.id}`" :key="item.id"
       name="setting_basic_sourcename" need :model-value="appSetting['common.sourceNameType']" :value="item.id" :label="item.label" @update:model-value="updateSetting({'common.sourceNameType': $event})")
-dd
-  h3#basic_control_btn_position {{ $t('setting__basic_control_btn_position') }}
-  div
-    base-checkbox.gap-left(
-      v-for="item in controlBtnPositionList" :id="`setting_basic_control_btn_position_${item.id}`" :key="item.id"
-      name="setting_basic_control_btn_position" need :model-value="appSetting['common.controlBtnPosition']" :value="item.id" :label="item.name" @update:model-value="updateSetting({'common.controlBtnPosition': $event})")
-dd
-  h3#basic_playbar_progress_style {{ $t('setting__basic_playbar_progress_style') }}
-  div
-    base-checkbox.gap-left(
-      id="setting_basic_playbar_progress_style_mini" name="setting_basic_playbar_progress_style"
-      need :model-value="appSetting['common.playBarProgressStyle']" value="mini" :label="$t('setting__basic_playbar_progress_style_mini')" @update:model-value="updateSetting({'common.playBarProgressStyle': $event})")
-    base-checkbox.gap-left(
-      id="setting_basic_playbar_progress_style_middle" name="setting_basic_playbar_progress_style"
-      need :model-value="appSetting['common.playBarProgressStyle']" value="middle" :label="$t('setting__basic_playbar_progress_style_middle')" @update:model-value="updateSetting({'common.playBarProgressStyle': $event})")
-    base-checkbox.gap-left(
-      id="setting_basic_playbar_progress_style_full" name="setting_basic_playbar_progress_style"
-      need :model-value="appSetting['common.playBarProgressStyle']" value="full" :label="$t('setting__basic_playbar_progress_style_full')" @update:model-value="updateSetting({'common.playBarProgressStyle': $event})")
 
 play-timeout-modal(v-model="isShowPlayTimeoutModal")
 user-api-modal(v-model="isShowUserApiModal")
 </template>
 
 <script>
-import { computed, ref, shallowReactive } from '@common/utils/vueTools'
-import { windowSizeList, userApi, isFullscreen, themeId } from '@renderer/store'
+import { computed, ref, shallowReactive, watch } from '@common/utils/vueTools'
+import { windowSizeList, userApi, isFullscreen, themeId, themeInfo } from '@renderer/store'
 import { langList, useI18n } from '@root/lang'
-import { getSystemFonts } from '@renderer/utils/ipc'
+import { getSystemFonts, removeTheme as removeSavedTheme, saveTheme } from '@renderer/utils/ipc'
 import apiSourceInfo from '@renderer/utils/musicSdk/api-source-info'
 import { useTimeout } from '@renderer/core/player/timeoutStop'
+import { createThemeColors } from '@common/theme/utils'
 
 import PlayTimeoutModal from './PlayTimeoutModal.vue'
 import UserApiModal from './UserApiModal.vue'
 import { appSetting, updateSetting } from '@renderer/store/setting'
-import { getThemes, applyTheme } from '@renderer/store/utils'
+import { getThemes, applyTheme, copyTheme, findTheme } from '@renderer/store/utils'
 
 export default {
   name: 'SettingBasic',
@@ -115,47 +113,233 @@ export default {
   setup() {
     const t = useI18n()
 
-    const isSolidTheme = (theme) => {
+    const isSolidTheme = theme => {
       const backgroundImage = theme.config?.extInfo?.['--background-image']
       return !backgroundImage || backgroundImage == 'none'
     }
-    const defaultThemesRaw = shallowReactive([])
-    const defaultThemes = computed(() => {
-      return defaultThemesRaw.map(theme => ({ ...theme, isDefault: true, name: t('theme_' + theme.id) }))
+    const normalizeColorInput = value => {
+      const text = value.trim()
+      if (!text) return ''
+      const hex = text.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)
+      if (hex) {
+        return text.length == 4
+          ? `#${text[1]}${text[1]}${text[2]}${text[2]}${text[3]}${text[3]}`.toUpperCase()
+          : text.toUpperCase()
+      }
+      const rgb = text.match(/^rgb\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i)
+      if (!rgb) return ''
+      const channels = rgb.slice(1).map(v => Math.max(0, Math.min(255, Number.parseInt(v))))
+      return `rgb(${channels[0]}, ${channels[1]}, ${channels[2]})`
+    }
+    const getThemeLabel = color => color.startsWith('rgb')
+      ? color.replace(/\s+/g, '')
+      : color.toUpperCase()
+    const HIDDEN_DEFAULT_THEMES_KEY = 'lx_hidden_theme_card_ids'
+    const getHiddenDefaultThemeIds = () => {
+      try {
+        const value = JSON.parse(window.localStorage.getItem(HIDDEN_DEFAULT_THEMES_KEY) ?? '[]')
+        return Array.isArray(value) ? value.filter(id => typeof id == 'string') : []
+      } catch {
+        return []
+      }
+    }
+    const createThemeCard = ({ id, name = '', themeColor = '', isDefault = false, isDraft = false }) => ({
+      id,
+      name,
+      themeColor,
+      isDefault,
+      isDraft,
+      label: themeColor ? getThemeLabel(themeColor) : '',
+      styles: {
+        '--color-primary-theme': themeColor || 'rgba(255,255,255,0.08)',
+      },
     })
+
+    const defaultThemesRaw = shallowReactive([])
+    const hiddenDefaultThemeIds = ref(getHiddenDefaultThemeIds())
+    const saveHiddenDefaultThemeIds = () => {
+      try {
+        window.localStorage.setItem(HIDDEN_DEFAULT_THEMES_KEY, JSON.stringify(hiddenDefaultThemeIds.value))
+      } catch {}
+    }
+    const defaultThemes = computed(() => defaultThemesRaw
+      .filter(theme => !hiddenDefaultThemeIds.value.includes(theme.id))
+      .map(theme => createThemeCard({ ...theme, isDefault: true })))
     const userThemes = shallowReactive([])
-    const themeList = computed(() => [...defaultThemes.value, ...userThemes])
+    const draftTheme = ref(null)
+    const themeList = computed(() => draftTheme.value
+      ? [...defaultThemes.value, ...userThemes, draftTheme.value]
+      : [...defaultThemes.value, ...userThemes])
+    const removableThemeCount = computed(() => themeList.value.filter(theme => !theme.isDraft).length)
+    const selectedThemeCardId = ref('')
+    const typedThemeColor = ref('')
+    const typedThemeColorNormalized = computed(() => normalizeColorInput(typedThemeColor.value))
+    const selectedThemeCard = computed(() => themeList.value.find(theme => theme.id == selectedThemeCardId.value) ?? null)
+    const themePreviewColor = computed(() => typedThemeColorNormalized.value || selectedThemeCard.value?.themeColor || 'rgba(255,255,255,0.18)')
+
+    const syncTypedThemeColor = theme => {
+      typedThemeColor.value = theme?.themeColor ?? ''
+    }
+    const findThemeCardById = id => themeList.value.find(theme => theme.id == id) ?? null
+    const getFallbackTheme = removedId => themeList.value.find(theme => !theme.isDraft && theme.id != removedId) ?? null
+    const applySelectedTheme = theme => {
+      if (!theme) return
+      themeId.value = theme.id
+      applyTheme(theme.id, appSetting['theme.lightId'], appSetting['theme.darkId'], dataPath)
+      updateSetting({ 'theme.id': theme.id })
+    }
+    const syncThemeSelectionAfterDelete = removedId => {
+      const fallbackTheme = getFallbackTheme(removedId)
+      if (themeId.value == removedId && fallbackTheme) {
+        applySelectedTheme(fallbackTheme)
+        selectedThemeCardId.value = fallbackTheme.id
+        syncTypedThemeColor(fallbackTheme)
+        return
+      }
+
+      if (selectedThemeCardId.value == removedId) {
+        const currentTheme = findThemeCardById(themeId.value) ?? fallbackTheme
+        selectedThemeCardId.value = currentTheme?.id ?? ''
+        syncTypedThemeColor(currentTheme)
+      }
+    }
 
     let dataPath = ''
     const init = () => {
       getThemes((info) => {
         dataPath = info.dataPath
         defaultThemesRaw.splice(0, defaultThemesRaw.length, ...info.themes.filter(isSolidTheme).map(t => {
-          return {
-            id: t.id,
-            styles: {
-              '--color-primary-theme': t.config.themeColors['--color-theme'],
-            },
-          }
-        }))
-        userThemes.splice(0, userThemes.length, ...info.userThemes.filter(isSolidTheme).map(t => {
+          const themeColor = t.config.themeColors['--color-theme']
           return {
             id: t.id,
             name: t.name,
-            styles: {
-              '--color-primary-theme': t.config.themeColors['--color-theme'],
-            },
+            themeColor,
           }
         }))
+        userThemes.splice(0, userThemes.length, ...info.userThemes.filter(isSolidTheme).map(t => {
+          return createThemeCard({
+            id: t.id,
+            name: t.name,
+            themeColor: t.config.themeColors['--color-theme'],
+          })
+        }))
+        const currentThemeId = themeId.value || appSetting['theme.id']
+        selectedThemeCardId.value = findThemeCardById(currentThemeId)?.id ?? defaultThemes.value[0]?.id ?? ''
+        syncTypedThemeColor(findThemeCardById(selectedThemeCardId.value))
       })
     }
     init()
 
-    const toggleTheme = (theme) => {
-      if (themeId.value == theme.id) return
+    watch(() => themeId.value, id => {
+      if (!id || selectedThemeCard.value?.isDraft) return
+      const resolvedTheme = findThemeCardById(id) ?? defaultThemes.value[0] ?? userThemes[0] ?? null
+      selectedThemeCardId.value = resolvedTheme?.id ?? ''
+      syncTypedThemeColor(resolvedTheme)
+    }, { immediate: true })
+
+    const toggleTheme = theme => {
+      selectedThemeCardId.value = theme.id
+      syncTypedThemeColor(theme)
+      if (theme.isDraft || themeId.value == theme.id) return
       themeId.value = theme.id
       applyTheme(theme.id, appSetting['theme.lightId'], appSetting['theme.darkId'], dataPath)
       updateSetting({ 'theme.id': theme.id })
+    }
+
+    const getSolidBaseTheme = () => {
+      const active = findTheme(themeInfo, themeId.value || appSetting['theme.id'])
+      if (active && isSolidTheme(active)) return copyTheme(active)
+      const fallback = themeInfo.themes.find(isSolidTheme) ?? themeInfo.themes[0]
+      return copyTheme(fallback)
+    }
+    const getSelectedBaseTheme = themeCard => {
+      if (!themeCard?.isDraft) {
+        const selectedTheme = findTheme(themeInfo, themeCard.id)
+        if (selectedTheme && isSolidTheme(selectedTheme)) return copyTheme(selectedTheme)
+      }
+      return getSolidBaseTheme()
+    }
+
+    const createEmptyTheme = () => {
+      if (!draftTheme.value) {
+        draftTheme.value = createThemeCard({
+          id: `draft_theme_${Date.now()}`,
+          isDraft: true,
+        })
+      }
+      selectedThemeCardId.value = draftTheme.value.id
+      typedThemeColor.value = ''
+    }
+
+    const applyTypedTheme = async() => {
+      const color = typedThemeColorNormalized.value
+      const selected = selectedThemeCard.value
+      if (!color || !selected) return
+
+      const targetTheme = getSelectedBaseTheme(selected)
+      const fontColor = targetTheme.config.themeColors['--color-1000'] ?? (targetTheme.isDark ? 'rgb(229, 229, 229)' : 'rgb(33, 33, 33)')
+      const isUpdatingUserTheme = !selected.isDefault && !selected.isDraft
+
+      targetTheme.id = isUpdatingUserTheme ? selected.id : `user_theme_${Date.now()}`
+      targetTheme.name = getThemeLabel(color)
+      targetTheme.isCustom = true
+      targetTheme.config.themeColors = createThemeColors(color, fontColor, targetTheme.isDark, targetTheme.isDarkFont ?? false)
+      targetTheme.config.extInfo['--background-image'] = 'none'
+
+      await saveTheme(targetTheme)
+
+      const themeCard = createThemeCard({
+        id: targetTheme.id,
+        name: targetTheme.name,
+        themeColor: color,
+      })
+
+      if (isUpdatingUserTheme) {
+        const index = userThemes.findIndex(theme => theme.id == targetTheme.id)
+        if (index > -1) userThemes.splice(index, 1, themeCard)
+        else userThemes.push(themeCard)
+
+        const userThemeIndex = themeInfo.userThemes.findIndex(theme => theme.id == targetTheme.id)
+        if (userThemeIndex > -1) themeInfo.userThemes.splice(userThemeIndex, 1, targetTheme)
+        else themeInfo.userThemes.push(targetTheme)
+      } else {
+        draftTheme.value = null
+        userThemes.push(themeCard)
+        themeInfo.userThemes.push(targetTheme)
+      }
+
+      selectedThemeCardId.value = targetTheme.id
+      typedThemeColor.value = color
+      themeId.value = targetTheme.id
+      applyTheme(targetTheme.id, appSetting['theme.lightId'], appSetting['theme.darkId'], dataPath)
+      updateSetting({ 'theme.id': targetTheme.id })
+    }
+
+    const handleThemeContextMenu = theme => {
+      if (removableThemeCount.value <= 1) return
+
+      if (theme.isDefault) {
+        hiddenDefaultThemeIds.value = [...new Set([...hiddenDefaultThemeIds.value, theme.id])]
+        saveHiddenDefaultThemeIds()
+        syncThemeSelectionAfterDelete(theme.id)
+        return
+      }
+
+      if (theme.isDraft) {
+        draftTheme.value = null
+        selectedThemeCardId.value = themeId.value || appSetting['theme.id']
+        syncTypedThemeColor(findThemeCardById(selectedThemeCardId.value))
+        return
+      }
+
+      void removeSavedTheme(theme.id).then(() => {
+        const index = userThemes.findIndex(item => item.id == theme.id)
+        if (index > -1) userThemes.splice(index, 1)
+
+        const userThemeIndex = themeInfo.userThemes.findIndex(item => item.id == theme.id)
+        if (userThemeIndex > -1) themeInfo.userThemes.splice(userThemeIndex, 1)
+        syncThemeSelectionAfterDelete(theme.id)
+      })
     }
 
     const isShowPlayTimeoutModal = ref(false)
@@ -198,17 +382,8 @@ export default {
       ]
     })
 
-    const controlBtnPositionList = computed(() => {
-      return [
-        { id: 'left', name: t('setting__basic_control_btn_position_left') },
-        { id: 'right', name: t('setting__basic_control_btn_position_right') },
-      ]
-    })
-
     const systemFontList = ref([])
-    const fontList = computed(() => {
-      return [{ id: '', label: t('setting__desktop_lyric_font_default') }, ...systemFontList.value]
-    })
+    const fontList = computed(() => [{ id: '', label: t('setting__desktop_lyric_font_default') }, ...systemFontList.value])
     void getSystemFonts().then(fonts => {
       systemFontList.value = fonts.map(f => ({ id: f, label: f.replace(/(^"|"$)/g, '') }))
     })
@@ -239,6 +414,12 @@ export default {
       appSetting,
       updateSetting,
       themeList,
+      selectedThemeCardId,
+      typedThemeColor,
+      typedThemeColorNormalized,
+      themePreviewColor,
+      applyTypedTheme,
+      createEmptyTheme,
       fonts,
       updateFonts,
       isShowPlayTimeoutModal,
@@ -248,11 +429,10 @@ export default {
       windowSizeList,
       langList,
       sourceNameTypes,
-      controlBtnPositionList,
       fontList,
       isFullscreen,
       toggleTheme,
-      themeId,
+      handleThemeContextMenu,
       fontSizeList,
     }
   },
@@ -265,29 +445,30 @@ export default {
 .theme {
   display: flex;
   flex-flow: row wrap;
-  margin-bottom: -20px;
+  gap: 12px;
+  margin: 16px 0 0;
 
   .themeItem {
     display: flex;
     flex-flow: column nowrap;
     align-items: center;
     cursor: pointer;
-    margin-right: 8px;
     transition: .3s ease;
-    transition-property: color, opacity;
-    margin-bottom: 18px;
-    width: 86px;
+    transition-property: color, opacity, box-shadow;
+    width: 92px;
+    padding: 10px 10px 6px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.48);
+    border: 1px solid rgba(255, 255, 255, 0.5);
 
     &:hover {
       opacity: .7;
     }
 
-    &:last-child {
-      margin-right: 0;
-    }
-
     &.active {
       color: var(--color-primary-font-active);
+      opacity: 1;
+      box-shadow: 0 12px 30px color-mix(in srgb, var(--color-primary) 16%, transparent);
 
       .bg {
         border-color: var(--color-primary-font-active);
@@ -300,20 +481,20 @@ export default {
 
     .bg {
       display: block;
-      width: 36px;
-      height: 36px;
-      margin-bottom: 5px;
-      border: 2Px solid transparent;
-      padding: 2Px;
+      width: 44px;
+      height: 44px;
+      margin-bottom: 8px;
+      border: 2px solid transparent;
+      padding: 3px;
       transition: border-color .3s ease;
-      border-radius: 5px;
+      border-radius: 12px;
 
       &:after {
         display: block;
         content: ' ';
         width: 100%;
         height: 100%;
-        border-radius: @radius-border;
+        border-radius: 9px;
         background-color: var(--color-primary-theme);
       }
     }
@@ -321,7 +502,57 @@ export default {
     .label {
       width: 100%;
       text-align: center;
-      height: 1.2em;
+      min-height: 1.2em;
+      font-size: 12px;
+      line-height: 1.2;
+      word-break: break-all;
+    }
+  }
+}
+
+.themeComposer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.themePreview {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--theme-preview);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.38);
+}
+
+.themeInput {
+  max-width: 220px;
+}
+
+.themeAdd {
+  justify-content: center;
+
+  .bg:after {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(226, 232, 244, 0.9));
+  }
+
+  .label {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+  }
+}
+
+.themeDraft {
+  .bg {
+    border-style: dashed;
+    border-color: rgba(121, 136, 164, 0.34);
+
+    &:after {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(226, 232, 244, 0.82));
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.62);
     }
   }
 }

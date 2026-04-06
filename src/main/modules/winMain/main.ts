@@ -7,6 +7,7 @@ import { mainSend } from '@common/mainIpc'
 import { sendFocus, sendTaskbarButtonClick } from './rendererEvent'
 
 let browserWindow: Electron.BrowserWindow | null = null
+let trayModulePromise: Promise<{ ensureTray: () => void }> | null = null
 
 const winEvent = () => {
   if (!browserWindow) return
@@ -206,9 +207,15 @@ export const unmaximize = () => {
 }
 export const toggleHide = () => {
   if (!browserWindow) return
-  browserWindow.isVisible()
-    ? browserWindow.hide()
-    : browserWindow.show()
+  if (browserWindow.isVisible()) {
+    trayModulePromise ??= import('../tray')
+    void trayModulePromise.then(({ ensureTray }) => {
+      ensureTray()
+      browserWindow?.hide()
+    })
+    return
+  }
+  browserWindow.show()
 }
 export const toggleMinimize = () => {
   if (!browserWindow) return

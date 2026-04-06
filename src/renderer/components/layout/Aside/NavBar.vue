@@ -1,7 +1,7 @@
 <template>
   <div :class="[$style.menu, { [$style.collapsed]: isSidebarCollapsed }]">
     <section v-for="section in menus" :key="section.title" :class="$style.section">
-      <p v-if="!isSidebarCollapsed" :class="$style.sectionTitle">{{ section.title }}</p>
+      <p :class="$style.sectionTitle" :aria-hidden="isSidebarCollapsed">{{ section.title }}</p>
       <ul :class="$style.list" role="toolbar">
         <li v-for="item in section.items" :key="item.key" :class="$style.navItem" role="presentation">
           <router-link
@@ -9,7 +9,6 @@
             role="tab"
             :aria-selected="isItemActive(item)"
             :aria-label="item.label"
-            :title="isSidebarCollapsed ? item.label : ''"
             :to="item.to"
           >
             <span :class="$style.iconWrap">
@@ -17,7 +16,7 @@
                 <use :xlink:href="item.icon" />
               </svg>
             </span>
-            <span v-if="!isSidebarCollapsed" :class="$style.label">{{ item.label }}</span>
+            <span :class="$style.label">{{ item.label }}</span>
           </router-link>
         </li>
       </ul>
@@ -37,20 +36,12 @@ const t = useI18n()
 
 const localEntries = [
   {
-    key: 'local',
-    to: { path: '/local', query: { view: 'albums' } },
-    icon: '#icon-musicFolder',
-    iconSize: '0 0 247.498 247.498',
-    name: 'LocalMusic',
-    label: '本地音乐',
-  },
-  {
     key: 'localTracks',
     to: { path: '/local', query: { view: 'tracks' } },
     icon: '#icon-musicFile',
     iconSize: '0 0 512 512',
     name: 'LocalMusic',
-    label: '曲库',
+    label: '歌曲',
     localView: 'tracks',
   },
   {
@@ -68,7 +59,7 @@ const localEntries = [
     icon: '#icon-artist-custom',
     iconSize: '0 0 1024 1024',
     name: 'LocalMusic',
-    label: '音乐家',
+    label: '歌手',
     localView: 'artists',
   },
 ]
@@ -99,28 +90,6 @@ const menus = computed(() => [
         label: t('song_list'),
       },
       {
-        key: 'leaderboard',
-        to: '/leaderboard',
-        icon: '#icon-leaderboard',
-        iconSize: '0 0 425.22 425.2',
-        name: 'Leaderboard',
-        label: t('leaderboard'),
-      },
-    ],
-  },
-  {
-    title: 'LIBRARY',
-    items: [
-      ...localEntries,
-      {
-        key: 'list',
-        to: '/list',
-        icon: '#icon-love',
-        iconSize: '0 0 444.87 391.18',
-        name: 'List',
-        label: t('my_list'),
-      },
-      {
         key: 'download',
         to: '/download',
         icon: '#icon-download-2',
@@ -130,9 +99,31 @@ const menus = computed(() => [
       },
     ].filter(item => item.key != 'download' || appSetting['download.enable']),
   },
+  {
+    title: 'LOCAL',
+    items: [
+      {
+        key: 'local',
+        to: { path: '/local', query: { view: 'albums' } },
+        icon: '#icon-musicFolder',
+        iconSize: '0 0 247.498 247.498',
+        name: 'LocalMusic',
+        label: '本地音乐',
+      },
+      ...localEntries,
+      {
+        key: 'list',
+        to: '/list',
+        icon: '#icon-love',
+        iconSize: '0 0 444.87 391.18',
+        name: 'List',
+        label: t('my_list'),
+      },
+    ],
+  },
 ])
 
-const isItemActive = (item) => {
+const isItemActive = item => {
   if (item.name != 'LocalMusic') return route.meta.name == item.name
   if (!item.localView) return route.meta.name == 'LocalMusic'
   return route.meta.name == 'LocalMusic' && currentLocalView.value == item.localView
@@ -144,81 +135,82 @@ const isItemActive = (item) => {
 
 .menu {
   flex: auto;
-  display: flex;
-  flex-flow: column nowrap;
-  gap: 14px;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-}
-
-.list {
-  -webkit-app-region: no-drag;
   display: flex;
-  flex-flow: column nowrap;
-  gap: 6px;
-  min-width: 0;
+  flex-direction: column;
+  gap: 18px;
+  padding: 0 2px 2px;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
 }
 
 .section {
   display: flex;
-  flex-flow: column nowrap;
+  flex-direction: column;
   gap: 8px;
   min-width: 0;
 }
 
 .sectionTitle {
-  padding: 0 4px;
+  padding: 0 10px;
+  height: 14px;
+  line-height: 14px;
   font-size: 10px;
-  letter-spacing: .12em;
+  letter-spacing: .16em;
   text-transform: uppercase;
-  color: var(--shell-muted, var(--color-font-label));
+  color: rgba(86, 100, 120, 0.56);
+  overflow: hidden;
+}
+
+.list {
+  -webkit-app-region: no-drag;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
 }
 
 .navItem {
   position: relative;
+  min-width: 0;
 }
 
 .link {
-  position: relative;
   width: 100%;
-  min-height: 42px;
-  padding: 8px 10px;
-  border-radius: 12px;
-  transition: @transition-fast;
-  transition-property: background-color, opacity, transform, border-color;
-  color: var(--shell-text, var(--color-nav-font));
-  cursor: pointer;
-  outline: none;
-  display: flex;
+  max-width: 100%;
+  height: 48px;
+  min-height: 48px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border-radius: 15px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
-  border: 1px solid transparent;
-  overflow: hidden;
+  gap: 12px;
   text-decoration: none;
-
-  &.active {
-    background: var(--shell-surface-strong, rgba(255, 255, 255, 0.8));
-    border-color: var(--shell-stroke, rgba(255, 255, 255, 0.18));
-    box-shadow: inset 2px 0 0 var(--shell-accent, var(--color-primary));
-
-    &:hover {
-      background: var(--shell-surface-strong, rgba(255, 255, 255, 0.86));
-    }
-  }
+  color: var(--shell-text, var(--color-nav-font));
+  transition: transform @transition-fast, background-color @transition-fast, color @transition-fast;
 
   &:hover {
-    color: var(--shell-text, var(--color-nav-font));
     transform: translateY(-1px);
-
-    &:not(.active) {
-      background: var(--shell-surface-soft, rgba(255, 255, 255, 0.56));
-    }
+    background: rgba(255, 255, 255, 0.46);
   }
+}
 
-  &:active:not(.active) {
-    opacity: .6;
-    transform: translateY(0);
+.active {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 82%, white), color-mix(in srgb, var(--color-primary) 58%, white 42%));
+  color: #fff;
+  box-shadow: 0 16px 30px color-mix(in srgb, var(--color-primary) 22%, transparent);
+
+  .iconWrap {
+    background: rgba(255, 255, 255, 0.22);
   }
 }
 
@@ -226,34 +218,46 @@ const isItemActive = (item) => {
   flex: none;
   width: 28px;
   height: 28px;
-  border-radius: 9px;
-  display: flex;
+  border-radius: 10px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.12);
-  color: inherit;
+  justify-self: center;
+  background: rgba(255, 255, 255, 0.62);
+
+  svg {
+    fill: currentColor;
+  }
 }
 
 .label {
   min-width: 0;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.2;
-  text-decoration: none;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
   .mixin-ellipsis-1();
 }
 
 .collapsed {
-  .list {
-    align-items: center;
+  .sectionTitle {
+    visibility: hidden;
+    opacity: 0;
   }
 
   .link {
-    width: 40px;
-    min-height: 40px;
+    width: 100%;
+    max-width: 100%;
+    height: 48px;
+    min-height: 48px;
     padding: 0;
+    grid-template-columns: 28px;
+    gap: 0;
     justify-content: center;
   }
-}
 
+  .label {
+    display: none;
+  }
+}
 </style>

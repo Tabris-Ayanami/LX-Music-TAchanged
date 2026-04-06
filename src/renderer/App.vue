@@ -3,7 +3,7 @@
     id="container"
     class="view-container"
     :class="[themeShouldUseDarkColors ? 'themeShellDark' : 'themeShellLight', { sidebarCollapsed: isSidebarCollapsed }]"
-    :style="{ '--sidebar-width': isSidebarCollapsed ? '64px' : '136px' }"
+    :style="{ '--sidebar-width': isSidebarCollapsed ? '104px' : '232px' }"
   >
     <div class="shellOrb shellOrbA" />
     <div class="shellOrb shellOrbB" />
@@ -136,8 +136,8 @@ body {
 #container {
   position: relative;
   display: flex;
-  gap: 12px;
-  padding: 12px;
+  gap: 0;
+  padding: 0;
   height: 100%;
   overflow: hidden;
   isolation: isolate;
@@ -152,19 +152,30 @@ body {
 #left {
   flex: none;
   width: var(--sidebar-width);
+  box-sizing: border-box;
   position: relative;
+  display: flex;
+  flex-flow: column nowrap;
+  min-height: 0;
   z-index: 3;
+  border-right: 1px solid rgba(255, 255, 255, 0.28);
+  padding: 12px;
+  background: transparent;
+  contain: layout paint;
+  will-change: width;
+  transition: width .24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 #right {
   flex: auto;
   display: flex;
   flex-flow: column nowrap;
-  gap: 10px;
+  gap: 0;
   min-width: 0;
   min-height: 0;
-  padding-bottom: 116px;
+  padding-bottom: 0;
   position: relative;
   z-index: 1;
+  background: transparent;
 }
 #toolbar, #player {
   flex: none;
@@ -174,23 +185,28 @@ body {
   flex: auto;
   min-height: 0;
   z-index: 1;
+  padding: 0;
 }
 #view {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  border-radius: 12px;
-  border: 1px solid var(--shell-stroke);
-  background: var(--shell-panel);
-  box-shadow: var(--shell-panel-shadow);
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 #player {
   position: absolute;
-  left: calc(var(--sidebar-width) + 24px);
-  right: 12px;
-  bottom: 28px;
+  left: 22px;
+  right: 22px;
+  bottom: 16px;
   width: auto;
+  display: flex;
+  align-items: flex-end;
   z-index: 4;
+  transition: left @transition-normal, right @transition-normal, width @transition-normal;
+  pointer-events: auto;
 }
 
 .shellOrb {

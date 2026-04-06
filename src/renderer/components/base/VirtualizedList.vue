@@ -138,6 +138,7 @@ export default {
     let cancelScroll = null
     let isAutoScrolling = false
     let scrollToValue = 0
+    let resizeObserver = null
 
     const createList = (startIndex, endIndex) => {
       const cache = cachedList.slice(startIndex, endIndex)
@@ -292,6 +293,15 @@ export default {
         capture: false,
         passive: true,
       })
+      if (window.ResizeObserver) {
+        resizeObserver = new window.ResizeObserver(() => {
+          requestAnimationFrame(() => {
+            if (!dom_scrollContainer.value?.clientHeight) return
+            updateView()
+          })
+        })
+        resizeObserver.observe(dom_scrollContainer.value)
+      }
       cachedList = Array(props.list.length)
       startIndex = -1
       endIndex = -1
@@ -299,7 +309,6 @@ export default {
       if (props.list.length) {
         void nextTick(() => {
           requestAnimationFrame(() => {
-            console.log('updateView')
             updateView()
           })
         })
@@ -309,6 +318,8 @@ export default {
     onBeforeUnmount(() => {
       dom_scrollContainer.value.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', handleResize)
+      resizeObserver?.disconnect?.()
+      resizeObserver = null
       if (cancelScroll) cancelScroll()
     })
 

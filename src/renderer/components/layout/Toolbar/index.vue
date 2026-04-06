@@ -1,5 +1,5 @@
 <template>
-  <div :class="[$style.toolbar, { [$style.fullscreen]: isFullscreen }, appSetting['common.controlBtnPosition'] == 'left' ? $style.controlBtnLeft : $style.controlBtnRight]">
+  <div :class="[$style.toolbar, { [$style.fullscreen]: isFullscreen }]">
     <div :class="$style.searchSlot">
       <SearchInput />
     </div>
@@ -9,14 +9,13 @@
           <use xlink:href="#icon-setting" />
         </svg>
       </router-link>
-      <ControlBtns v-if="appSetting['common.controlBtnPosition'] != 'left'" />
+      <ControlBtns />
     </div>
   </div>
 </template>
 
 <script setup>
 import { isFullscreen } from '@renderer/store'
-import { appSetting } from '@renderer/store/setting'
 import { useI18n } from '@renderer/plugins/i18n'
 import ControlBtns from './ControlBtns.vue'
 import SearchInput from './SearchInput.vue'
@@ -31,24 +30,15 @@ const t = useI18n()
   display: flex;
   min-height: 56px;
   align-items: center;
-  gap: 10px;
-  padding: 0 4px;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 22px 12px;
   -webkit-app-region: drag;
   z-index: 2;
   color: var(--shell-text, var(--color-font));
 
   &.fullscreen {
     -webkit-app-region: no-drag;
-  }
-
-  &.controlBtnLeft {
-    .actions {
-      justify-content: flex-end;
-    }
-  }
-
-  &.controlBtnRight {
-    justify-content: flex-start;
   }
 }
 
@@ -64,20 +54,21 @@ const t = useI18n()
   flex: none;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   -webkit-app-region: no-drag;
 }
 
 .settingBtn {
   width: 38px;
   height: 38px;
-  border-radius: 12px;
-  border: 1px solid var(--shell-stroke, rgba(255, 255, 255, 0.18));
+  border-radius: 18px;
+  border: 1px solid rgba(42, 55, 75, 0.08);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: var(--shell-text, var(--color-font));
-  background: var(--shell-surface, rgba(255, 255, 255, 0.68));
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 10px 22px rgba(92, 108, 138, 0.08);
   transition: @transition-fast;
   transition-property: transform, opacity, background-color;
 

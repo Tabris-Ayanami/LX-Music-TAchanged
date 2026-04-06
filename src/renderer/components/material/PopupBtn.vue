@@ -1,7 +1,15 @@
 <template>
   <div ref="dom_btn" :class="$style.content" @click="handleShowPopup" @mouseenter="handlMsEnter" @mouseleave="handlMsLeave">
     <slot />
-    <base-popup v-model:visible="visible" :btn-el="dom_btn" @mouseenter="handlMsEnter" @mouseleave="handlMsLeave">
+    <base-popup
+      v-model:visible="visible"
+      :btn-el="dom_btn"
+      :panel-class="popupClass"
+      :list-class="listClass"
+      :no-arrow="noArrow"
+      @mouseenter="handlMsEnter"
+      @mouseleave="handlMsLeave"
+    >
       <slot name="content" />
     </base-popup>
   </div>
@@ -9,6 +17,21 @@
 
 <script setup lang="ts">
 import { ref, onBeforeUnmount } from '@common/utils/vueTools'
+
+defineProps({
+  popupClass: {
+    type: String,
+    default: '',
+  },
+  listClass: {
+    type: String,
+    default: '',
+  },
+  noArrow: {
+    type: Boolean,
+    default: false,
+  },
+})
 
 const visible = ref(false)
 const dom_btn = ref<HTMLElement | null>(null)

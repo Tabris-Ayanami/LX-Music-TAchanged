@@ -99,7 +99,7 @@ export default {
   overflow: hidden;
   transition: @transition-normal;
   transition-property: background-color;
-  background-color: var(--color-primary-light-100-alpha-800);
+  background-color: var(--slider-track-color, var(--color-primary-light-100-alpha-800));
   // background-color: #f5f5f5;
   position: relative;
   border-radius: 40px;
@@ -125,12 +125,12 @@ export default {
 }
 
 .progressBar2 {
-  background-color: var(--color-primary-light-100-alpha-400);
+  background-color: var(--slider-fill-color, var(--color-primary-light-100-alpha-400));
   will-change: transform;
 }
 
 .progressBar3 {
-  background-color: var(--color-primary-light-100-alpha-200);
+  background-color: var(--slider-drag-fill-color, var(--color-primary-light-100-alpha-200));
   box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
   opacity: 0.5;
 }

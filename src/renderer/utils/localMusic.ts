@@ -1,5 +1,7 @@
 import { createUserList, getUserLists } from '@renderer/store/list/action'
 import { userLists } from '@renderer/store/list/state'
+import { playMusicInfo } from '@renderer/store/player/state'
+import { appendToDefaultList, playMusicsInDefaultList } from './playDefaultList'
 
 export const LOCAL_MUSIC_LIST_ID = 'userlist_local_music'
 export const LOCAL_MUSIC_LIST_NAME = '本地音乐'
@@ -23,6 +25,8 @@ export interface LocalMusicGroup {
 }
 
 const groupCoverCache = new Map<string, string>()
+const albumGroupCache = new WeakMap<LX.Music.MusicInfoLocal[], LocalMusicGroup[]>()
+const artistGroupCache = new WeakMap<LX.Music.MusicInfoLocal[], LocalMusicGroup[]>()
 let localTrackCache: LX.Music.MusicInfoLocal[] = []
 let ensureLocalMusicListPromise: Promise<LX.List.UserListInfo> | null = null
 
@@ -100,7 +104,37 @@ export const ensureLocalMusicList = async() => {
   return ensureLocalMusicListPromise
 }
 
+const clampPlayIndex = (index: number, length: number) => {
+  if (!length) return 0
+  if (index < 0) return 0
+  if (index >= length) return length - 1
+  return index
+}
+
+export const playLocalTempTracks = async(
+  _tempId: string,
+  tracks: LX.Music.MusicInfo[],
+  index: number = 0,
+  options: {
+    interrupt?: boolean
+  } = {},
+) => {
+  if (!tracks.length) return
+  const safeIndex = clampPlayIndex(index, tracks.length)
+  if (options.interrupt === false && playMusicInfo.musicInfo) {
+    await appendToDefaultList(tracks)
+    return
+  }
+  await playMusicsInDefaultList(tracks, safeIndex)
+}
+
+export const playSingleLocalTrack = async(track: LX.Music.MusicInfoLocal) => {
+  await playLocalTempTracks(`${LOCAL_MUSIC_LIST_ID}__single__${track.id}`, [track], 0)
+}
+
 export const buildLocalAlbumGroups = (tracks: LX.Music.MusicInfoLocal[]): LocalMusicGroup[] => {
+  const cachedGroups = albumGroupCache.get(tracks)
+  if (cachedGroups) return cachedGroups
   const groups = new Map<string, LocalMusicGroup>()
 
   tracks.forEach((track, index) => {
@@ -137,10 +171,14 @@ export const buildLocalAlbumGroups = (tracks: LX.Music.MusicInfoLocal[]): LocalM
     }
   })
 
-  return Array.from(groups.values()).sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN'))
+  const result = Array.from(groups.values()).sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN'))
+  albumGroupCache.set(tracks, result)
+  return result
 }
 
 export const buildLocalArtistGroups = (tracks: LX.Music.MusicInfoLocal[]): LocalMusicGroup[] => {
+  const cachedGroups = artistGroupCache.get(tracks)
+  if (cachedGroups) return cachedGroups
   const groups = new Map<string, LocalMusicGroup>()
 
   tracks.forEach((track, index) => {
@@ -175,7 +213,7 @@ export const buildLocalArtistGroups = (tracks: LX.Music.MusicInfoLocal[]): Local
     }
   })
 
-  return Array.from(groups.values())
+  const result = Array.from(groups.values())
     .map(group => {
       const albumCount = new Set(group.items.map(item => getText(item.track.meta.albumName, '未命名专辑'))).size
       return {
@@ -184,4 +222,6 @@ export const buildLocalArtistGroups = (tracks: LX.Music.MusicInfoLocal[]): Local
       }
     })
     .sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN'))
+  artistGroupCache.set(tracks, result)
+  return result
 }
