@@ -15,6 +15,7 @@ let tray: Electron.Tray | null
 let isEnableTray: boolean = false
 let themeId: number
 let isShowStatusBarLyric: boolean = false
+let isTempTrayVisible: boolean = false
 
 const playerState = {
   empty: false,
@@ -140,12 +141,13 @@ const getIconPath = (id: number) => {
   return path.join(global.staticPath, 'images/tray', theme.fileName + (isWin ? '.ico' : '.png'))
 }
 
-export const createTray = () => {
+export const createTray = (force = false) => {
   // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-  if ((tray && !tray.isDestroyed()) || !global.lx.appSetting['tray.enable']) return
+  if ((tray && !tray.isDestroyed()) || (!force && !global.lx.appSetting['tray.enable'])) return
 
   // 托盘
   tray = new Tray(nativeImage.createFromPath(getIconPath(global.lx.appSetting['tray.themeId'])))
+  isTempTrayVisible = force && !global.lx.appSetting['tray.enable']
 
   // tray.setToolTip('LX Music')
   // createMenu()
@@ -162,7 +164,14 @@ export const destroyTray = () => {
   tray.destroy()
   isEnableTray = false
   isShowStatusBarLyric = false
+  isTempTrayVisible = false
   tray = null
+}
+
+export const ensureTray = () => {
+  createTray(true)
+  setTip()
+  createMenu()
 }
 
 const handleUpdateConfig = (setting: Partial<LX.AppSetting>) => {
@@ -323,6 +332,7 @@ const setTip = () => {
 }
 
 const init = () => {
+  if (global.lx.appSetting['tray.enable']) isTempTrayVisible = false
   if (themeId != global.lx.appSetting['tray.themeId']) {
     themeId = global.lx.appSetting['tray.themeId']
     setTrayImage(themeId)
@@ -356,6 +366,10 @@ export default () => {
     createMenu()
   })
   global.lx.event_app.on('main_window_show', () => {
+    if (isTempTrayVisible && !global.lx.appSetting['tray.enable']) {
+      destroyTray()
+      return
+    }
     createMenu()
   })
   if (!isWin) {

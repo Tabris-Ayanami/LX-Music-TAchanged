@@ -11,7 +11,7 @@
         <p :class="$style.desc">{{ detailDescription }}</p>
       </div>
       <div :class="$style.headerActions">
-        <button type="button" :class="[$style.actionBtn, $style.primary]" :disabled="!detailGroup" @click="playFirstTrack">
+        <button type="button" :class="[$style.actionBtn, $style.primary]" :disabled="!detailTracks.length" @click="playFirstTrack">
           播放第一首
         </button>
         <button type="button" :class="$style.actionBtn" @click="goBack">
@@ -21,51 +21,36 @@
     </section>
 
     <section :class="$style.listCard">
-      <div :class="$style.tableHead">
-        <span :class="[$style.cell, $style.numCell]">#</span>
-        <span :class="[$style.cell, $style.nameCell]">歌曲名</span>
-        <span :class="[$style.cell, $style.singerCell]">艺术家</span>
-        <span :class="[$style.cell, $style.albumCell]">专辑名</span>
-        <span :class="[$style.cell, $style.timeCell]">时长</span>
-      </div>
-
-      <div v-if="detailItems.length" :class="$style.tableBody">
-        <button
-          v-for="(item, rowIndex) in detailItems"
-          :key="item.track.id"
-          type="button"
-          :class="$style.row"
-          @click="playTrack(item.index)"
-        >
-          <span :class="[$style.cell, $style.numCell]">{{ Number(rowIndex) + 1 }}</span>
-          <span :class="[$style.cell, $style.nameCell]" :title="item.track.name">{{ item.track.name }}</span>
-          <span :class="[$style.cell, $style.singerCell]" :title="item.track.singer">{{ item.track.singer || '--' }}</span>
-          <span :class="[$style.cell, $style.albumCell]" :title="item.track.meta.albumName">{{ item.track.meta.albumName || '--' }}</span>
-          <span :class="[$style.cell, $style.timeCell]">{{ item.track.interval || '--/--' }}</span>
-        </button>
-      </div>
-
-      <div v-else :class="$style.emptyState">
-        这个分类下暂时还没有歌曲。
-      </div>
+      <MusicList
+        v-if="detailTracks.length && localListId"
+        :key="`${detailType}:${detailKey}`"
+        :list-id="localListId"
+        :music-list="detailTracks"
+        play-mode="single-temp"
+        play-on-click
+        :temp-list-id-prefix="`${LOCAL_MUSIC_LIST_ID}__${detailType}__${detailKey}`"
+      />
+      <div v-else :class="$style.emptyState">这个分类下暂时还没有歌曲。</div>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from '@common/utils/vueTools'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from '@common/utils/vueTools'
 import { useRoute, useRouter } from '@common/utils/vueRouter'
-import { playList } from '@renderer/core/player'
 import { getPicPath } from '@renderer/core/music'
 import { getListMusics } from '@renderer/store/list/action'
+import MusicList from '@renderer/views/List/MusicList/index.vue'
 import {
+  LOCAL_MUSIC_LIST_ID,
   buildLocalAlbumGroups,
   buildLocalArtistGroups,
   ensureLocalMusicList,
   getCachedLocalGroupCover,
   getCachedLocalTracks,
-  setCachedLocalTracks,
+  playLocalTempTracks,
   setCachedLocalGroupCover,
+  setCachedLocalTracks,
 } from '@renderer/utils/localMusic'
 
 const route = useRoute()
@@ -76,7 +61,7 @@ const detailCover = ref('')
 
 const detailType = computed(() => route.query.type == 'artists' ? 'artists' : 'albums')
 const detailKey = computed(() => typeof route.query.key == 'string' ? route.query.key : '')
-const detailTypeLabel = computed(() => detailType.value == 'artists' ? '艺术家详情' : '专辑详情')
+const detailTypeLabel = computed(() => detailType.value == 'artists' ? '音乐家详情' : '专辑详情')
 
 const groups = computed(() => detailType.value == 'artists'
   ? buildLocalArtistGroups(tracks.value)
@@ -84,16 +69,15 @@ const groups = computed(() => detailType.value == 'artists'
 
 const detailGroup = computed(() => groups.value.find(item => item.key == detailKey.value) ?? null)
 const detailItems = computed(() => detailGroup.value?.items ?? [])
+const detailTracks = computed(() => detailItems.value.map(item => item.track))
 
 const detailDescription = computed(() => {
   if (!detailGroup.value) return '从左侧返回本地音乐重新选择。'
-  if (detailType.value == 'artists') {
-    return `${detailGroup.value.subtitle} · 共 ${detailGroup.value.count} 首歌曲`
-  }
+  if (detailType.value == 'artists') return `${detailGroup.value.subtitle} · 共 ${detailGroup.value.count} 首歌曲`
   return `${detailGroup.value.singer} · 共 ${detailGroup.value.count} 首歌曲`
 })
 
-const init = async() => {
+const refreshTracks = async() => {
   const list = await ensureLocalMusicList()
   localListId.value = list.id
   const cachedTracks = getCachedLocalTracks()
@@ -102,8 +86,18 @@ const init = async() => {
   setCachedLocalTracks(tracks.value)
 }
 
+const handleListUpdate = (ids: string[]) => {
+  if (!localListId.value || !ids.includes(localListId.value)) return
+  void refreshTracks()
+}
+
 onMounted(() => {
-  void init()
+  window.app_event.on('myListUpdate', handleListUpdate)
+  void refreshTracks()
+})
+
+onBeforeUnmount(() => {
+  window.app_event.off('myListUpdate', handleListUpdate)
 })
 
 watch([detailGroup, localListId], ([group, listId]) => {
@@ -141,14 +135,11 @@ const goBack = () => {
   })
 }
 
-const playTrack = (index: number) => {
-  if (!localListId.value || index < 0) return
-  playList(localListId.value, index)
-}
-
 const playFirstTrack = () => {
-  if (!detailGroup.value) return
-  playTrack(detailGroup.value.firstIndex)
+  if (!detailTracks.value.length) return
+  void playLocalTempTracks(`${LOCAL_MUSIC_LIST_ID}__${detailType.value}__${detailKey.value}`, detailTracks.value, 0, {
+    interrupt: false,
+  })
 }
 </script>
 
@@ -269,57 +260,6 @@ const playFirstTrack = () => {
   display: flex;
   flex-flow: column nowrap;
   overflow: hidden;
-}
-
-.tableHead,
-.row {
-  display: grid;
-  grid-template-columns: 64px minmax(0, 1.7fr) minmax(0, 1.2fr) minmax(0, 1.2fr) 90px;
-  align-items: center;
-  gap: 12px;
-  padding: 0 18px;
-}
-
-.tableHead {
-  flex: none;
-  height: 42px;
-  border-bottom: 1px solid rgba(140, 170, 210, 0.14);
-  color: var(--shell-muted, var(--color-font-label));
-  font-size: 12px;
-}
-
-.tableBody {
-  flex: auto;
-  min-height: 0;
-  overflow: auto;
-}
-
-.row {
-  width: 100%;
-  height: 52px;
-  border: none;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color .2s ease;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.16);
-  }
-}
-
-.cell {
-  min-width: 0;
-  .mixin-ellipsis-1();
-}
-
-.numCell {
-  color: var(--shell-muted, var(--color-font-label));
-}
-
-.timeCell {
-  text-align: right;
 }
 
 .emptyState {

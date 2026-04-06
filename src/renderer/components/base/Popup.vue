@@ -1,7 +1,7 @@
 <template>
   <component :is="Teleport" to="#root">
     <div
-      :class="[$style.popup, {[$style.top]: isShowTop}, {[$style.active]: props.visible}]"
+      :class="[props.panelClass, $style.popup, {[$style.top]: isShowTop}, {[$style.active]: props.visible}, {[$style.noArrow]: props.noArrow}]"
       :style="popupStyle"
       :aria-hidden="!props.visible"
       @click.stop
@@ -9,7 +9,7 @@
       @mouseleave="emit('mouseleave', $event)"
       @transitionend="emit('transitionend', $event)"
     >
-      <div ref="dom_content" class="scroll" :class="$style.list">
+      <div ref="dom_content" class="scroll" :class="[props.listClass, $style.list]">
         <slot />
       </div>
     </div>
@@ -32,6 +32,9 @@ const Teleport = teleport_ as new () => {
 const props = defineProps<{
   visible: boolean
   btnEl: HTMLElement | null
+  panelClass?: string
+  listClass?: string
+  noArrow?: boolean
 }>()
 
 interface Emitter {
@@ -161,6 +164,12 @@ onBeforeUnmount(() => {
       border-bottom: none;
       border-top: 8px solid var(--color-content-background);
     }
+  }
+}
+
+.noArrow {
+  &:before {
+    display: none;
   }
 }
 .list {

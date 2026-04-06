@@ -137,7 +137,7 @@ export default {
   overflow: hidden;
   transition: @transition-normal;
   transition-property: background-color, opacity;
-  background-color: var(--color-primary-alpha-700);
+  background-color: var(--slider-track-color, var(--color-primary-alpha-700));
   // background-color: #f5f5f5;
   position: relative;
   // border-radius: @radius-progress-border;
@@ -159,7 +159,7 @@ export default {
   height: 100%;
   // border-radius: @radius-progress-border;
   transition-duration: 0.2s;
-  background-color: var(--color-button-font);
+  background-color: var(--slider-fill-color, var(--color-button-font));
   box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
 }
 

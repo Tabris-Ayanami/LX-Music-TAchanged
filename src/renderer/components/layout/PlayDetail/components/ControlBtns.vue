@@ -1,28 +1,29 @@
 <template lang="pug">
-div(:class="[$style.footerLeftControlBtns, { [$style.compact]: mode === 'main' }]")
+div(:class="[$style.footerLeftControlBtns, { [$style.compact]: mode === 'main' || mode === 'detail-left' || mode === 'detail-right' }]")
   common-volume-btn(v-if="mode === 'extra'")
-  PlayQueueBtn(v-if="mode === 'extra'")
-  button(v-if="mode !== 'main'" :class="[$style.footerLeftControlBtn, $style.lrcBtn]" :aria-label="toggleDesktopLyricBtnTitle" @click="toggleDesktopLyric" @contextmenu="toggleLockDesktopLyric")
+  PlayQueueBtn(v-if="mode === 'extra' || mode === 'detail' || mode === 'detail-left'")
+  button(v-if="mode !== 'main' && mode !== 'detail-right'" :class="[$style.footerLeftControlBtn, $style.lrcBtn]" :aria-label="toggleDesktopLyricBtnTitle" @click="toggleDesktopLyric" @contextmenu="toggleLockDesktopLyric")
     svg(v-show="appSetting['desktopLyric.enable']" version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" height="125%" viewBox="0 0 512 512" space="preserve")
       use(xlink:href="#icon-desktop-lyric-on")
     svg(v-show="!appSetting['desktopLyric.enable']" version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" height="125%" viewBox="0 0 512 512" space="preserve")
       use(xlink:href="#icon-desktop-lyric-off")
-  button(v-if="mode !== 'main'" :class="[$style.footerLeftControlBtn, { [$style.active]: appSetting['player.audioVisualization'] }]" :aria-label="$t('audio_visualization')" @click="toggleAudioVisualization")
+  common-playback-rate-btn(v-if="mode === 'detail-left'")
+  button(v-else-if="mode !== 'main' && mode !== 'detail-right'" :class="[$style.footerLeftControlBtn, { [$style.active]: appSetting['player.audioVisualization'] }]" :aria-label="$t('audio_visualization')" @click="toggleAudioVisualization")
     svg(version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" width="95%" viewBox="0 0 24 24" space="preserve")
       use(xlink:href="#icon-audio-wave")
-  button(v-if="mode !== 'main'" :class="[$style.footerLeftControlBtn, { [$style.active]: isShowLrcSelectContent }]" :aria-label="$t('lyric__select')" @click="toggleVisibleLrc")
+  button(v-if="mode !== 'main' && mode !== 'detail-left'" :class="[$style.footerLeftControlBtn, { [$style.active]: isShowLrcSelectContent }]" :aria-label="$t('lyric__select')" @click="toggleVisibleLrc")
     svg(version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" width="95%" viewBox="0 0 24 24" space="preserve")
       use(xlink:href="#icon-text")
-  button(v-if="mode !== 'main'" :class="[$style.footerLeftControlBtn, {[$style.active]: isShowPlayComment}]" :aria-label="$t('comment__show')" @click="toggleVisibleComment")
+  button(v-if="mode !== 'main' && mode !== 'detail' && mode !== 'detail-left' && mode !== 'detail-right'" :class="[$style.footerLeftControlBtn, {[$style.active]: isShowPlayComment}]" :aria-label="$t('comment__show')" @click="toggleVisibleComment")
     svg(version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" width="95%" viewBox="0 0 24 24" space="preserve")
       use(xlink:href="#icon-comment")
-  common-sound-effect-btn(v-if="mode !== 'main'")
-  common-playback-rate-btn(v-if="mode !== 'main'")
-  common-toggle-play-mode-btn(v-if="mode !== 'main'")
-  button(v-if="mode !== 'main'" :class="$style.footerLeftControlBtn" :aria-label="$t('player__add_music_to')" @click="isShowAddMusicTo = true")
+  common-sound-effect-btn(v-if="mode !== 'main' && mode !== 'detail-left'")
+  common-playback-rate-btn(v-if="mode !== 'main' && mode !== 'detail' && mode !== 'detail-left' && mode !== 'detail-right'")
+  common-toggle-play-mode-btn(v-if="mode !== 'main' && mode !== 'detail-left'")
+  button(v-if="mode !== 'main' && mode !== 'detail' && mode !== 'detail-left' && mode !== 'detail-right'" :class="$style.footerLeftControlBtn" :aria-label="$t('player__add_music_to')" @click="isShowAddMusicTo = true")
     svg(version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" space="preserve")
       use(xlink:href="#icon-add-2")
-  common-list-add-modal(v-if="mode !== 'main'" v-model:show="isShowAddMusicTo" :music-info="playMusicInfo.musicInfo")
+  common-list-add-modal(v-if="mode !== 'main' && mode !== 'detail' && mode !== 'detail-left' && mode !== 'detail-right'" v-model:show="isShowAddMusicTo" :music-info="playMusicInfo.musicInfo")
 </template>
 
 <script>
@@ -116,9 +117,9 @@ export default {
   }
 
   .footerLeftControlBtn {
-    width: 24px;
-    height: 24px;
-    opacity: .82;
+    width: var(--detail-side-control-size, 24px);
+    height: var(--detail-side-control-size, 24px);
+    opacity: .9;
     cursor: pointer;
     transition: opacity @transition-normal, color @transition-normal, transform @transition-normal;
     display: flex;
@@ -127,6 +128,12 @@ export default {
     background-color: transparent;
     border: none;
     padding: 0;
+
+    svg {
+      width: 92%;
+      height: 92%;
+      filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.22));
+    }
 
     &:hover {
       opacity: 1;
@@ -145,6 +152,19 @@ export default {
 }
 
 .compact {
-  gap: 14px;
+  flex-wrap: nowrap;
+  gap: 10px 12px;
+  min-height: var(--detail-center-control-size, 64px);
+
+  .footerLeftControlBtn,
+  button {
+    width: var(--detail-side-control-size, 28px);
+    height: var(--detail-side-control-size, 28px);
+  }
+
+  svg {
+    transform: scale(1);
+    transform-origin: center;
+  }
 }
 </style>

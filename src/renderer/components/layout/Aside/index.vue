@@ -1,100 +1,136 @@
 <template>
-  <div :class="[$style.aside, { [$style.fullscreen]: isFullscreen, [$style.collapsed]: isSidebarCollapsed }]">
-    <div :class="$style.topTools">
-      <ControlBtns v-if="appSetting['common.controlBtnPosition'] == 'left'" />
+  <aside :class="$style.host">
+    <div :class="[$style.panel, { [$style.collapsed]: isSidebarCollapsed }]">
+      <div :class="$style.brandRow">
+        <div :class="$style.brand">
+          <button type="button" :class="$style.logoBtn" :title="isSidebarCollapsed ? '展开侧栏' : '收起侧栏'" @click="toggleSidebarCollapsed">
+            <span :class="$style.logo">
+              <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" space="preserve">
+                <use xlink:href="#icon-lx-note" />
+              </svg>
+            </span>
+          </button>
+          <router-link to="/search" :class="$style.brandLink">
+            <strong :class="$style.brandText">LX Music</strong>
+          </router-link>
+        </div>
+      </div>
+      <NavBar />
     </div>
-    <NavBar />
-    <div :class="$style.bottomTools">
-      <button type="button" :class="$style.brandButton" :title="isSidebarCollapsed ? '展开侧栏' : '收起侧栏'" @click="toggleSidebarCollapsed">
-        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 32 32" width="18" height="18" space="preserve">
-          <use xlink:href="#icon-list-order" />
-        </svg>
-      </button>
-    </div>
-  </div>
+  </aside>
 </template>
 
 <script setup>
-import { isFullscreen } from '@renderer/store'
-import { appSetting } from '@renderer/store/setting'
 import { isSidebarCollapsed, toggleSidebarCollapsed } from '@renderer/store/ui'
-
-import ControlBtns from './ControlBtns.vue'
 import NavBar from './NavBar.vue'
 </script>
 
 <style lang="less" module>
 @import '@renderer/assets/styles/layout.less';
 
-.aside {
+.host {
   -webkit-app-region: drag;
-  -webkit-user-select: none;
   display: flex;
   flex-flow: column nowrap;
+  width: 100%;
+  height: 100%;
   min-width: 0;
-  overflow-x: hidden;
-  padding: 12px 10px;
+  min-height: 0;
+}
+
+.panel {
+  -webkit-app-region: drag;
+  display: flex;
+  flex-flow: column nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 14px 12px;
+  box-sizing: border-box;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(248, 251, 255, 0.66));
+  box-shadow: 0 10px 24px rgba(95, 116, 154, 0.08);
+  overflow: hidden;
+  contain: layout paint;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.brandRow {
+  -webkit-app-region: no-drag;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 14px;
+}
+
+.brand {
+  min-width: 0;
+  display: flex;
+  align-items: center;
   gap: 12px;
-  border-radius: 18px;
-  border: 1px solid var(--shell-stroke, rgba(255, 255, 255, 0.18));
-  background: var(--shell-surface, rgba(255, 255, 255, 0.6));
-  box-shadow: 0 14px 36px rgba(31, 48, 78, 0.1);
-  backdrop-filter: blur(22px);
+}
 
-  &.fullscreen {
-    -webkit-app-region: no-drag;
+.brandLink {
+  min-width: 0;
+  color: var(--shell-text, var(--color-font));
+  text-decoration: none;
+}
 
-    .topTools {
-      display: none;
-    }
+.logoBtn {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: none;
+}
+
+.logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--color-primary) 82%, white), color-mix(in srgb, var(--color-primary) 54%, white 46%));
+  color: #fff;
+  box-shadow: 0 14px 28px color-mix(in srgb, var(--color-primary) 18%, transparent);
+
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
   }
+}
+
+.brandText {
+  display: block;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .collapsed {
-  padding-left: 8px;
-  padding-right: 8px;
-}
+  background: transparent;
+  box-shadow: none;
 
-.topTools {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  -webkit-app-region: no-drag;
-}
-
-.bottomTools {
-  margin-top: auto;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-top: 4px;
-  -webkit-app-region: no-drag;
-}
-
-.brandButton {
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: 1px solid var(--shell-stroke, rgba(255, 255, 255, 0.18));
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--shell-text, var(--color-font));
-  background: var(--shell-surface-strong, rgba(255, 255, 255, 0.82));
-  cursor: pointer;
-  transition: @transition-fast;
-  transition-property: transform, opacity, background-color, border-color;
-
-  &:hover {
-    opacity: .88;
-    transform: translateY(-1px);
+  .brandRow {
+    justify-content: center;
   }
 
-  &:active {
-    opacity: .7;
-    transform: translateY(0);
+  .brand {
+    justify-content: center;
+  }
+
+  .brandLink {
+    display: none;
   }
 }
 </style>

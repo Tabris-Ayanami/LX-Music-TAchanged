@@ -1,7 +1,6 @@
-import { playList } from '@renderer/core/player'
-import { setTempList } from '@renderer/store/list/action'
-import { tempList, tempListMeta } from '@renderer/store/list/state'
 import { getListDetail, getListDetailAll } from '@renderer/store/songList/action'
+import { appendToDefaultList, playMusicsInDefaultList } from '@renderer/utils/playDefaultList'
+import { playMusicInfo } from '@renderer/store/player/state'
 
 const getListPlayIndex = (list: LX.Music.MusicInfoOnline[], index?: number) => {
   if (index == null) {
@@ -19,20 +18,20 @@ export default () => {
     if (link == null) return
     let isPlayingList = false
     const id = decodeURIComponent(link)
-    const playListId = `${source}__${decodeURIComponent(link)}`
+    const shouldQueueOnly = playIndex == null && !!playMusicInfo.musicInfo
     let list = (await getListDetail(id, source, 1)).list
     if (playIndex == null || list.length > playIndex) {
-      isPlayingList = true
-      await setTempList(playListId, list)
-      playList(tempList.id, getListPlayIndex(list, playIndex))
+      if (shouldQueueOnly) {
+        await appendToDefaultList(list)
+      } else {
+        isPlayingList = true
+        await playMusicsInDefaultList(list, getListPlayIndex(list, playIndex))
+      }
     }
     list = await getListDetailAll(id, source)
-    if (isPlayingList) {
-      if (tempListMeta.id == id) await setTempList(playListId, list)
-    } else {
-      await setTempList(playListId, list)
-      playList(tempList.id, getListPlayIndex(list, playIndex))
-    }
+    if (!list.length) return
+    if (shouldQueueOnly || isPlayingList) await appendToDefaultList(list)
+    else await playMusicsInDefaultList(list, getListPlayIndex(list, playIndex))
   }
 
   return async(source: LX.OnlineSource, link: string, playIndex?: number) => {

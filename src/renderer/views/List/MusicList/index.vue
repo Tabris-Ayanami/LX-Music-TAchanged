@@ -133,6 +133,22 @@ export default {
       type: String,
       required: true,
     },
+    playMode: {
+      type: String,
+      default: 'list',
+    },
+    playOnClick: {
+      type: Boolean,
+      default: false,
+    },
+    tempListIdPrefix: {
+      type: String,
+      default: '',
+    },
+    musicList: {
+      type: Array,
+      default: null,
+    },
   },
   emits: ['show-menu'],
   setup(props, { emit }) {
@@ -140,6 +156,7 @@ export default {
 
     let scrollIndex = null
     let isAnimation = false
+    let restoreScroll = async() => {}
     const handleRestoreScroll = (_scrollIndex, _isAnimation) => {
       scrollIndex = _scrollIndex
       isAnimation = _isAnimation
@@ -250,12 +267,17 @@ export default {
       listRef,
     })
 
-    const { saveListPosition, restoreScroll } = useListScroll({ props, listRef, list, handleRestoreScroll })
+    const { saveListPosition, restoreScroll: restoreListScroll } = useListScroll({ props, listRef, list, handleRestoreScroll })
+    restoreScroll = restoreListScroll
 
 
     const handleListItemClick = (event, index) => {
       if (rightClickSelectedIndex.value > -1) return
       handleSelectData(index)
+      if (props.playOnClick) {
+        handlePlayMusic(index).catch(() => {})
+        return
+      }
       doubleClickPlay(index)
     }
     const handleListItemRightClick = (event, index) => {
@@ -286,7 +308,7 @@ export default {
           handleShowDownloadModal(index, true)
           break
         case 'play':
-          handlePlayMusic(index, true)
+          handlePlayMusic(index).catch(() => {})
           break
         case 'search':
           handleSearch(index)

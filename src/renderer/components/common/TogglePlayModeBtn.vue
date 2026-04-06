@@ -99,7 +99,9 @@ const toggleMode = (mode) => {
 @import '@renderer/assets/styles/layout.less';
 .btnContent {
   flex: none;
-  height: 100%;
+  height: var(--detail-side-control-size, 24px);
+  display: flex;
+  align-items: center;
 }
 
 .btn {
@@ -111,15 +113,18 @@ const toggleMode = (mode) => {
   cursor: pointer;
   background-color: transparent;
   border: none;
-  width: 24px;
+  width: var(--detail-side-control-size, 24px);
+  height: var(--detail-side-control-size, 24px);
   display: flex;
   flex-flow: column nowrap;
   padding: 0;
 
   svg {
     transition: opacity @transition-fast;
-    opacity: .6;
-    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.2));
+    width: 92%;
+    height: 92%;
+    opacity: .8;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.22));
   }
   &:hover {
     svg {

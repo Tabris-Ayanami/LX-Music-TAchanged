@@ -106,40 +106,52 @@ const overwriteUserList = (lists: LX.List.UserListInfo[]) => {
 // }
 
 
-export const listDataOverwrite = ({ defaultList, loveList, userList, tempList }: MakeOptional<LX.List.ListDataFull, 'tempList'>): string[] => {
+export const listDataOverwrite = ({ defaultList, loveList, userList, tempList }: Partial<LX.List.ListDataFull>): string[] => {
   const updatedListIds: string[] = []
-  const newUserIds: string[] = []
-  const newUserListInfos = userList.map(({ list, ...listInfo }) => {
-    newUserIds.push(listInfo.id)
-    if (allMusicList.has(listInfo.id)) {
-      overwriteMusicList(listInfo.id, list)
-      updatedListIds.push(listInfo.id)
-    }
-    return listInfo
-  })
-  for (const list of userLists) {
-    if (!allMusicList.has(list.id) || newUserIds.includes(list.id)) continue
-    removeMusicList(list.id)
-    updatedListIds.push(list.id)
-  }
-  overwriteUserList(newUserListInfos)
+  const syncIds = new Set<string>()
 
-  if (allMusicList.has(LIST_IDS.DEFAULT)) {
+  if (userList) {
+    const newUserIds: string[] = []
+    const newUserListInfos = userList.map(({ list, ...listInfo }) => {
+      newUserIds.push(listInfo.id)
+      syncIds.add(listInfo.id)
+      if (allMusicList.has(listInfo.id)) {
+        overwriteMusicList(listInfo.id, list)
+        updatedListIds.push(listInfo.id)
+      }
+      return listInfo
+    })
+    for (const list of userLists) {
+      if (!allMusicList.has(list.id) || newUserIds.includes(list.id)) continue
+      removeMusicList(list.id)
+      updatedListIds.push(list.id)
+    }
+    overwriteUserList(newUserListInfos)
+  }
+
+  if (defaultList && allMusicList.has(LIST_IDS.DEFAULT)) {
     overwriteMusicList(LIST_IDS.DEFAULT, defaultList)
     updatedListIds.push(LIST_IDS.DEFAULT)
+    syncIds.add(LIST_IDS.DEFAULT)
   }
 
-  overwriteMusicList(LIST_IDS.LOVE, loveList)
-  updatedListIds.push(LIST_IDS.LOVE)
+  if (loveList) {
+    overwriteMusicList(LIST_IDS.LOVE, loveList)
+    updatedListIds.push(LIST_IDS.LOVE)
+    syncIds.add(LIST_IDS.LOVE)
+  }
 
   if (tempList && allMusicList.has(LIST_IDS.TEMP)) {
     overwriteMusicList(LIST_IDS.TEMP, tempList)
     updatedListIds.push(LIST_IDS.TEMP)
+    syncIds.add(LIST_IDS.TEMP)
   }
-  const newIds = [LIST_IDS.DEFAULT, LIST_IDS.LOVE, ...userList.map(l => l.id)]
-  if (tempList) newIds.push(LIST_IDS.TEMP)
-  void overwriteListPosition(newIds)
-  void overwriteListUpdateInfo(newIds)
+
+  const newIds = Array.from(syncIds)
+  if (newIds.length) {
+    void overwriteListPosition(newIds)
+    void overwriteListUpdateInfo(newIds)
+  }
   return updatedListIds
 }
 

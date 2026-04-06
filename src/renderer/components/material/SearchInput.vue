@@ -205,25 +205,29 @@ export default {
   position: relative;
   width: 100%;
   max-width: none;
-  height: 40px;
+  height: 48px;
   -webkit-app-region: no-drag;
 }
 
 .search {
   position: absolute;
   width: 100%;
-  border-radius: 12px;
-  transition: box-shadow .4s ease, background-color @transition-normal;
+  border-radius: 24px;
+  transition: box-shadow .28s ease, background-color @transition-normal, border-color @transition-fast, transform @transition-fast;
   display: flex;
   flex-flow: column nowrap;
-  background-color: var(--shell-search-surface, var(--color-primary-light-300-alpha-700));
-  border: 1px solid var(--shell-search-border, transparent);
-  backdrop-filter: blur(16px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(244, 249, 255, 0.62));
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  box-shadow: 0 10px 24px rgba(44, 61, 88, 0.08);
+  backdrop-filter: blur(18px) saturate(152%);
+  -webkit-backdrop-filter: blur(18px) saturate(152%);
   overflow: hidden;
 
   &.active {
-    background-color: var(--shell-search-surface, var(--color-primary-light-600-alpha-100));
-    box-shadow: 0 12px 36px rgba(32, 50, 80, 0.14);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(243, 249, 255, 0.78));
+    border-color: color-mix(in srgb, var(--shell-accent, var(--color-primary)) 34%, white 66%);
+    box-shadow: 0 18px 42px rgba(32, 50, 80, 0.16), 0 0 0 3px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 10%, transparent);
+    transform: translateY(-1px);
     .form {
       input {
         border-bottom-left-radius: 0;
@@ -236,12 +240,12 @@ export default {
   }
   .form {
     display: flex;
-    height: 40px;
+    height: 48px;
     position: relative;
     input {
       flex: auto;
-      border-top-left-radius: 11px;
-      border-bottom-left-radius: 11px;
+      border-top-left-radius: 23px;
+      border-bottom-left-radius: 23px;
       background-color: transparent;
       border: none;
       min-width: 0;
@@ -250,7 +254,7 @@ export default {
       padding: 0 14px;
       overflow: hidden;
       font-size: 13px;
-      line-height: 40px;
+      line-height: 48px;
       color: var(--shell-text, var(--color-font));
       &::placeholder {
         color: var(--shell-muted, var(--color-button-font));
@@ -265,13 +269,25 @@ export default {
       outline: none;
       cursor: pointer;
       height: 100%;
-      padding: 5px 8px;
+      padding: 6px 8px;
       color: var(--color-button-font);
       transition: background-color .2s ease;
 
+      svg {
+        width: 20px;
+        height: 20px;
+      }
+
       &:last-child {
-        border-top-right-radius: 11px;
-        border-bottom-right-radius: 11px;
+        border-top-right-radius: 23px;
+        border-bottom-right-radius: 23px;
+        padding-left: 6px;
+        padding-right: 10px;
+
+        svg {
+          width: 17px;
+          height: 17px;
+        }
       }
 
       &:hover {
@@ -283,8 +299,11 @@ export default {
     }
   }
   .list {
-    background: color-mix(in srgb, var(--shell-surface-strong, rgba(255, 255, 255, 0.96)) 90%, transparent);
-    border-top: 1px solid rgba(255, 255, 255, 0.24);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(245, 249, 255, 0.76));
+    border-top: 1px solid rgba(255, 255, 255, 0.26);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(22px) saturate(158%);
+    -webkit-backdrop-filter: blur(22px) saturate(158%);
     font-size: 13px;
     transition: .3s ease;
     height: 0;
@@ -292,19 +311,20 @@ export default {
     overflow: hidden;
     li {
       cursor: pointer;
-      padding: 8px 5px;
+      padding: 10px 8px;
       transition: background-color .2s ease;
       line-height: 1.3;
       span {
         .mixin-ellipsis-2();
       }
 
-      &.select {
+      &.select,
+      &:hover {
         background-color: rgba(255, 255, 255, 0.12);
       }
       &:last-child {
-        border-bottom-left-radius: 11px;
-        border-bottom-right-radius: 11px;
+        border-bottom-left-radius: 23px;
+        border-bottom-right-radius: 23px;
       }
     }
   }

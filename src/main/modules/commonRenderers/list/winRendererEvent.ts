@@ -37,7 +37,7 @@ export const registerRendererEvents = (sendEvent: <T = any>(name: string, params
     sendEvent<LX.List.ListActionMusicOverwrite>(PLAYER_EVENT_NAME.list_music_overwrite, { listId, musicInfos })
   }
   const list_music_clear = async(ids: string[]) => {
-    sendEvent<LX.List.ListActionMusicClear>(PLAYER_EVENT_NAME.list_data_overwire, ids)
+    sendEvent<LX.List.ListActionMusicClear>(PLAYER_EVENT_NAME.list_music_clear, ids)
   }
   global.lx.event_list.on('list_data_overwrite', list_data_overwrite)
   global.lx.event_list.on('list_create', list_create)

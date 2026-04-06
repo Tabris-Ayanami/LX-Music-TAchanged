@@ -11,6 +11,7 @@ import {
 } from '@renderer/store/list/listManage'
 import { toRaw } from '@common/utils/vueTools'
 import { LIST_IDS } from '@common/constants'
+import { toSerializableMusicInfos } from '@renderer/utils/musicInfo'
 
 export const registerAction = (onListChanged: (listIds: string[]) => void) => {
   return registerListAction(appSetting, onListChanged)
@@ -76,11 +77,11 @@ export const createUserList = async({ name, id = `userlist_${Date.now()}`, list 
 }
 
 
-export const setTempList = async(id: string, list: LX.Music.MusicInfoOnline[]) => {
+export const setTempList = async(id: string, list: LX.Music.MusicInfo[]) => {
   tempListMeta.id = id
   await overwriteListMusics({
     listId: LIST_IDS.TEMP,
-    musicInfos: list,
+    musicInfos: toSerializableMusicInfos(list),
   })
 }
 

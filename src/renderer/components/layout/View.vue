@@ -1,12 +1,23 @@
 <template>
   <div :class="$style.view">
     <router-view v-slot="{ Component }">
-      <!-- <transition enter-active-class="animated-fast fadeIn" leave-active-class="animated-fast fadeOut"> -->
-      <component :is="Component" class="view-container" />
-      <!-- </transition> -->
+      <keep-alive :max="10">
+        <component :is="Component" :key="routeViewKey" class="view-container" />
+      </keep-alive>
     </router-view>
   </div>
 </template>
+
+<script setup>
+import { computed } from '@common/utils/vueTools'
+import { useRoute } from '@common/utils/vueRouter'
+
+const route = useRoute()
+const routeViewKey = computed(() => {
+  const query = route.query ? JSON.stringify(route.query) : ''
+  return `${route.path}::${query}`
+})
+</script>
 
 <style lang="less" module>
 @import '@renderer/assets/styles/layout.less';
