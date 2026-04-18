@@ -121,8 +121,7 @@ export const search = async(text: string, page: number, sourceId: LX.OnlineSourc
       resetListInfo(sourceId)
       listInfo.noItemLabel = window.i18n.t('list__load_failed')
       console.log(error)
-      throw error
+      return []
     })
   }
 }
-

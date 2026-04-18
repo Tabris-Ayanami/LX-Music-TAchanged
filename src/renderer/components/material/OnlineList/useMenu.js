@@ -132,6 +132,7 @@ export default ({
     menuLocation,
     isShowItemMenu,
     showMenu,
+    hideMenu,
     menuClick,
   }
 }

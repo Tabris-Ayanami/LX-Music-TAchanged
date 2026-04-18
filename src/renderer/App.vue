@@ -3,7 +3,10 @@
     id="container"
     class="view-container"
     :class="[themeShouldUseDarkColors ? 'themeShellDark' : 'themeShellLight', { sidebarCollapsed: isSidebarCollapsed }]"
-    :style="{ '--sidebar-width': isSidebarCollapsed ? '104px' : '232px' }"
+    :style="{
+      '--sidebar-width': isSidebarCollapsed ? '104px' : '232px',
+      '--player-window-gutter': '22px',
+    }"
   >
     <div class="shellOrb shellOrbA" />
     <div class="shellOrb shellOrbB" />
@@ -158,12 +161,46 @@ body {
   flex-flow: column nowrap;
   min-height: 0;
   z-index: 3;
-  border-right: 1px solid rgba(255, 255, 255, 0.28);
   padding: 12px;
-  background: transparent;
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--shell-accent) 24%, rgba(255, 255, 255, 0.26)), transparent 42%),
+    radial-gradient(circle at 14% 82%, rgba(255, 255, 255, 0.22), transparent 28%),
+    linear-gradient(180deg, color-mix(in srgb, var(--shell-surface-strong, rgba(255, 255, 255, 0.92)) 94%, transparent), color-mix(in srgb, var(--shell-surface-soft, rgba(241, 246, 255, 0.92)) 84%, transparent)),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08) 62%, rgba(255, 255, 255, 0.02));
+  backdrop-filter: blur(34px) saturate(142%);
   contain: layout paint;
   will-change: width;
   transition: width .24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+#left::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.06) 18%, transparent 26%, transparent 76%, rgba(255, 255, 255, 0.1)),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.16), transparent 12%, transparent 88%, rgba(255, 255, 255, 0.06));
+  mask-image:
+    linear-gradient(180deg, #000 0 14px, transparent 40px calc(100% - 40px), #000 calc(100% - 14px)),
+    linear-gradient(90deg, #000 0 14px, transparent 40px calc(100% - 40px), #000 calc(100% - 14px));
+  mask-composite: intersect;
+  -webkit-mask-image:
+    linear-gradient(180deg, #000 0 14px, transparent 40px calc(100% - 40px), #000 calc(100% - 14px)),
+    linear-gradient(90deg, #000 0 14px, transparent 40px calc(100% - 40px), #000 calc(100% - 14px));
+  -webkit-mask-composite: source-in;
+  opacity: .7;
+  pointer-events: none;
+}
+#left::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  right: 0;
+  bottom: 12px;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--shell-text) 12%, rgba(255, 255, 255, 0.3)), transparent);
+  opacity: .12;
+  pointer-events: none;
 }
 #right {
   flex: auto;
@@ -175,7 +212,9 @@ body {
   padding-bottom: 0;
   position: relative;
   z-index: 1;
-  background: transparent;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--shell-surface, rgba(255, 255, 255, 0.82)) 26%, transparent), transparent 24%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04), transparent 12%);
 }
 #toolbar, #player {
   flex: none;
@@ -198,14 +237,13 @@ body {
 }
 #player {
   position: absolute;
-  left: 22px;
-  right: 22px;
-  bottom: 16px;
-  width: auto;
-  display: flex;
-  align-items: flex-end;
+  left: 50%;
+  right: auto;
+  bottom: 24px;
+  width: min(calc(100% - (var(--player-window-gutter) * 2)), 1180px);
   z-index: 4;
-  transition: left @transition-normal, right @transition-normal, width @transition-normal;
+  transform: translateX(-50%);
+  transition: left @transition-normal, width @transition-normal, transform @transition-normal;
   pointer-events: auto;
 }
 

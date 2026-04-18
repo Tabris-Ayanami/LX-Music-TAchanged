@@ -46,7 +46,9 @@ export default () => {
     ]).catch(err => {
       log.error(err)
     })
-    void music.init() // 初始化音乐sdk
+    void music.init().catch(err => {
+      log.error(err)
+    }) // 初始化音乐sdk
     unregister = registerAction((ids) => {
       window.app_event.myListUpdate(ids)
     })

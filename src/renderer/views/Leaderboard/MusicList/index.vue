@@ -50,7 +50,7 @@ const togglePage = (page: number) => {
 }
 
 const hideMenu = () => {
-  listRef.value.handleMenuClick()
+  listRef.value.hideMenu()
 }
 
 defineExpose({ hideMenu })

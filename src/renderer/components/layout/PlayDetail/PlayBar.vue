@@ -46,9 +46,9 @@
     </div>
 
     <div :class="$style.transportRow">
-        <button type="button" :class="[$style.iconBtn, $style.modeBtn, { [$style.activeIcon]: isListLoopMode }]" :aria-label="$t('player__play_toggle_mode_list_loop')" @click.stop="enableListLoop()">
-          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" space="preserve">
-          <use xlink:href="#icon-shuffle-amll" />
+        <button type="button" :class="[$style.iconBtn, $style.modeBtn, { [$style.activeIcon]: isTogglePlayActive }]" :aria-label="currentTogglePlayLabel" @click.stop="toggleNextPlayMode()">
+          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" :viewBox="currentTogglePlayIcon.viewBox" space="preserve">
+          <use :xlink:href="currentTogglePlayIcon.id" />
           </svg>
         </button>
       <button type="button" :class="[$style.transportBtn, $style.prevBtn]" :aria-label="$t('player__prev')" @click.stop="playPrev()">
@@ -203,9 +203,20 @@ const updatePreservesPitch = enabled => {
   updateSetting({ 'player.preservesPitch': enabled })
 }
 
-const enableListLoop = () => {
-  if (appSetting['player.togglePlayMethod'] == 'listLoop') return
-  setTogglePlayMode('listLoop')
+const togglePlayModes = ['listLoop', 'random', 'list', 'singleLoop', 'none']
+const togglePlayIconMap = {
+  listLoop: { id: '#icon-list-loop', viewBox: '0 0 24 24' },
+  random: { id: '#icon-list-random', viewBox: '0 0 24 24' },
+  list: { id: '#icon-list-order', viewBox: '0 0 32 32' },
+  singleLoop: { id: '#icon-single-loop', viewBox: '0 0 24 24' },
+  none: { id: '#icon-single', viewBox: '0 0 32 32' },
+}
+
+const toggleNextPlayMode = () => {
+  const currentMode = appSetting['player.togglePlayMethod']
+  const currentIndex = togglePlayModes.indexOf(currentMode)
+  const nextMode = togglePlayModes[(currentIndex + 1) % togglePlayModes.length] ?? 'listLoop'
+  setTogglePlayMode(nextMode)
 }
 
 const playTitle = computed(() => playMusicInfo.musicInfo?.name || '')
@@ -220,7 +231,18 @@ const musicArtistLine = computed(() => {
 })
 
 const remainingTimeStr = computed(() => `-${formatPlayTime2(Math.max(0, playProgress.maxPlayTime - playProgress.nowPlayTime))}`)
-const isListLoopMode = computed(() => appSetting['player.togglePlayMethod'] == 'listLoop')
+const currentTogglePlayMode = computed(() => appSetting['player.togglePlayMethod'])
+const currentTogglePlayLabel = computed(() => {
+  switch (currentTogglePlayMode.value) {
+    case 'listLoop': return window.i18n.t('player__play_toggle_mode_list_loop')
+    case 'random': return window.i18n.t('player__play_toggle_mode_random')
+    case 'list': return window.i18n.t('player__play_toggle_mode_list')
+    case 'singleLoop': return window.i18n.t('player__play_toggle_mode_single_loop')
+    default: return window.i18n.t('player__play_toggle_mode_off')
+  }
+})
+const currentTogglePlayIcon = computed(() => togglePlayIconMap[currentTogglePlayMode.value] ?? togglePlayIconMap.none)
+const isTogglePlayActive = computed(() => currentTogglePlayMode.value != 'none')
 </script>
 
 <style lang="less" module>

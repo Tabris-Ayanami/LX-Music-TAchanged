@@ -284,7 +284,8 @@ export default {
 .content {
   position: relative;
   border-radius: 4px;
-  box-shadow: 0 0 4px rgba(0, 0, 0, .25);
+  border: none;
+  box-shadow: 0 20px 42px rgba(20, 29, 46, .16), 0 8px 18px rgba(20, 29, 46, .08), inset 0 1px 0 rgba(255, 255, 255, .34);
   overflow: hidden;
   // max-height: 80%;
   // max-width: 76%;
@@ -293,7 +294,13 @@ export default {
   display: flex;
   flex-flow: column nowrap;
   z-index: 100;
-  background-color: var(--color-content-background);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-primary) 16%, rgba(255, 255, 255, 0.995)),
+      color-mix(in srgb, var(--color-primary) 24%, rgba(255, 255, 255, 0.99))
+    );
+  isolation: isolate;
 }
 
 .header {

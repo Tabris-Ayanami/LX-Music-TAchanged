@@ -92,10 +92,17 @@ export default {
   transition: .14s ease;
   transition-property: transform, opacity;
   border-radius: @radius-border;
-  background-color: var(--color-content-background);
-  box-shadow: 0 1px 8px 0 rgba(0,0,0,.2);
+  border: none;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-primary) 16%, rgba(255, 255, 255, 0.995)),
+      color-mix(in srgb, var(--color-primary) 24%, rgba(255, 255, 255, 0.99))
+    );
+  box-shadow: 0 18px 40px rgba(20, 29, 46, 0.16), 0 6px 18px rgba(20, 29, 46, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.34);
   z-index: 10;
   overflow: hidden;
+  isolation: isolate;
   // will-change: transform;
 }
 .listItem {
@@ -106,6 +113,7 @@ export default {
   padding: 0 10px;
   text-align: center;
   outline: none;
+  color: var(--color-font);
   transition: @transition-normal;
   transition-property: background-color, opacity;
   box-sizing: border-box;
@@ -113,10 +121,10 @@ export default {
   // background-color: var(--color-primary-light-600-alpha-800);
 
   &:hover {
-    background-color: var(--color-primary-background-hover);
+    background-color: var(--color-list-hover-background, var(--color-primary-background-hover));
   }
   &:active {
-    background-color: var(--color-primary-background-active);
+    background-color: var(--color-list-active-background, var(--color-primary-background-active));
   }
 
   &[disabled] {

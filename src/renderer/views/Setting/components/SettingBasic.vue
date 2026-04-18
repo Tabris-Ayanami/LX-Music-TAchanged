@@ -17,7 +17,8 @@ dd
   h3#basic_theme {{ $t('setting__basic_theme') }}
   div
     .gap-top(:class="$style.themeComposer")
-      span(:class="$style.themePreview" :style="{ '--theme-preview': themePreviewColor }")
+      label(:class="$style.themePreview" :style="{ '--theme-preview': themePreviewColor }" :aria-label="$t('theme_edit_modal__pick_color')")
+        input(type="color" :class="$style.themePicker" :value="themePreviewHexColor" @input="handlePickThemeColor")
       base-input(v-model="typedThemeColor" :class="$style.themeInput" placeholder="#73BCFC / rgb(115, 188, 252)" @submit="applyTypedTheme")
       base-btn.btn(min :disabled="!typedThemeColorNormalized" @click="applyTypedTheme") 应用
     ul(:class="$style.theme")
@@ -127,9 +128,28 @@ export default {
           : text.toUpperCase()
       }
       const rgb = text.match(/^rgb\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i)
-      if (!rgb) return ''
-      const channels = rgb.slice(1).map(v => Math.max(0, Math.min(255, Number.parseInt(v))))
-      return `rgb(${channels[0]}, ${channels[1]}, ${channels[2]})`
+      if (rgb) {
+        const channels = rgb.slice(1).map(v => Math.max(0, Math.min(255, Number.parseInt(v))))
+        return `rgb(${channels[0]}, ${channels[1]}, ${channels[2]})`
+      }
+      const rgba = text.match(/^rgba\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*((?:0|1)(?:\.\d+)?)\s*\)$/i)
+      if (!rgba) return ''
+      const channels = rgba.slice(1, 4).map(v => Math.max(0, Math.min(255, Number.parseInt(v))))
+      const alpha = Math.max(0, Math.min(1, Number.parseFloat(rgba[4])))
+      if (alpha >= 1) return `rgb(${channels[0]}, ${channels[1]}, ${channels[2]})`
+      return `rgba(${channels[0]}, ${channels[1]}, ${channels[2]}, ${Number(alpha.toFixed(3))})`
+    }
+    const colorToHex = value => {
+      const normalized = normalizeColorInput(value)
+      if (!normalized) return '#73BCFC'
+      if (normalized.startsWith('#')) {
+        return normalized.length == 4
+          ? `#${normalized[1]}${normalized[1]}${normalized[2]}${normalized[2]}${normalized[3]}${normalized[3]}`.toUpperCase()
+          : normalized.toUpperCase()
+      }
+      const channels = normalized.match(/\d{1,3}/g)?.slice(0, 3)?.map(v => Math.max(0, Math.min(255, Number.parseInt(v))))
+      if (!channels?.length) return '#73BCFC'
+      return `#${channels.map(channel => channel.toString(16).padStart(2, '0')).join('')}`.toUpperCase()
     }
     const getThemeLabel = color => color.startsWith('rgb')
       ? color.replace(/\s+/g, '')
@@ -176,6 +196,7 @@ export default {
     const typedThemeColorNormalized = computed(() => normalizeColorInput(typedThemeColor.value))
     const selectedThemeCard = computed(() => themeList.value.find(theme => theme.id == selectedThemeCardId.value) ?? null)
     const themePreviewColor = computed(() => typedThemeColorNormalized.value || selectedThemeCard.value?.themeColor || 'rgba(255,255,255,0.18)')
+    const themePreviewHexColor = computed(() => colorToHex(themePreviewColor.value))
 
     const syncTypedThemeColor = theme => {
       typedThemeColor.value = theme?.themeColor ?? ''
@@ -315,6 +336,10 @@ export default {
       updateSetting({ 'theme.id': targetTheme.id })
     }
 
+    const handlePickThemeColor = event => {
+      typedThemeColor.value = event.target.value.toUpperCase()
+    }
+
     const handleThemeContextMenu = theme => {
       if (removableThemeCount.value <= 1) return
 
@@ -418,7 +443,9 @@ export default {
       typedThemeColor,
       typedThemeColorNormalized,
       themePreviewColor,
+      themePreviewHexColor,
       applyTypedTheme,
+      handlePickThemeColor,
       createEmptyTheme,
       fonts,
       updateFonts,
@@ -518,6 +545,7 @@ export default {
 }
 
 .themePreview {
+  position: relative;
   width: 42px;
   height: 42px;
   flex: none;
@@ -525,6 +553,20 @@ export default {
   border: 1px solid rgba(0, 0, 0, 0.08);
   background: var(--theme-preview);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.38);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.themePicker {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  background: transparent;
 }
 
 .themeInput {

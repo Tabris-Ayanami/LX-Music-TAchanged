@@ -286,10 +286,12 @@ const createCoverElement = snapshot => {
     boxShadow: '0 18px 48px rgba(0, 0, 0, 0.24)',
     contain: 'paint',
     willChange: 'transform, border-radius, opacity',
-    transform: 'translateZ(0)',
+    transform: snapshot.coverTransform || 'translateZ(0)',
   })
   return cover
 }
+
+const getCoverTransform = (value) => value || 'translateZ(0)'
 
 const toAnimationPromise = async animation => {
   if (!animation) return Promise.resolve()
@@ -328,7 +330,7 @@ const animatePlayDetail = (el, opening, done) => {
     return
   }
 
-  const snapshot = getPlayDetailOrigin()
+  const snapshot = getPlayDetailOrigin(!opening)
   const shellTargetRect = el.getBoundingClientRect()
   if (!snapshot?.shellRect || !shellTargetRect.width || !shellTargetRect.height) {
     animateFallback(el, opening, done)
@@ -411,18 +413,21 @@ const animatePlayDetail = (el, opening, done) => {
             ...getRectStyles(snapshot.coverRect),
             borderRadius: snapshot.coverRadius || '10px',
             opacity: 1,
+            transform: getCoverTransform(snapshot.coverTransform),
           },
           {
             ...getRectStyles(artworkTargetRect),
             borderRadius: artworkTargetRadius,
             opacity: 1,
             offset: 0.9,
+            transform: 'translateZ(0)',
           },
           {
             ...getRectStyles(artworkTargetRect),
             borderRadius: artworkTargetRadius,
             opacity: 0,
             offset: 1,
+            transform: 'translateZ(0)',
           },
         ]
       : [
@@ -430,11 +435,13 @@ const animatePlayDetail = (el, opening, done) => {
             ...getRectStyles(artworkTargetRect),
             borderRadius: artworkTargetRadius,
             opacity: 0.84,
+            transform: 'translateZ(0)',
           },
           {
             ...getRectStyles(snapshot.coverRect),
             borderRadius: snapshot.coverRadius || '10px',
             opacity: 1,
+            transform: getCoverTransform(snapshot.coverTransform),
           },
         ]
 

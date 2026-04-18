@@ -2,7 +2,7 @@
   <div :class="$style.view">
     <router-view v-slot="{ Component }">
       <keep-alive :max="10">
-        <component :is="Component" :key="routeViewKey" class="view-container" />
+        <component :is="Component" v-if="Component" :key="routeViewKey" class="view-container" />
       </keep-alive>
     </router-view>
   </div>

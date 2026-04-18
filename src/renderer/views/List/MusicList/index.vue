@@ -105,7 +105,9 @@
 
 <script>
 import { clipboardWriteText } from '@common/utils/electron'
+import { watch } from '@common/utils/vueTools'
 import { assertApiSupport } from '@renderer/store/utils'
+import listActionRunner from '@renderer/utils/listActionRunner.cjs'
 import SearchList from './components/SearchList.vue'
 import MusicSortModal from './components/MusicSortModal.vue'
 import MusicToggleModal from './components/MusicToggleModal.vue'
@@ -121,6 +123,8 @@ import useSearch from './useSearch'
 import useListScroll from './useListScroll'
 import useMusicToggle from './useMusicToggle'
 import { appSetting } from '@renderer/store/setting'
+
+const { runListAction } = listActionRunner
 export default {
   name: 'MusicList',
   components: {
@@ -238,6 +242,7 @@ export default {
       menuLocation,
       isShowItemMenu,
       showMenu,
+      hideMenu,
       menuClick,
     } = useMenu({
       assertApiSupport,
@@ -270,6 +275,14 @@ export default {
     const { saveListPosition, restoreScroll: restoreListScroll } = useListScroll({ props, listRef, list, handleRestoreScroll })
     restoreScroll = restoreListScroll
 
+    const closeItemMenu = () => {
+      rightClickSelectedIndex.value = -1
+      hideMenu()
+    }
+
+    watch(isShowItemMenu, (visible) => {
+      if (!visible) rightClickSelectedIndex.value = -1
+    })
 
     const handleListItemClick = (event, index) => {
       if (rightClickSelectedIndex.value > -1) return
@@ -286,7 +299,7 @@ export default {
     }
     const handleMenuClick = (action) => {
       let index = rightClickSelectedIndex.value
-      rightClickSelectedIndex.value = -1
+      closeItemMenu()
       menuClick(action, index)
     }
     const handleListRightClick = (event) => {
@@ -303,20 +316,26 @@ export default {
       })
     }
     const handleListBtnClick = ({ action, index }) => {
-      switch (action) {
-        case 'download':
-          handleShowDownloadModal(index, true)
-          break
-        case 'play':
-          handlePlayMusic(index).catch(() => {})
-          break
-        case 'search':
-          handleSearch(index)
-          break
-        case 'listAdd':
-          handleShowMusicAddModal(index, true)
-          break
-      }
+      runListAction({
+        beforeAction: () => emit('show-menu'),
+        closeMenu: closeItemMenu,
+        action: () => {
+          switch (action) {
+            case 'download':
+              handleShowDownloadModal(index, true)
+              break
+            case 'play':
+              handlePlayMusic(index).catch(() => {})
+              break
+            case 'search':
+              handleSearch(index)
+              break
+            case 'listAdd':
+              handleShowMusicAddModal(index, true)
+              break
+          }
+        },
+      })
     }
     const scrollToTop = () => {
       listRef.value.scrollTo(0, true)
@@ -376,6 +395,7 @@ export default {
       isShowMusicToggleModal,
       selectedToggleMusicInfo,
       toggleSource,
+      hideMenu: closeItemMenu,
     }
   },
 }
@@ -393,8 +413,18 @@ export default {
   flex-flow: column nowrap;
 
   :global(.list-item) {
+    &:hover {
+      background-color: color-mix(in srgb, var(--color-primary) 34%, rgba(255, 255, 255, 0.94)) !important;
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 48%, rgba(255, 255, 255, 0.62)) !important;
+    }
+    &.selected {
+      background-color: color-mix(in srgb, var(--color-primary) 34%, rgba(255, 255, 255, 0.94)) !important;
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 48%, rgba(255, 255, 255, 0.62)) !important;
+    }
     &.active {
       color: var(--color-button-font);
+      background-color: color-mix(in srgb, var(--color-primary) 44%, rgba(255, 255, 255, 0.92)) !important;
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 56%, rgba(255, 255, 255, 0.58)) !important;
     }
   }
   :global {

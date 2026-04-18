@@ -186,7 +186,18 @@ export default {
   padding: 0 10px !important;
   width: calc(@item-width - 15px);
   min-width: 160px;
+  border: none;
+  background-color: color-mix(in srgb, var(--color-primary) 36%, rgba(255, 255, 255, 0.95));
+  box-shadow: 0 8px 18px rgba(20, 29, 46, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.38);
   .mixin-ellipsis-1();
+
+  &:hover {
+    background-color: color-mix(in srgb, var(--color-primary) 46%, rgba(255, 255, 255, 0.94));
+  }
+
+  &:active {
+    background-color: color-mix(in srgb, var(--color-primary) 54%, rgba(255, 255, 255, 0.92));
+  }
 }
 
 .newList {

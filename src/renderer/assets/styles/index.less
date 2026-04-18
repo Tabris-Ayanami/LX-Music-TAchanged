@@ -284,15 +284,17 @@
   --color-primary-font: var(--color-primary);
   --color-primary-font-hover: var(--color-primary-alpha-300);
   --color-primary-font-active: var(--color-primary-dark-100-alpha-200);
-  --color-primary-background: var(--color-primary-light-400-alpha-700);
-  --color-primary-background-hover: var(--color-primary-light-300-alpha-800);
-  --color-primary-background-active: var(--color-primary-light-100-alpha-800);
-  --color-button-font: var(--color-primary-alpha-100);
-  --color-button-font-selected: var(--color-primary-dark-100-alpha-100);
-  --color-button-background: var(--color-primary-light-400-alpha-700);
-  --color-button-background-selected: var(--color-primary-alpha-600);
-  --color-button-background-hover: var(--color-primary-light-300-alpha-600);
-  --color-button-background-active: var(--color-primary-light-100-alpha-600);
+  --color-primary-background: color-mix(in srgb, var(--color-primary) 30%, rgba(255, 255, 255, 0.95));
+  --color-primary-background-hover: color-mix(in srgb, var(--color-primary) 40%, rgba(255, 255, 255, 0.94));
+  --color-primary-background-active: color-mix(in srgb, var(--color-primary) 50%, rgba(255, 255, 255, 0.92));
+  --color-list-hover-background: color-mix(in srgb, var(--color-primary) 32%, rgba(255, 255, 255, 0.94));
+  --color-list-active-background: color-mix(in srgb, var(--color-primary) 42%, rgba(255, 255, 255, 0.92));
+  --color-button-font: var(--color-primary-dark-900);
+  --color-button-font-selected: var(--color-primary-dark-700);
+  --color-button-background: color-mix(in srgb, var(--color-primary) 32%, rgba(255, 255, 255, 0.95));
+  --color-button-background-selected: color-mix(in srgb, var(--color-primary) 42%, rgba(255, 255, 255, 0.93));
+  --color-button-background-hover: color-mix(in srgb, var(--color-primary) 40%, rgba(255, 255, 255, 0.94));
+  --color-button-background-active: color-mix(in srgb, var(--color-primary) 50%, rgba(255, 255, 255, 0.92));
   --color-list-header-border-bottom: 1px solid var(--color-primary-alpha-900);
   --color-content-background: var(--color-primary-light-1000);
 
@@ -498,17 +500,20 @@ table {
     font-size: 12px;
 
     &:hover {
-      background-color: var(--color-primary-background-hover);
+      background-color: var(--color-list-hover-background, var(--color-primary-background-hover));
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 45%, rgba(255, 255, 255, 0.7));
 
       // .list-item-cell-action {
       //   display: block;
       // }
     }
     &.active {
-      background-color: var(--color-primary-background-active);
+      background-color: var(--color-list-active-background, var(--color-primary-background-active));
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 52%, rgba(255, 255, 255, 0.64));
     }
     &.selected {
-      background-color: var(--color-primary-background-hover);
+      background-color: var(--color-list-hover-background, var(--color-primary-background-hover));
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 45%, rgba(255, 255, 255, 0.7));
     }
     &.disabled {
       opacity: .5;

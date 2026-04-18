@@ -167,6 +167,7 @@ const isItemActive = item => {
   text-transform: uppercase;
   color: rgba(86, 100, 120, 0.56);
   overflow: hidden;
+  transition: opacity @transition-fast, color @transition-fast;
 }
 
 .list {
@@ -187,15 +188,16 @@ const isItemActive = item => {
   max-width: 100%;
   height: 48px;
   min-height: 48px;
-  padding: 10px 12px;
+  padding: 3px 12px 3px 0;
   box-sizing: border-box;
   border-radius: 15px;
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-columns: 42px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
   text-decoration: none;
   color: var(--shell-text, var(--color-nav-font));
+  overflow: visible;
   transition: transform @transition-fast, background-color @transition-fast, color @transition-fast;
 
   &:hover {
@@ -207,57 +209,80 @@ const isItemActive = item => {
 .active {
   background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 82%, white), color-mix(in srgb, var(--color-primary) 58%, white 42%));
   color: #fff;
-  box-shadow: 0 16px 30px color-mix(in srgb, var(--color-primary) 22%, transparent);
+}
 
-  .iconWrap {
-    background: rgba(255, 255, 255, 0.22);
+.menu:not(.collapsed) {
+  .active {
+    // Extend the active shell to the left while keeping the icon center stable.
+    margin-left: -3px;
+    padding-left: 3px;
   }
 }
 
 .iconWrap {
   flex: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 10px;
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   justify-self: center;
-  background: rgba(255, 255, 255, 0.62);
+  background: transparent;
+  border: none;
+  overflow: visible;
+  transition: background-color @transition-fast, border-color @transition-fast;
 
   svg {
+    display: block;
+    position: absolute;
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -50%);
+    transform-origin: center;
     fill: currentColor;
   }
 }
 
 .label {
   min-width: 0;
+  max-width: 100%;
   font-size: 15px;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
+  opacity: 1;
+  transform: translateX(0);
+  transform-origin: left center;
+  transition: max-width .22s cubic-bezier(0.22, 1, 0.36, 1), opacity .16s ease, transform .22s cubic-bezier(0.22, 1, 0.36, 1);
   .mixin-ellipsis-1();
 }
 
 .collapsed {
   .sectionTitle {
-    visibility: hidden;
     opacity: 0;
   }
 
   .link {
-    width: 100%;
-    max-width: 100%;
+    width: 42px;
+    max-width: 42px;
     height: 48px;
     min-height: 48px;
-    padding: 0;
-    grid-template-columns: 28px;
+    padding: 3px 0;
     gap: 0;
-    justify-content: center;
+    margin: 0;
+    justify-items: start;
+  }
+
+  .iconWrap {
+    grid-column: 1;
+    justify-self: center;
   }
 
   .label {
-    display: none;
+    max-width: 0;
+    opacity: 0;
+    transform: translateX(-6px);
   }
 }
 </style>

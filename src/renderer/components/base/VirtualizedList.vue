@@ -24,6 +24,9 @@ import {
   onMounted,
   onBeforeUnmount,
 } from 'vue'
+import scrollHelper from './virtualizedListScrollHelper.cjs'
+
+const { animateElementScroll } = scrollHelper
 
 /**
  * 生成防抖函数
@@ -40,56 +43,6 @@ export const debounce = (fn, delay = 100) => {
       timer = null
       fn.apply(this, _args)
     }, delay)
-  }
-}
-
-const easeInOutQuad = (t, b, c, d) => {
-  t /= d / 2
-  if (t < 1) return (c / 2) * t * t + b
-  t--
-  return (-c / 2) * (t * (t - 2) - 1) + b
-}
-const handleScroll = (element, to, duration = 300, callback = () => {}, onCancel = () => {}) => {
-  if (!element) { callback(); return }
-  const start = element.scrollTop || element.scrollY || 0
-  let cancel = false
-  if (to > start) {
-    let maxScrollTop = element.scrollHeight - element.clientHeight
-    if (to > maxScrollTop) to = maxScrollTop
-  } else if (to < start) {
-    if (to < 0) to = 0
-  } else { callback(); return }
-  const change = to - start
-  const increment = 10
-  if (!change) { callback(); return }
-
-  let currentTime = 0
-  let val
-  let cancelCallback
-
-  const animateScroll = () => {
-    currentTime += increment
-    val = parseInt(easeInOutQuad(currentTime, start, change, duration))
-    if (element.scrollTo) {
-      element.scrollTo(0, val)
-    } else {
-      element.scrollTop = val
-    }
-    if (currentTime < duration) {
-      if (cancel) {
-        cancelCallback()
-        onCancel()
-        return
-      }
-      window.setTimeout(animateScroll, increment)
-    } else {
-      callback()
-    }
-  }
-  animateScroll()
-  return (callback) => {
-    cancelCallback = callback
-    cancel = true
   }
 }
 
@@ -139,6 +92,36 @@ export default {
     let isAutoScrolling = false
     let scrollToValue = 0
     let resizeObserver = null
+    let resizeTimer = null
+    let updateFrame = null
+    let isUnmounted = false
+
+    const clearScheduledUpdate = () => {
+      if (resizeTimer != null) {
+        window.clearTimeout(resizeTimer)
+        resizeTimer = null
+      }
+      if (updateFrame != null) {
+        window.cancelAnimationFrame(updateFrame)
+        updateFrame = null
+      }
+    }
+
+    const scheduleUpdateView = () => {
+      clearScheduledUpdate()
+      updateFrame = window.requestAnimationFrame(() => {
+        updateFrame = null
+        if (isUnmounted || !dom_scrollContainer.value) return
+        updateView()
+      })
+    }
+
+    const scheduleUpdateViewAfterNextTick = () => {
+      void nextTick(() => {
+        if (isUnmounted || !dom_scrollContainer.value) return
+        scheduleUpdateView()
+      })
+    }
 
     const createList = (startIndex, endIndex) => {
       const cache = cachedList.slice(startIndex, endIndex)
@@ -157,11 +140,14 @@ export default {
       return list
     }
 
-    const updateView = (currentScrollTop = dom_scrollContainer.value.scrollTop) => {
+    const updateView = currentScrollTop => {
+      const container = dom_scrollContainer.value
+      if (!container) return
+      const resolvedScrollTop = currentScrollTop ?? container.scrollTop
       // const currentScrollTop = this.$refs.dom_scrollContainer.scrollTop
       const itemHeight = props.itemHeight
-      const currentStartIndex = Math.floor(currentScrollTop / itemHeight)
-      const scrollContainerHeight = dom_scrollContainer.value.clientHeight
+      const currentStartIndex = Math.floor(resolvedScrollTop / itemHeight)
+      const scrollContainerHeight = container.clientHeight
       const currentEndIndex = currentStartIndex + Math.ceil(scrollContainerHeight / itemHeight)
       const continuous = currentStartIndex <= endIndex && currentEndIndex >= startIndex
       const currentStartRenderIndex = Math.max(currentStartIndex, 0)
@@ -184,18 +170,20 @@ export default {
         //   // console.log('scroll up')
         //   views.value = createList(currentStartRenderIndex, currentEndRenderIndex)
         // } else return
-        if (currentScrollTop == scrollTop && endIndex >= currentEndIndex) return
+        if (resolvedScrollTop == scrollTop && endIndex >= currentEndIndex) return
         requestAnimationFrame(() => {
+          if (isUnmounted || !dom_scrollContainer.value) return
           views.value = createList(currentStartRenderIndex, currentEndRenderIndex)
         })
       } else {
         requestAnimationFrame(() => {
+          if (isUnmounted || !dom_scrollContainer.value) return
           views.value = createList(currentStartRenderIndex, currentEndRenderIndex)
         })
       }
       startIndex = currentStartIndex
       endIndex = currentEndIndex
-      scrollTop = currentScrollTop
+      scrollTop = resolvedScrollTop
     }
 
     const setStopScrollStatus = debounce(() => {
@@ -206,7 +194,9 @@ export default {
       if (!isListScrolling) isListScrolling = isListScrollingRef.value = true
       setStopScrollStatus()
 
-      const currentScrollTop = dom_scrollContainer.value.scrollTop
+      const container = dom_scrollContainer.value
+      if (!container) return
+      const currentScrollTop = container.scrollTop
       if (Math.abs(currentScrollTop - scrollTop) > props.itemHeight * 0.6) {
         updateView(currentScrollTop)
       }
@@ -214,6 +204,7 @@ export default {
     }
 
     const scrollTo = (scrollTop, animate = false, onScrollEnd) => {
+      const getContainer = () => dom_scrollContainer.value
       if (onScrollEnd) {
         void new Promise(resolve => {
           if (cancelScroll) {
@@ -222,24 +213,38 @@ export default {
             resolve()
           }
         }).then(() => {
+          const container = getContainer()
+          if (!container) {
+            onScrollEnd('missing')
+            return
+          }
           if (animate) {
             isAutoScrolling = true
             scrollToValue = scrollTop
-            cancelScroll = handleScroll(dom_scrollContainer.value, scrollTop, 300, () => {
-              cancelScroll = null
-              isAutoScrolling = false
-              onScrollEnd(true)
-            }, () => {
-              cancelScroll = null
-              isAutoScrolling = false
-              onScrollEnd('canceled')
+            cancelScroll = animateElementScroll({
+              element: container,
+              to: scrollTop,
+              duration: 300,
+              onComplete: () => {
+                cancelScroll = null
+                isAutoScrolling = false
+                onScrollEnd(true)
+              },
+              onCancel: () => {
+                cancelScroll = null
+                isAutoScrolling = false
+                onScrollEnd('canceled')
+              },
             })
           } else {
-            dom_scrollContainer.value.scrollTop = scrollTop
+            container.scrollTop = scrollTop
+            onScrollEnd(true)
           }
         })
       } else {
-        dom_scrollContainer.value.scrollTo({
+        const container = getContainer()
+        if (!container) return
+        container.scrollTo({
           top: scrollTop,
           behavior: animate ? 'smooth' : 'instant',
         })
@@ -251,11 +256,16 @@ export default {
     }
 
     const getScrollTop = () => {
-      return isAutoScrolling ? scrollToValue : dom_scrollContainer.value.scrollTop
+      return isAutoScrolling ? scrollToValue : dom_scrollContainer.value?.scrollTop ?? 0
     }
 
     const handleResize = () => {
-      window.setTimeout(updateView)
+      clearScheduledUpdate()
+      resizeTimer = window.setTimeout(() => {
+        resizeTimer = null
+        if (isUnmounted || !dom_scrollContainer.value) return
+        updateView()
+      })
     }
 
     const contentStyle = computed(() => {
@@ -272,11 +282,7 @@ export default {
       startIndex = -1
       endIndex = -1
       if (cachedList.length) {
-        void nextTick(() => {
-          requestAnimationFrame(() => {
-            updateView()
-          })
-        })
+        scheduleUpdateViewAfterNextTick()
       } else {
         views.value = []
       }
@@ -289,38 +295,43 @@ export default {
     })
 
     onMounted(() => {
-      dom_scrollContainer.value.addEventListener('scroll', onScroll, {
+      const container = dom_scrollContainer.value
+      if (!container) return
+      container.addEventListener('scroll', onScroll, {
         capture: false,
         passive: true,
       })
       if (window.ResizeObserver) {
         resizeObserver = new window.ResizeObserver(() => {
-          requestAnimationFrame(() => {
+          updateFrame = window.requestAnimationFrame(() => {
+            updateFrame = null
             if (!dom_scrollContainer.value?.clientHeight) return
             updateView()
           })
         })
-        resizeObserver.observe(dom_scrollContainer.value)
+        resizeObserver.observe(container)
       }
       cachedList = Array(props.list.length)
       startIndex = -1
       endIndex = -1
 
       if (props.list.length) {
-        void nextTick(() => {
-          requestAnimationFrame(() => {
-            updateView()
-          })
-        })
+        scheduleUpdateViewAfterNextTick()
       }
       window.addEventListener('resize', handleResize)
     })
     onBeforeUnmount(() => {
-      dom_scrollContainer.value.removeEventListener('scroll', onScroll)
+      isUnmounted = true
+      clearScheduledUpdate()
+      dom_scrollContainer.value?.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', handleResize)
       resizeObserver?.disconnect?.()
       resizeObserver = null
-      if (cancelScroll) cancelScroll()
+      if (cancelScroll) {
+        cancelScroll()
+        cancelScroll = null
+      }
+      isAutoScrolling = false
     })
 
     return {

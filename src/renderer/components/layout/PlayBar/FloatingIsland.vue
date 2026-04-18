@@ -3,6 +3,7 @@
     ref="playerRef"
     :class="[$style.player, { [$style.compact]: isFloatingIslandCompact }]"
     data-play-floating-island="true"
+    :data-floating-compact="isFloatingIslandCompact ? 'true' : 'false'"
   >
     <button
       type="button"
@@ -12,8 +13,10 @@
       @contextmenu.prevent="handleToMusicLocation"
     >
       <div data-play-floating-cover="true" :class="$style.cover">
-        <img v-if="musicInfo.pic" :src="musicInfo.pic" decoding="async" @error="imgError">
-        <div v-else :class="$style.emptyPic">L<span>X</span></div>
+        <div :class="[$style.coverArt, { [$style.coverArtSpinning]: isFloatingIslandCompact && isPlay && musicInfo.pic }]">
+          <img v-if="musicInfo.pic" :src="musicInfo.pic" decoding="async" @error="imgError">
+          <div v-else :class="$style.emptyPic">L<span>X</span></div>
+        </div>
       </div>
     </button>
 
@@ -34,7 +37,7 @@
                 <use xlink:href="#icon-prev-amll" />
               </svg>
             </button>
-            <button type="button" :class="[$style.iconBtn, $style.playBtn]" :aria-label="isPlay ? $t('player__pause') : $t('player__play')" @click="togglePlay">
+            <button type="button" :class="[$style.iconBtn, $style.playBtn, { [$style.playing]: isPlay }]" :aria-label="isPlay ? $t('player__pause') : $t('player__play')" @click="togglePlay">
               <svg v-if="isPlay" version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" width="18" height="18" viewBox="0 0 1024 1024" space="preserve">
                 <use xlink:href="#icon-pause" />
               </svg>
@@ -87,7 +90,7 @@
       </div>
 
       <div :class="$style.compactControls">
-        <button type="button" :class="[$style.iconBtn, $style.playBtn, $style.compactPlayBtn]" :aria-label="isPlay ? $t('player__pause') : $t('player__play')" @click="togglePlay">
+        <button type="button" :class="[$style.iconBtn, $style.playBtn, $style.compactPlayBtn, { [$style.playing]: isPlay }]" :aria-label="isPlay ? $t('player__pause') : $t('player__play')" @click="togglePlay">
           <svg v-if="isPlay" version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" width="18" height="18" viewBox="0 0 1024 1024" space="preserve">
             <use xlink:href="#icon-pause" />
           </svg>
@@ -216,17 +219,22 @@ export default {
   position: relative;
   height: 82px;
   width: 100%;
-  max-width: min(100%, 1180px);
+  max-width: 100%;
   min-height: 82px;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 18px;
   border-radius: 22px;
-  border: 1px solid var(--shell-stroke, rgba(255, 255, 255, 0.18));
-  background: color-mix(in srgb, var(--shell-surface-strong, rgba(255, 255, 255, 0.9)) 76%, transparent);
-  box-shadow: var(--shell-player-shadow, 0 20px 40px rgba(91, 113, 153, 0.18));
-  backdrop-filter: blur(28px);
+  border: 1px solid color-mix(in srgb, var(--shell-stroke, rgba(255, 255, 255, 0.18)) 84%, rgba(255, 255, 255, 0.72));
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(245, 248, 255, 0.82)),
+    color-mix(in srgb, var(--shell-surface-strong, rgba(255, 255, 255, 0.92)) 80%, transparent);
+  box-shadow:
+    0 26px 52px rgba(82, 108, 160, 0.16),
+    0 10px 24px rgba(82, 108, 160, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.24);
+  backdrop-filter: blur(30px) saturate(132%);
   color: var(--shell-text, var(--color-font));
   transition: width .28s cubic-bezier(0.22, 1, 0.36, 1), height .24s cubic-bezier(0.22, 1, 0.36, 1), padding .24s cubic-bezier(0.22, 1, 0.36, 1), gap .24s cubic-bezier(0.22, 1, 0.36, 1), transform @transition-fast, border-radius @transition-fast, box-shadow @transition-fast;
   transform: translateZ(0);
@@ -236,25 +244,57 @@ export default {
   will-change: width, height, transform;
   pointer-events: auto;
   box-sizing: border-box;
+  isolation: isolate;
 
   * {
     box-sizing: border-box;
   }
 
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  &::before {
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.46),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  }
+
+  &::after {
+    inset: 1px 1px auto 1px;
+    height: 58%;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.08) 52%, rgba(255, 255, 255, 0));
+    opacity: .96;
+  }
+
   &.compact {
-    width: 164px;
-    max-width: 164px;
-    min-width: 164px;
+    width: 152px;
+    max-width: 152px;
+    min-width: 152px;
     height: 62px;
     min-height: 62px;
-    gap: 10px;
-    padding: 8px 12px 8px 10px;
+    gap: 8px;
+    padding: 8px 10px 8px 8px;
     border-radius: 999px;
+    justify-content: flex-start;
   }
 }
 
 :global(#player) {
   pointer-events: auto;
+}
+
+:global(#player[data-floating-compact='true']) {
+  left: var(--player-window-gutter);
+  transform: none;
+  width: 152px;
 }
 
 .cover {
@@ -267,8 +307,29 @@ export default {
   overflow: hidden;
   background: transparent;
   line-height: 0;
-  box-shadow: 0 8px 18px rgba(27, 39, 65, 0.12);
   pointer-events: none;
+}
+
+.player:not(.compact) {
+  .cover,
+  .coverArt {
+    border-radius: 10px;
+  }
+
+  .coverArt {
+    animation: none;
+    animation-play-state: paused;
+  }
+}
+
+.coverArt {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  overflow: hidden;
+  transform: translateZ(0);
+  transform-origin: center;
+  will-change: transform;
 
   img,
   .emptyPic {
@@ -281,6 +342,10 @@ export default {
     display: block;
     object-fit: cover;
   }
+}
+
+.coverArtSpinning {
+  animation-play-state: running;
 }
 
 .coverTrigger {
@@ -305,13 +370,25 @@ export default {
   width: 42px;
   height: 42px;
   border-radius: 999px;
+  align-self: center;
+  justify-self: center;
 }
 
 .compact .cover {
   width: 42px;
   height: 42px;
   border-radius: 999px;
-  box-shadow: 0 10px 22px rgba(27, 39, 65, 0.14);
+}
+
+.compact .coverArt {
+  border-radius: 999px;
+  animation: floatingIslandCoverSpin 15s linear infinite;
+  animation-fill-mode: both;
+  animation-play-state: paused;
+}
+
+.compact .coverArtSpinning {
+  animation-play-state: running;
 }
 
 .emptyPic {
@@ -336,6 +413,8 @@ export default {
   align-items: center;
   overflow: hidden;
   min-height: 0;
+  transform-origin: right center;
+  transition: min-width .34s cubic-bezier(0.2, 0.9, 0.2, 1), max-width .34s cubic-bezier(0.2, 0.9, 0.2, 1), transform .34s cubic-bezier(0.2, 0.9, 0.2, 1);
 }
 
 .expandedContent {
@@ -349,11 +428,14 @@ export default {
   width: 100%;
   opacity: 1;
   overflow: hidden;
-  transition: max-width .28s cubic-bezier(0.22, 1, 0.36, 1), width .28s cubic-bezier(0.22, 1, 0.36, 1), opacity .18s ease;
+  transform: translateX(0);
+  transform-origin: right center;
+  transition: max-width .34s cubic-bezier(0.2, 0.9, 0.2, 1), width .34s cubic-bezier(0.2, 0.9, 0.2, 1), opacity .24s ease, transform .34s cubic-bezier(0.2, 0.9, 0.2, 1);
 }
 
 .compactControls {
   width: 0;
+  max-width: 0;
   min-width: 0;
   opacity: 0;
   overflow: hidden;
@@ -363,38 +445,63 @@ export default {
   gap: 6px;
   justify-content: flex-end;
   flex: none;
-  transition: width .28s cubic-bezier(0.22, 1, 0.36, 1), opacity .18s ease;
+  transform: translateX(14px);
+  transform-origin: right center;
+  transition: max-width .34s cubic-bezier(0.2, 0.9, 0.2, 1), width .34s cubic-bezier(0.2, 0.9, 0.2, 1), opacity .24s ease, transform .34s cubic-bezier(0.2, 0.9, 0.2, 1);
+  -webkit-app-region: no-drag;
 }
 
 .compact .expandedContent {
   max-width: 0;
   width: 0;
   opacity: 0;
+  transform: translateX(18px);
   pointer-events: none;
 }
 
 .compact .compactControls {
-  width: 64px;
+  width: 74px;
+  max-width: 74px;
+  height: 100%;
   opacity: 1;
   pointer-events: auto;
-  transform: translateX(3px);
+  overflow: visible;
+  position: relative;
+  z-index: 9;
+  transform: translateX(0);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
 }
 
 .compact .contentCluster {
-  flex: none;
-  width: 64px;
+  min-width: 0;
+  width: 74px;
+  max-width: 74px;
+  flex: 1 1 auto;
+  height: 100%;
   align-self: center;
   justify-content: flex-end;
+  align-items: center;
+  overflow: visible;
+  position: relative;
+  z-index: 9;
+  -webkit-app-region: no-drag;
+}
+
+.compact .compactControls > * {
+  pointer-events: auto;
 }
 
 .topRow {
   position: relative;
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) 116px minmax(0, 1fr);
   align-items: center;
   gap: 14px;
-  padding-right: 2px;
 }
 
 .trackMeta {
@@ -437,15 +544,13 @@ export default {
 }
 
 .controls {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  grid-column: 2;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  z-index: 1;
+  justify-self: center;
+  width: 116px;
 }
 
 .iconBtn,
@@ -462,6 +567,8 @@ export default {
   cursor: pointer;
   transition: @transition-fast;
   transition-property: transform, opacity, background-color;
+  overflow: visible;
+  -webkit-app-region: no-drag;
 
   &:hover {
     opacity: .84;
@@ -477,6 +584,9 @@ export default {
   svg {
     width: 18px;
     height: 18px;
+    display: block;
+    overflow: visible;
+    transform-origin: center;
     fill: currentColor;
   }
 }
@@ -484,13 +594,40 @@ export default {
 .playBtn {
   width: 34px;
   height: 34px;
-  color: #fff;
-  background: linear-gradient(135deg, var(--shell-accent, var(--color-primary)), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 68%, white 32%));
-  box-shadow: 0 12px 22px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 24%, transparent);
+  color: color-mix(in srgb, var(--shell-accent, var(--color-primary)) 70%, var(--shell-text, #1b2230) 30%);
+  border: 1px solid color-mix(in srgb, var(--shell-accent, var(--color-primary)) 20%, rgba(255, 255, 255, 0.72));
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 12%, rgba(255, 255, 255, 0.78)));
+  box-shadow: 0 10px 18px rgba(27, 39, 65, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.46);
+  transition-property: transform, opacity, background-color, box-shadow, color, border-color;
 
   svg {
     width: 16px;
     height: 16px;
+  }
+
+  &:hover {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.94), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 20%, rgba(255, 255, 255, 0.8)));
+    box-shadow: 0 12px 22px rgba(27, 39, 65, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.54);
+  }
+
+  &:active {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.88), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 18%, rgba(255, 255, 255, 0.74)));
+  }
+}
+
+.playing {
+  color: rgba(255, 255, 255, 0.96);
+  border-color: color-mix(in srgb, var(--shell-accent, var(--color-primary)) 28%, rgba(255, 255, 255, 0.68));
+  background: linear-gradient(135deg, var(--shell-accent, var(--color-primary)), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 72%, white 28%));
+  box-shadow: 0 12px 22px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 24%, transparent);
+
+  &:hover {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--shell-accent, var(--color-primary)) 90%, white 10%), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 62%, white 38%));
+    box-shadow: 0 14px 24px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 26%, transparent);
+  }
+
+  &:active {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--shell-accent, var(--color-primary)) 88%, black 12%), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 64%, white 36%));
   }
 }
 
@@ -499,6 +636,8 @@ export default {
   width: 30px;
   height: 30px;
   align-self: center;
+  justify-self: center;
+  -webkit-app-region: no-drag;
 
   svg {
     width: 14px;
@@ -512,10 +651,12 @@ export default {
 }
 
 .utilityCluster {
-  grid-column: 2;
+  grid-column: 3;
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  justify-self: end;
+  min-width: 0;
   gap: 8px;
 }
 
@@ -573,6 +714,8 @@ export default {
   height: 28px;
   flex: none;
   align-self: center;
+  justify-self: end;
+  -webkit-app-region: no-drag;
 
   svg {
     width: 16px;
@@ -602,6 +745,15 @@ export default {
 
 .progressBar {
   height: 3px;
+}
+
+@keyframes floatingIslandCoverSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 980px) {

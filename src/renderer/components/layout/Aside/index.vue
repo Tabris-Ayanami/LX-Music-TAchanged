@@ -45,11 +45,11 @@ import NavBar from './NavBar.vue'
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
-  padding: 14px 12px;
+  padding: 14px 14px 14px 12px;
   box-sizing: border-box;
-  border-radius: 24px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(248, 251, 255, 0.66));
-  box-shadow: 0 10px 24px rgba(95, 116, 154, 0.08);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   overflow: hidden;
   contain: layout paint;
   backface-visibility: hidden;
@@ -62,19 +62,26 @@ import NavBar from './NavBar.vue'
   align-items: center;
   justify-content: flex-start;
   margin-bottom: 14px;
+  overflow: hidden;
 }
 
 .brand {
   min-width: 0;
-  display: flex;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
 }
 
 .brandLink {
   min-width: 0;
+  max-width: 100%;
   color: var(--shell-text, var(--color-font));
   text-decoration: none;
+  opacity: 1;
+  transform: translateX(0);
+  transition: max-width @transition-fast, opacity @transition-fast, transform @transition-fast;
 }
 
 .logoBtn {
@@ -88,22 +95,26 @@ import NavBar from './NavBar.vue'
   justify-content: center;
   cursor: pointer;
   flex: none;
+  justify-self: start;
 }
 
 .logo {
   width: 42px;
   height: 42px;
-  border-radius: 14px;
+  border-radius: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, color-mix(in srgb, var(--color-primary) 82%, white), color-mix(in srgb, var(--color-primary) 54%, white 46%));
+  background: linear-gradient(145deg, color-mix(in srgb, var(--color-primary) 80%, white), color-mix(in srgb, var(--color-primary) 58%, white 42%));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 20%, rgba(255, 255, 255, 0.76));
   color: #fff;
-  box-shadow: 0 14px 28px color-mix(in srgb, var(--color-primary) 18%, transparent);
+  overflow: visible;
 
   svg {
     width: 20px;
     height: 20px;
+    display: block;
+    transform-origin: center;
     fill: currentColor;
   }
 }
@@ -121,16 +132,10 @@ import NavBar from './NavBar.vue'
   background: transparent;
   box-shadow: none;
 
-  .brandRow {
-    justify-content: center;
-  }
-
-  .brand {
-    justify-content: center;
-  }
-
   .brandLink {
-    display: none;
+    max-width: 0;
+    opacity: 0;
+    transform: translateX(-6px);
   }
 }
 </style>

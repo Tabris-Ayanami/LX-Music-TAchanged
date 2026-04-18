@@ -46,6 +46,8 @@ export default {
   data() {
     return {
       show: false,
+      hideTimer: null,
+      documentClickHandler: null,
       listStyles: {
         transform: 'scaleY(0) translateY(0)',
       },
@@ -66,19 +68,48 @@ export default {
     },
   },
   mounted() {
-    document.addEventListener('click', this.handleHide, true)
+    this.attachDocumentListener()
+  },
+  activated() {
+    this.attachDocumentListener()
+  },
+  deactivated() {
+    this.handleHide()
+    this.detachDocumentListener()
   },
   beforeUnmount() {
-    document.removeEventListener('click', this.handleHide, true)
+    this.detachDocumentListener()
+    this.clearHideTimer()
   },
   methods: {
+    attachDocumentListener() {
+      if (!this.documentClickHandler) {
+        this.documentClickHandler = (event) => {
+          this.handleHide(event)
+        }
+      }
+      document.removeEventListener('click', this.documentClickHandler, true)
+      document.addEventListener('click', this.documentClickHandler, true)
+    },
+    detachDocumentListener() {
+      if (!this.documentClickHandler) return
+      document.removeEventListener('click', this.documentClickHandler, true)
+    },
+    clearHideTimer() {
+      if (this.hideTimer == null) return
+      clearTimeout(this.hideTimer)
+      this.hideTimer = null
+    },
     handleHide(e) {
       if (!this.show) return
       // if (e && e.target.parentNode != this.$refs.dom_list && this.show) return this.show = false
       if (e && (e.target == this.$refs.dom_btn || this.$refs.dom_btn.contains(e.target))) return
+      this.clearHideTimer()
       this.listStyles.transform = 'scaleY(0) translateY(0)'
-      setTimeout(() => {
+      if (!this.show) return
+      this.hideTimer = setTimeout(() => {
         this.show = false
+        this.hideTimer = null
       }, 50)
     },
     handleClick(item) {
@@ -88,6 +119,7 @@ export default {
       this.$emit('change', item)
     },
     handleShow() {
+      this.clearHideTimer()
       this.show = true
       this.$nextTick(() => {
         this.listStyles.transform = `scaleY(1) translateY(${this.handleGetOffset()}px)`
@@ -123,6 +155,7 @@ export default {
   width: var(--selection-width, 300px);
 
   &.active {
+    z-index: 12;
     .label {
       background-color: var(--color-button-background);
     }
@@ -138,9 +171,11 @@ export default {
 }
 
 .label {
-  background-color: var(--color-button-background);
+  background-color: color-mix(in srgb, var(--color-primary) 34%, rgba(255, 255, 255, 0.95));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 42%, rgba(255, 255, 255, 0.66));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.46);
   padding: 0 10px;
-  transition: background-color @transition-normal;
+  transition: background-color @transition-normal, border-color @transition-normal, box-shadow @transition-normal;
   height: @selection-height;
   // line-height: 27px;
   line-height: 1.5;
@@ -167,10 +202,12 @@ export default {
   }
 
   &:hover {
-    background-color: var(--color-button-background-hover);
+    background-color: color-mix(in srgb, var(--color-primary) 42%, rgba(255, 255, 255, 0.94));
+    border-color: color-mix(in srgb, var(--color-primary) 52%, rgba(255, 255, 255, 0.6));
   }
   &:active {
-    background-color: var(--color-button-background-active);
+    background-color: color-mix(in srgb, var(--color-primary) 50%, rgba(255, 255, 255, 0.92));
+    border-color: color-mix(in srgb, var(--color-primary) 58%, rgba(255, 255, 255, 0.54));
   }
 }
 
@@ -179,7 +216,12 @@ export default {
   top: 0;
   left: 0;
   width: 100%;
-  background-color: var(--color-content-background);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-primary) 16%, rgba(255, 255, 255, 0.995)),
+      color-mix(in srgb, var(--color-primary) 24%, rgba(255, 255, 255, 0.99))
+    );
   opacity: 0;
   transform: scaleY(0) translateY(0);
   transform-origin: 0 (@selection-height / 2) 0;
@@ -187,9 +229,11 @@ export default {
   transition-property: transform, opacity;
   z-index: 10;
   border-radius: @form-radius;
-  box-shadow: 0 0 4px rgba(0, 0, 0, .15);
+  border: none;
+  box-shadow: 0 16px 34px rgba(20, 29, 46, 0.16), 0 6px 16px rgba(20, 29, 46, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.34);
   overflow: auto;
   max-height: 200px;
+  isolation: isolate;
 }
 .listItem {
   cursor: pointer;
@@ -198,18 +242,20 @@ export default {
   // color: var(--color-button-font);
   outline: none;
   transition: background-color @transition-normal;
-  background-color: transparent;
+  background-color: color-mix(in srgb, var(--color-primary) 10%, rgba(255, 255, 255, 0.985));
+  border: none;
   box-sizing: border-box;
   .mixin-ellipsis-1();
 
   &:hover {
-    background-color: var(--color-button-background-hover);
+    background-color: color-mix(in srgb, var(--color-primary) 28%, rgba(255, 255, 255, 0.96));
   }
   &:active {
-    background-color: var(--color-button-background-active);
+    background-color: color-mix(in srgb, var(--color-primary) 36%, rgba(255, 255, 255, 0.94));
   }
   &.active {
     color: var(--color-button-font);
+    background-color: color-mix(in srgb, var(--color-primary) 32%, rgba(255, 255, 255, 0.95));
   }
 }
 

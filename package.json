@@ -63,6 +63,9 @@
     "build:renderer-scripts": "cross-env NODE_ENV=production webpack --config build-config/renderer-scripts/webpack.config.prod.js --progress",
     "lint": "eslint --ext .ts,.js,.vue -f node_modules/eslint-formatter-friendly src",
     "lint:fix": "eslint --ext .ts,.js,.vue -f node_modules/eslint-formatter-friendly --fix src",
+    "typecheck": "npx tsc --noEmit -p src/common/tsconfig.json && npx tsc --noEmit -p src/main/tsconfig.json && npx tsc --noEmit -p src/renderer/tsconfig.json",
+    "test:unit": "node scripts/quality/run-node-regression-tests.cjs",
+    "quality:gate": "node scripts/quality/run-quality-gate.cjs",
     "postinstall": "electron-builder install-app-deps",
     "dp": "cross-env ELECTRON_GET_USE_PROXY=true GLOBAL_AGENT_HTTPS_PROXY=http://127.0.0.1:2081 npm run pack",
     "up": "cross-env ELECTRON_GET_USE_PROXY=true GLOBAL_AGENT_HTTPS_PROXY=http://127.0.0.1:2081 npm i"

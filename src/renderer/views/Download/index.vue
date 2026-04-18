@@ -70,7 +70,8 @@
 <script>
 // import { checkPath, openDirInExplorer, openUrl } from '@common/utils/electron'
 
-import { ref } from '@common/utils/vueTools'
+import { ref, watch } from '@common/utils/vueTools'
+import listActionRunner from '@renderer/utils/listActionRunner.cjs'
 import useListInfo from './useListInfo'
 import useList from './useList'
 import useTab from './useTab'
@@ -80,6 +81,8 @@ import useTaskActions from './useTaskActions'
 import useMusicAdd from './useMusicAdd'
 import { downloadStatus } from '@renderer/store/download/state'
 import { appSetting } from '@renderer/store/setting'
+
+const { runListAction } = listActionRunner
 
 export default {
   name: 'Download',
@@ -128,6 +131,7 @@ export default {
       menuLocation,
       isShowItemMenu,
       showMenu,
+      hideMenu,
       menuClick,
     } = useMenu({
       handleStartTask,
@@ -139,6 +143,15 @@ export default {
       handleShowMusicAddModal,
       handleSearch,
       handleOpenMusicDetail,
+    })
+
+    const closeItemMenu = () => {
+      rightClickSelectedIndex.value = -1
+      hideMenu()
+    }
+
+    watch(isShowItemMenu, (visible) => {
+      if (!visible) rightClickSelectedIndex.value = -1
     })
 
     let clickTime = 0
@@ -175,31 +188,36 @@ export default {
     }
     const handleMenuClick = (action) => {
       let index = rightClickSelectedIndex.value
-      rightClickSelectedIndex.value = -1
+      closeItemMenu()
       menuClick(action, index)
     }
 
     const handleListBtnClick = ({ action, index }) => {
-      switch (action) {
-        case 'play':
-          handlePlayMusic(index, true)
-          break
-        case 'start':
-          void handleStartTask(index, true)
-          break
-        case 'pause':
-          void handlePauseTask(index, true)
-          break
-        case 'remove':
-          void handleRemoveTask(index, true)
-          break
-        case 'file':
-          void handleOpenFile(index)
-          break
-        case 'search':
-          handleSearch(index)
-          break
-      }
+      runListAction({
+        closeMenu: closeItemMenu,
+        action: () => {
+          switch (action) {
+            case 'play':
+              handlePlayMusic(index, true)
+              break
+            case 'start':
+              void handleStartTask(index, true)
+              break
+            case 'pause':
+              void handlePauseTask(index, true)
+              break
+            case 'remove':
+              void handleRemoveTask(index, true)
+              break
+            case 'file':
+              void handleOpenFile(index)
+              break
+            case 'search':
+              handleSearch(index)
+              break
+          }
+        },
+      })
     }
 
     const getName = (downloadInfo) => {
@@ -234,6 +252,7 @@ export default {
       handleListItemRightClick,
       handleMenuClick,
       handleListBtnClick,
+      hideMenu: closeItemMenu,
 
       getName,
       getTypeName,
@@ -253,8 +272,18 @@ export default {
   flex-flow: column nowrap;
 
   :global(.list-item) {
+    &:hover {
+      background-color: color-mix(in srgb, var(--color-primary) 34%, rgba(255, 255, 255, 0.94)) !important;
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 48%, rgba(255, 255, 255, 0.62)) !important;
+    }
+    &.selected {
+      background-color: color-mix(in srgb, var(--color-primary) 34%, rgba(255, 255, 255, 0.94)) !important;
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 48%, rgba(255, 255, 255, 0.62)) !important;
+    }
     &.active {
       color: var(--color-button-font);
+      background-color: color-mix(in srgb, var(--color-primary) 44%, rgba(255, 255, 255, 0.92)) !important;
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 56%, rgba(255, 255, 255, 0.58)) !important;
     }
   }
 }
@@ -302,4 +331,3 @@ export default {
 }
 
 </style>
-
