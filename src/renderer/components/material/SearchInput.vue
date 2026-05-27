@@ -1,6 +1,14 @@
 <template>
   <div :class="$style.container">
-    <div :class="[$style.search, {[$style.active]: focus}, {[$style.big]: big}, {[$style.small]: small}]">
+    <div :class="[$style.search, {[$style.active]: focus}, {[$style.expanded]: visibleList}, {[$style.big]: big}, {[$style.small]: small}]">
+      <LiquidGlassLayer
+        variant="search"
+        :active="true"
+        :interactive="true"
+        :blur-amount="visibleList ? 1.9 : 1.5"
+        :saturation="visibleList ? 220 : 206"
+        :over-light="visibleList"
+      />
       <div :class="$style.form">
         <input
           ref="dom_input"
@@ -52,8 +60,12 @@
 import { clipboardReadText } from '@common/utils/electron'
 import { HOTKEY_COMMON } from '@common/hotKey'
 import { appSetting } from '@renderer/store/setting'
+import LiquidGlassLayer from '@renderer/components/common/liquidGlass/LiquidGlassLayer.vue'
 
 export default {
+  components: {
+    LiquidGlassLayer,
+  },
   props: {
     placeholder: {
       type: String,
@@ -89,18 +101,17 @@ export default {
       text: '',
       selectIndex: -1,
       focus: false,
+      blurTimer: null,
       listStyle: {
         height: 0,
       },
     }
   },
   watch: {
-    list(n) {
+    list() {
       if (!this.visibleList) return
       if (this.selectIndex > -1) this.selectIndex = -1
-      this.$nextTick(() => {
-        this.listStyle.height = this.$refs.dom_list.scrollHeight + 'px'
-      })
+      this.$nextTick(this.updateListHeight)
     },
     modelValue(n) {
       this.text = n
@@ -114,9 +125,17 @@ export default {
     this.handleRegisterEvent('on')
   },
   beforeUnmount() {
+    if (this.blurTimer) {
+      clearTimeout(this.blurTimer)
+      this.blurTimer = null
+    }
     this.handleRegisterEvent('off')
   },
   methods: {
+    updateListHeight() {
+      const domList = this.$refs.dom_list
+      this.listStyle.height = domList ? `${domList.scrollHeight}px` : '0px'
+    },
     handleRegisterEvent(action) {
       let eventHub = window.key_event
       let name = action == 'on' ? 'on' : 'off'
@@ -131,11 +150,17 @@ export default {
       this.sendEvent('listClick', index)
     },
     handleFocus() {
+      if (this.blurTimer) {
+        clearTimeout(this.blurTimer)
+        this.blurTimer = null
+      }
       this.focus = true
       this.sendEvent('focus')
     },
     handleBlur() {
-      setTimeout(() => {
+      if (this.blurTimer) clearTimeout(this.blurTimer)
+      this.blurTimer = setTimeout(() => {
+        this.blurTimer = null
         this.focus = false
         this.sendEvent('blur')
       }, 80)
@@ -150,7 +175,7 @@ export default {
     },
     showList() {
       this.isShow = true
-      this.listStyle.height = this.$refs.dom_list.scrollHeight + 'px'
+      this.updateListHeight()
     },
     hideList() {
       this.isShow = false
@@ -211,37 +236,52 @@ export default {
 
 .search {
   position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   border-radius: 24px;
-  transition: box-shadow .28s ease, background-color @transition-normal, border-color @transition-fast, transform @transition-fast;
+  transition: box-shadow .32s cubic-bezier(0.16, 1, 0.3, 1), border-color .2s ease-out, transform .32s cubic-bezier(0.16, 1, 0.3, 1), border-radius .32s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-flow: column nowrap;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(244, 249, 255, 0.62));
-  border: 1px solid rgba(255, 255, 255, 0.38);
-  box-shadow: 0 10px 24px rgba(44, 61, 88, 0.08);
-  backdrop-filter: blur(18px) saturate(152%);
-  -webkit-backdrop-filter: blur(18px) saturate(152%);
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: 0 16px 34px rgba(44, 61, 88, 0.14), 0 6px 14px rgba(44, 61, 88, 0.1);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   overflow: hidden;
+  isolation: isolate;
+  will-change: border-radius, box-shadow, transform;
 
   &.active {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(243, 249, 255, 0.78));
     border-color: color-mix(in srgb, var(--shell-accent, var(--color-primary)) 34%, white 66%);
-    box-shadow: 0 18px 42px rgba(32, 50, 80, 0.16), 0 0 0 3px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 10%, transparent);
+    box-shadow:
+      0 24px 50px rgba(32, 50, 80, 0.18),
+      0 10px 22px rgba(32, 50, 80, 0.12),
+      0 0 0 3px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 12%, transparent);
     transform: translateY(-1px);
     .form {
       input {
         border-bottom-left-radius: 0;
-
       }
       button {
         border-bottom-right-radius: 0;
       }
     }
   }
+
+  &.expanded {
+    border-radius: 24px 24px 28px 28px;
+    box-shadow:
+      0 28px 60px rgba(32, 50, 80, 0.22),
+      0 12px 28px rgba(32, 50, 80, 0.14),
+      0 0 0 3px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 12%, transparent);
+  }
+
   .form {
     display: flex;
     height: 48px;
     position: relative;
+    z-index: 1;
     input {
       flex: auto;
       border-top-left-radius: 23px;
@@ -291,24 +331,59 @@ export default {
       }
 
       &:hover {
-        background-color: rgba(255, 255, 255, 0.08);
+        background-color: rgba(255, 255, 255, 0.12);
       }
       &:active {
-        background-color: rgba(255, 255, 255, 0.12);
+        background-color: rgba(255, 255, 255, 0.18);
       }
     }
   }
   .list {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(245, 249, 255, 0.76));
-    border-top: 1px solid rgba(255, 255, 255, 0.26);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
-    backdrop-filter: blur(22px) saturate(158%);
-    -webkit-backdrop-filter: blur(22px) saturate(158%);
+    position: relative;
+    z-index: 1;
+    background: transparent;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     font-size: 13px;
-    transition: .3s ease;
+    transition: height .34s cubic-bezier(0.16, 1, 0.3, 1);
     height: 0;
-    transition-property: height;
     overflow: hidden;
+    isolation: isolate;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      border-radius: 0 0 26px 26px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.64), rgba(244, 248, 255, 0.52)),
+        linear-gradient(130deg, color-mix(in srgb, var(--shell-accent, var(--color-primary)) 10%, transparent), rgba(255, 255, 255, 0));
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.48),
+        0 24px 52px rgba(35, 53, 84, 0.14);
+      backdrop-filter: blur(32px) saturate(184%);
+      -webkit-backdrop-filter: blur(32px) saturate(184%);
+      opacity: 0;
+      transform: scaleY(.92);
+      transform-origin: top center;
+      transition: opacity .28s ease, transform .34s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+
+    ul {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      padding: 8px 0 10px;
+      list-style: none;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: opacity .22s ease, transform .28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
     li {
       cursor: pointer;
       padding: 10px 8px;
@@ -326,6 +401,21 @@ export default {
         border-bottom-left-radius: 23px;
         border-bottom-right-radius: 23px;
       }
+    }
+  }
+}
+
+.expanded {
+  .list {
+    &::before {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+
+    ul {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: .04s;
     }
   }
 }

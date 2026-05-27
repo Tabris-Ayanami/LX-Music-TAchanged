@@ -25,7 +25,7 @@
       </div>
       <div :class="$style.content">
         <div v-show="!noItem" ref="dom_listContent" :class="$style.content">
-          <base-virtualized-list v-if="actionButtonsVisible" ref="listRef" :list="list" key-name="id" :item-height="listItemHeight" container-class="scroll" content-class="list" @contextmenu.capture="handleListRightClick">
+          <base-virtualized-list v-if="actionButtonsVisible" ref="listRef" :list="list" key-name="id" :item-height="listItemHeight" container-class="scroll" content-class="list" @scroll="handleScroll" @contextmenu.capture="handleListRightClick">
             <template #default="{ item, index }">
               <div
                 class="list-item" :class="[{ selected: rightClickSelectedIndex == index }, { active: selectedList.includes(item) }]"
@@ -53,7 +53,7 @@
               </div>
             </template>
           </base-virtualized-list>
-          <base-virtualized-list v-else ref="listRef" :list="list" key-name="id" :item-height="listItemHeight" container-class="scroll" content-class="list" @contextmenu.capture="handleListRightClick">
+          <base-virtualized-list v-else ref="listRef" :list="list" key-name="id" :item-height="listItemHeight" container-class="scroll" content-class="list" @scroll="handleScroll" @contextmenu.capture="handleListRightClick">
             <template #default="{ item, index }">
               <div
                 class="list-item" :class="[{ selected: rightClickSelectedIndex == index }, { active: selectedList.includes(item) }]"
@@ -146,7 +146,7 @@ export default {
       default: false,
     },
   },
-  emits: ['show-menu', 'play-list', 'togglePage'],
+  emits: ['show-menu', 'play-list', 'togglePage', 'scroll'],
   setup(props, { emit }) {
     const actionButtonsVisible = appSetting['list.actionButtonsVisible']
     const rightClickSelectedIndex = ref(-1)
@@ -265,6 +265,9 @@ export default {
         },
       })
     }
+    const handleScroll = event => {
+      emit('scroll', event)
+    }
     const scrollToTop = () => {
       listRef.value.scrollTo(0, true)
     }
@@ -286,6 +289,7 @@ export default {
       handleMenuClick,
 
       handleListRightClick,
+      handleScroll,
       assertApiSupport,
 
       isShowListAdd,

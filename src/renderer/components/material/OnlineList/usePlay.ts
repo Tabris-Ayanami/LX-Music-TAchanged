@@ -1,11 +1,8 @@
-// import { useCommit } from '@common/utils/vueTools'
-import { defaultList } from '@renderer/store/list/state'
-import { getListMusics, addListMusics } from '@renderer/store/list/action'
 import { addTempPlayList } from '@renderer/store/player/action'
 import { appSetting } from '@renderer/store/setting'
 import { type Ref } from '@common/utils/vueTools'
-import { playList } from '@renderer/core/player'
 import { LIST_IDS } from '@common/constants'
+import { playMusicInDefaultList, playMusicsInDefaultList } from '@renderer/utils/playDefaultList'
 
 export default ({ selectedList, props, removeAllSelect, emit }: {
   selectedList: Ref<LX.Music.MusicInfoOnline[]>
@@ -20,16 +17,11 @@ export default ({ selectedList, props, removeAllSelect, emit }: {
 
   const handlePlayMusic = async(index: number, single: boolean) => {
     let targetSong = props.list[index]
-    const defaultListMusics = await getListMusics(defaultList.id)
     if (selectedList.value.length && !single) {
-      await addListMusics(defaultList.id, [...selectedList.value])
+      await playMusicsInDefaultList([...selectedList.value], 0)
       removeAllSelect()
     } else {
-      await addListMusics(defaultList.id, [targetSong])
-    }
-    let targetIndex = defaultListMusics.findIndex(s => s.id === targetSong.id)
-    if (targetIndex > -1) {
-      playList(defaultList.id, targetIndex)
+      await playMusicInDefaultList(targetSong)
     }
   }
 

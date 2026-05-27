@@ -4,6 +4,7 @@
       <SearchInput />
     </div>
     <div :class="$style.actions">
+      <LiquidGlassLayer variant="capsule" :interactive="true" :active="!isFullscreen" />
       <router-link to="/setting" :class="$style.settingBtn" :aria-label="t('setting')">
         <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 493.23 436.47" width="16" height="16" space="preserve">
           <use xlink:href="#icon-setting" />
@@ -17,6 +18,7 @@
 <script setup>
 import { isFullscreen } from '@renderer/store'
 import { useI18n } from '@renderer/plugins/i18n'
+import LiquidGlassLayer from '@renderer/components/common/liquidGlass/LiquidGlassLayer.vue'
 import ControlBtns from './ControlBtns.vue'
 import SearchInput from './SearchInput.vue'
 
@@ -54,27 +56,38 @@ const t = useI18n()
   flex: none;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
+  position: relative;
+  min-height: 54px;
+  padding: 8px 12px 8px 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  isolation: isolate;
   -webkit-app-region: no-drag;
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
 }
 
 .settingBtn {
-  width: 38px;
-  height: 38px;
-  border-radius: 18px;
-  border: 1px solid rgba(42, 55, 75, 0.08);
+  width: 34px;
+  height: 34px;
+  border-radius: 14px;
+  border: 1px solid transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: var(--shell-text, var(--color-font));
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 10px 22px rgba(92, 108, 138, 0.08);
-  transition: @transition-fast;
-  transition-property: transform, opacity, background-color;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+  transition: transform .22s ease-out, opacity .22s ease-out, background-color .22s ease-out;
 
   &:hover {
     opacity: .86;
     transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.14);
   }
 }
 

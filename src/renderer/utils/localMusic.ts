@@ -1,7 +1,7 @@
 import { createUserList, getUserLists } from '@renderer/store/list/action'
 import { userLists } from '@renderer/store/list/state'
 import { playMusicInfo } from '@renderer/store/player/state'
-import { appendToDefaultList, playMusicsInDefaultList } from './playDefaultList'
+import { playMusicsInDefaultList, queueNextInDefaultList } from './playDefaultList'
 
 export const LOCAL_MUSIC_LIST_ID = 'userlist_local_music'
 export const LOCAL_MUSIC_LIST_NAME = '本地音乐'
@@ -122,7 +122,7 @@ export const playLocalTempTracks = async(
   if (!tracks.length) return
   const safeIndex = clampPlayIndex(index, tracks.length)
   if (options.interrupt === false && playMusicInfo.musicInfo) {
-    await appendToDefaultList(tracks)
+    await queueNextInDefaultList(tracks)
     return
   }
   await playMusicsInDefaultList(tracks, safeIndex)

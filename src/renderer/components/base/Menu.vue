@@ -91,18 +91,23 @@ export default {
   transform-origin: 0 0 0;
   transition: .14s ease;
   transition-property: transform, opacity;
-  border-radius: @radius-border;
-  border: none;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
   background:
     linear-gradient(
       180deg,
       color-mix(in srgb, var(--color-primary) 16%, rgba(255, 255, 255, 0.995)),
       color-mix(in srgb, var(--color-primary) 24%, rgba(255, 255, 255, 0.99))
     );
-  box-shadow: 0 18px 40px rgba(20, 29, 46, 0.16), 0 6px 18px rgba(20, 29, 46, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+  box-shadow:
+    0 22px 52px rgba(17, 24, 39, 0.2),
+    0 8px 18px rgba(17, 24, 39, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.48);
   z-index: 10;
   overflow: hidden;
   isolation: isolate;
+  backdrop-filter: blur(26px) saturate(180%);
+  -webkit-backdrop-filter: blur(26px) saturate(180%);
   // will-change: transform;
 }
 .listItem {
@@ -121,10 +126,10 @@ export default {
   // background-color: var(--color-primary-light-600-alpha-800);
 
   &:hover {
-    background-color: var(--color-list-hover-background, var(--color-primary-background-hover));
+    background-color: color-mix(in srgb, var(--color-primary) 18%, rgba(255, 255, 255, 0.34));
   }
   &:active {
-    background-color: var(--color-list-active-background, var(--color-primary-background-active));
+    background-color: color-mix(in srgb, var(--color-primary) 26%, rgba(255, 255, 255, 0.42));
   }
 
   &[disabled] {

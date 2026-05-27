@@ -186,6 +186,7 @@
     "crypto-js": "^4.2.0",
     "electron-log": "^5.4.3",
     "font-list": "^2.0.2",
+    "html2canvas": "^1.4.1",
     "iconv-lite": "^0.7.2",
     "image-size": "^1.1.0",
     "jschardet": "^3.1.4",

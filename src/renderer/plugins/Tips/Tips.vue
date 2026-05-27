@@ -44,7 +44,7 @@ export default {
   },
   beforeUnmount() {
     const el = this.$el
-    el.parentNode.removeChild(el)
+    if (el?.parentNode) el.parentNode.removeChild(el)
   },
   methods: {
     handleGetMaxWidth(left) {

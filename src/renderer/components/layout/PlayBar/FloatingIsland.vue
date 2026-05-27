@@ -2,9 +2,19 @@
   <div
     ref="playerRef"
     :class="[$style.player, { [$style.compact]: isFloatingIslandCompact }]"
+    :style="playerStyle"
     data-play-floating-island="true"
     :data-floating-compact="isFloatingIslandCompact ? 'true' : 'false'"
   >
+    <LiquidGlassLayer
+      variant="island"
+      :active="!isFloatingIslandCompact || isPlay"
+      :interactive="true"
+      :blur-amount="2.05"
+      :saturation="214"
+      :over-light="true"
+    />
+    <span :class="$style.coverAura" aria-hidden="true" />
     <button
       type="button"
       :class="$style.coverTrigger"
@@ -69,7 +79,7 @@
             <div :class="$style.utilityBtn">
               <PlayQueueBtn placement="right" variant="floating" />
             </div>
-            <div :class="$style.utilityBtn">
+            <div :class="[$style.utilityBtn, $style.volumeUtility]">
               <common-volume-btn />
             </div>
             <button type="button" :class="$style.utilityBtn" :aria-label="$t('player__floating_compact')" @click.stop="toggleFloatingIslandCompact">
@@ -123,12 +133,14 @@ import usePlayProgress from '@renderer/utils/compositions/usePlayProgress'
 import { capturePlayDetailOrigin } from '@renderer/utils/playDetailTransition'
 import PlayQueueBtn from '@renderer/components/layout/PlayDetail/components/PlayQueueBtn.vue'
 import DownloadModal from '@renderer/components/common/DownloadModal.vue'
+import LiquidGlassLayer from '@renderer/components/common/liquidGlass/LiquidGlassLayer.vue'
 
 export default {
   name: 'FloatingIslandBar',
   components: {
     PlayQueueBtn,
     DownloadModal,
+    LiquidGlassLayer,
   },
   setup() {
     const router = useRouter()
@@ -182,6 +194,9 @@ export default {
       const interval = playMusicInfo.musicInfo?.interval
       return [source?.toUpperCase?.(), interval].filter(Boolean).join(' | ') || 'Floating Player'
     })
+    const playerStyle = computed(() => ({
+      '--floating-cover-image': musicInfo.pic ? `url("${String(musicInfo.pic).replace(/"/g, '\\"')}")` : 'none',
+    }))
 
     return {
       musicInfo,
@@ -203,6 +218,7 @@ export default {
       displayTitle,
       subtitle,
       metaLine,
+      playerStyle,
       toggleFloatingIslandCompact,
       togglePlay,
       playNext,
@@ -226,21 +242,17 @@ export default {
   gap: 12px;
   padding: 12px 18px;
   border-radius: 22px;
-  border: 1px solid color-mix(in srgb, var(--shell-stroke, rgba(255, 255, 255, 0.18)) 84%, rgba(255, 255, 255, 0.72));
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(245, 248, 255, 0.82)),
-    color-mix(in srgb, var(--shell-surface-strong, rgba(255, 255, 255, 0.92)) 80%, transparent);
-  box-shadow:
-    0 26px 52px rgba(82, 108, 160, 0.16),
-    0 10px 24px rgba(82, 108, 160, 0.1),
-    0 0 0 1px rgba(255, 255, 255, 0.24);
-  backdrop-filter: blur(30px) saturate(132%);
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: 0 26px 54px rgba(82, 108, 160, 0.12);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   color: var(--shell-text, var(--color-font));
-  transition: width .28s cubic-bezier(0.22, 1, 0.36, 1), height .24s cubic-bezier(0.22, 1, 0.36, 1), padding .24s cubic-bezier(0.22, 1, 0.36, 1), gap .24s cubic-bezier(0.22, 1, 0.36, 1), transform @transition-fast, border-radius @transition-fast, box-shadow @transition-fast;
+  transition: width .32s cubic-bezier(0.16, 1, 0.3, 1), height .28s cubic-bezier(0.16, 1, 0.3, 1), padding .28s cubic-bezier(0.16, 1, 0.3, 1), gap .28s cubic-bezier(0.16, 1, 0.3, 1), transform .22s ease-out, border-radius .28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow .22s ease-out;
   transform: translateZ(0);
   backface-visibility: hidden;
-  overflow: hidden;
-  contain: paint;
+  overflow: visible;
+  contain: layout style;
   will-change: width, height, transform;
   pointer-events: auto;
   box-sizing: border-box;
@@ -252,26 +264,7 @@ export default {
 
   &::before,
   &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-  }
-
-  &::before {
-    border: 1px solid rgba(255, 255, 255, 0.32);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.46),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.12);
-  }
-
-  &::after {
-    inset: 1px 1px auto 1px;
-    height: 58%;
-    border-radius: inherit;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.08) 52%, rgba(255, 255, 255, 0));
-    opacity: .96;
+    display: none;
   }
 
   &.compact {
@@ -287,8 +280,44 @@ export default {
   }
 }
 
+.coverTrigger,
+.coverAura,
+.contentCluster {
+  position: relative;
+  z-index: 1;
+}
+
+.coverAura {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -20px;
+    top: 8px;
+    width: 184px;
+    height: 86px;
+    border-radius: 54px;
+    background-image: var(--floating-cover-image);
+    background-position: 44px center;
+    background-size: 84px 84px;
+    background-repeat: no-repeat;
+    filter: blur(30px) saturate(180%);
+    opacity: .48;
+    transform: translateZ(0);
+    -webkit-mask-image: radial-gradient(ellipse at 46% 50%, rgba(0, 0, 0, .9), rgba(0, 0, 0, .48) 48%, rgba(0, 0, 0, .08) 78%, rgba(0, 0, 0, 0) 100%);
+    mask-image: radial-gradient(ellipse at 46% 50%, rgba(0, 0, 0, .9), rgba(0, 0, 0, .48) 48%, rgba(0, 0, 0, .08) 78%, rgba(0, 0, 0, 0) 100%);
+  }
+}
+
 :global(#player) {
   pointer-events: auto;
+  overflow: visible;
 }
 
 :global(#player[data-floating-compact='true']) {
@@ -411,10 +440,10 @@ export default {
   flex: 1 1 auto;
   display: flex;
   align-items: center;
-  overflow: hidden;
+  overflow: visible;
   min-height: 0;
   transform-origin: right center;
-  transition: min-width .34s cubic-bezier(0.2, 0.9, 0.2, 1), max-width .34s cubic-bezier(0.2, 0.9, 0.2, 1), transform .34s cubic-bezier(0.2, 0.9, 0.2, 1);
+  transition: min-width .34s cubic-bezier(0.16, 1, 0.3, 1), max-width .34s cubic-bezier(0.16, 1, 0.3, 1), transform .34s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .expandedContent {
@@ -427,10 +456,10 @@ export default {
   max-width: 100%;
   width: 100%;
   opacity: 1;
-  overflow: hidden;
+  overflow: visible;
   transform: translateX(0);
   transform-origin: right center;
-  transition: max-width .34s cubic-bezier(0.2, 0.9, 0.2, 1), width .34s cubic-bezier(0.2, 0.9, 0.2, 1), opacity .24s ease, transform .34s cubic-bezier(0.2, 0.9, 0.2, 1);
+  transition: max-width .34s cubic-bezier(0.16, 1, 0.3, 1), width .34s cubic-bezier(0.16, 1, 0.3, 1), opacity .24s ease, transform .34s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .compactControls {
@@ -447,7 +476,7 @@ export default {
   flex: none;
   transform: translateX(14px);
   transform-origin: right center;
-  transition: max-width .34s cubic-bezier(0.2, 0.9, 0.2, 1), width .34s cubic-bezier(0.2, 0.9, 0.2, 1), opacity .24s ease, transform .34s cubic-bezier(0.2, 0.9, 0.2, 1);
+  transition: max-width .34s cubic-bezier(0.16, 1, 0.3, 1), width .34s cubic-bezier(0.16, 1, 0.3, 1), opacity .24s ease, transform .34s cubic-bezier(0.16, 1, 0.3, 1);
   -webkit-app-region: no-drag;
 }
 
@@ -551,34 +580,72 @@ export default {
   gap: 8px;
   justify-self: center;
   width: 116px;
+  overflow: visible;
 }
 
 .iconBtn,
-.compactToggleBtn {
+.compactToggleBtn,
+.utilityBtn {
+  --floating-btn-border: rgba(255, 255, 255, 0.34);
+  --floating-btn-fill: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(244, 249, 255, 0.26));
+  --floating-btn-shadow: 0 14px 24px rgba(28, 41, 68, 0.13), 0 6px 12px rgba(28, 41, 68, 0.08), 0 1px 0 rgba(255, 255, 255, 0.76) inset, 0 -1px 0 rgba(27, 39, 65, 0.08) inset, 0 0 0 1px rgba(255, 255, 255, 0.22) inset;
   width: 28px;
   height: 28px;
-  border: none;
+  border: 1px solid var(--floating-btn-border);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background: var(--floating-btn-fill);
+  box-shadow: var(--floating-btn-shadow);
+  backdrop-filter: blur(22px) saturate(178%);
+  -webkit-backdrop-filter: blur(22px) saturate(178%);
   color: var(--shell-text, var(--color-button-font));
   cursor: pointer;
   transition: @transition-fast;
-  transition-property: transform, opacity, background-color;
+  transition-property: transform, opacity, background-color, box-shadow, border-color;
   overflow: visible;
   -webkit-app-region: no-drag;
+  position: relative;
+  isolation: isolate;
+  transform: translateY(-1px);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 1px;
+    left: 3px;
+    right: 3px;
+    height: 44%;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.05));
+    opacity: .7;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: auto 4px -4px;
+    height: 8px;
+    border-radius: 999px;
+    background: radial-gradient(ellipse at 50% 50%, rgba(30, 42, 68, 0.14) 0%, rgba(30, 42, 68, 0.06) 42%, rgba(30, 42, 68, 0) 82%);
+    filter: blur(4px);
+    opacity: .48;
+    pointer-events: none;
+  }
 
   &:hover {
-    opacity: .84;
-    transform: translateY(-1px);
-    background: rgba(255, 255, 255, 0.08);
+    opacity: .96;
+    transform: translateY(-2px);
+    box-shadow: 0 20px 34px rgba(28, 41, 68, 0.2), 0 8px 14px rgba(28, 41, 68, 0.14), 0 1px 0 rgba(255, 255, 255, 0.72) inset, 0 0 0 1px rgba(255, 255, 255, 0.26) inset;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(245, 249, 255, 0.28));
   }
 
   &:active {
-    opacity: .68;
-    transform: translateY(0);
+    opacity: .88;
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 10px 16px rgba(28, 41, 68, 0.14), 0 2px 6px rgba(28, 41, 68, 0.1), 0 1px 0 rgba(255, 255, 255, 0.5) inset;
   }
 
   svg {
@@ -591,43 +658,62 @@ export default {
   }
 }
 
+.volumeUtility {
+  transform: translateY(-1px);
+
+  &:hover,
+  &:active {
+    transform: translateY(-1px);
+  }
+}
+
 .playBtn {
   width: 34px;
   height: 34px;
-  color: color-mix(in srgb, var(--shell-accent, var(--color-primary)) 70%, var(--shell-text, #1b2230) 30%);
-  border: 1px solid color-mix(in srgb, var(--shell-accent, var(--color-primary)) 20%, rgba(255, 255, 255, 0.72));
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 12%, rgba(255, 255, 255, 0.78)));
-  box-shadow: 0 10px 18px rgba(27, 39, 65, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.46);
-  transition-property: transform, opacity, background-color, box-shadow, color, border-color;
+  color: color-mix(in srgb, var(--shell-accent, var(--color-primary)) 72%, var(--shell-text, #182236) 28%);
+  transform: translateY(-2px);
+  transition-property: transform, opacity, background-color, box-shadow, color, border-color, backdrop-filter;
 
   svg {
     width: 16px;
     height: 16px;
   }
 
-  &:hover {
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.94), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 20%, rgba(255, 255, 255, 0.8)));
-    box-shadow: 0 12px 22px rgba(27, 39, 65, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.54);
-  }
-
-  &:active {
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.88), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 18%, rgba(255, 255, 255, 0.74)));
+  &::before {
+    top: 2px;
+    left: 5px;
+    right: 5px;
+    height: 42%;
+    opacity: .64;
   }
 }
 
 .playing {
   color: rgba(255, 255, 255, 0.96);
-  border-color: color-mix(in srgb, var(--shell-accent, var(--color-primary)) 28%, rgba(255, 255, 255, 0.68));
-  background: linear-gradient(135deg, var(--shell-accent, var(--color-primary)), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 72%, white 28%));
-  box-shadow: 0 12px 22px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 24%, transparent);
+  border-color: color-mix(in srgb, var(--shell-accent, var(--color-primary)) 24%, rgba(255, 255, 255, 0.62));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--shell-accent, var(--color-primary)) 76%, white 24%), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 72%, #2f65c8 28%));
+  box-shadow:
+    0 18px 30px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 24%, transparent),
+    0 8px 14px rgba(27, 39, 65, 0.16),
+    0 1px 0 rgba(255, 255, 255, 0.42) inset,
+    0 -1px 0 rgba(20, 38, 76, 0.18) inset,
+    0 0 0 1px rgba(255, 255, 255, 0.24) inset;
 
   &:hover {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--shell-accent, var(--color-primary)) 90%, white 10%), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 62%, white 38%));
-    box-shadow: 0 14px 24px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 26%, transparent);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--shell-accent, var(--color-primary)) 70%, white 30%), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 66%, #2f65c8 34%));
+    box-shadow:
+      0 22px 34px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 26%, transparent),
+      0 10px 16px rgba(27, 39, 65, 0.18),
+      0 1px 0 rgba(255, 255, 255, 0.46) inset,
+      0 -1px 0 rgba(20, 38, 76, 0.18) inset,
+      0 0 0 1px rgba(255, 255, 255, 0.28) inset;
   }
 
   &:active {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--shell-accent, var(--color-primary)) 88%, black 12%), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 64%, white 36%));
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--shell-accent, var(--color-primary)) 74%, #1b3f92 26%), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 62%, #244f9c 38%));
   }
 }
 
@@ -658,33 +744,15 @@ export default {
   justify-self: end;
   min-width: 0;
   gap: 8px;
+  overflow: visible;
 }
 
 .utilityBtn {
   width: 30px;
   height: 30px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
   color: var(--shell-text, var(--color-button-font));
-  display: flex;
-  align-items: center;
-  justify-content: center;
   padding: 0;
-  cursor: pointer;
-  transition: @transition-fast;
-  transition-property: transform, opacity, background-color;
   line-height: 0;
-
-  &:hover {
-    opacity: .86;
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    opacity: .68;
-    transform: translateY(0);
-  }
 
   :global(button) {
     width: 100%;
@@ -695,6 +763,7 @@ export default {
     justify-content: center;
     background: transparent;
     border: none;
+    border-radius: inherit;
     color: inherit;
     line-height: 0;
   }

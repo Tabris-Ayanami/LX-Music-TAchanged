@@ -217,11 +217,23 @@ export default {
   transform-origin: 0 0 0;
   transition: .14s ease;
   transition-property: transform, opacity;
-  border-radius: @radius-border;
-  background-color: var(--color-content-background);
-  box-shadow: 0 1px 8px 0 rgba(0,0,0,.2);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-primary) 16%, rgba(255, 255, 255, 0.995)),
+      color-mix(in srgb, var(--color-primary) 24%, rgba(255, 255, 255, 0.99))
+    );
+  box-shadow:
+    0 22px 52px rgba(17, 24, 39, 0.2),
+    0 8px 18px rgba(17, 24, 39, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.48);
   z-index: 10;
   overflow: hidden;
+  isolation: isolate;
+  backdrop-filter: blur(26px) saturate(180%);
+  -webkit-backdrop-filter: blur(26px) saturate(180%);
 }
 
 .group {
@@ -257,17 +269,17 @@ export default {
   transition-property: background-color, opacity;
   box-sizing: border-box;
   .mixin-ellipsis-1();
-  background-color: var(--color-content-background);
+  background-color: transparent;
   border: none;
 
   &:hover {
-    background-color: var(--color-primary-background-hover);
+    background-color: color-mix(in srgb, var(--color-primary) 18%, rgba(255, 255, 255, 0.34));
   }
   &:active {
-    background-color: var(--color-primary-background-active);
+    background-color: color-mix(in srgb, var(--color-primary) 26%, rgba(255, 255, 255, 0.42));
   }
   &.active {
-    background-color: var(--color-content-background);
+    background-color: transparent;
     color: var(--color-button-font-selected);
     cursor: default;
     opacity: 1;
@@ -293,4 +305,3 @@ export default {
 }
 
 </style>
-

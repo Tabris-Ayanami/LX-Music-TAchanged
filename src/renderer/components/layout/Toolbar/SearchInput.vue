@@ -9,6 +9,7 @@ import {
   ref,
   watch,
   nextTick,
+  onBeforeUnmount,
 } from '@common/utils/vueTools'
 import { useRouter, useRoute } from '@common/utils/vueRouter'
 import { appSetting } from '@renderer/store/setting'
@@ -23,13 +24,18 @@ export default {
     const tipList = ref([])
     let isFocused = false
     let prevTempSearchSource = ''
+    let routeWatchTimer = null
+    let blurTimer = null
+    let tipRequestId = 0
 
     const route = useRoute()
     const router = useRouter()
 
     watch(() => route.name, (newValue, oldValue) => {
       if (oldValue == 'Search' && newValue != 'SongListDetail') {
-        setTimeout(() => {
+        if (routeWatchTimer) clearTimeout(routeWatchTimer)
+        routeWatchTimer = setTimeout(() => {
+          routeWatchTimer = null
           if (appSetting['odc.isAutoClearSearchInput'] && searchText.value) searchText.value = ''
           if (appSetting['odc.isAutoClearSearchList']) setSearchText('')
         })
@@ -45,21 +51,31 @@ export default {
     })
 
 
+    const syncVisibleByQuery = () => {
+      visibleList.value = isFocused && !!searchText.value.trim()
+    }
+
     const tipSearch = debounce(async() => {
+      const currentRequestId = ++tipRequestId
       if (searchText.value === '' && prevTempSearchSource) {
         tipList.value = []
         music[prevTempSearchSource].tipSearch.cancelTipSearch()
         return
       }
       const { temp_source } = await getSearchSetting()
+      if (currentRequestId != tipRequestId) return
       prevTempSearchSource ||= temp_source
-      music[prevTempSearchSource].tipSearch.search(searchText.value).then(list => {
+      const keyword = searchText.value
+      music[prevTempSearchSource].tipSearch.search(keyword).then(list => {
+        if (currentRequestId != tipRequestId) return
+        if (keyword != searchText.value) return
+        if (!isFocused) return
         tipList.value = list
       }).catch(() => {})
     }, 50)
 
     const handleTipSearch = () => {
-      if (!visibleList.value && isFocused) visibleList.value = true
+      syncVisibleByQuery()
       tipSearch()
     }
 
@@ -82,13 +98,19 @@ export default {
     const handleEvent = ({ action, data }) => {
       switch (action) {
         case 'focus':
+          if (blurTimer) {
+            clearTimeout(blurTimer)
+            blurTimer = null
+          }
           isFocused = true
-          visibleList.value ||= true
+          syncVisibleByQuery()
           if (searchText.value) handleTipSearch()
           break
         case 'blur':
           isFocused = false
-          setTimeout(() => {
+          if (blurTimer) clearTimeout(blurTimer)
+          blurTimer = setTimeout(() => {
+            blurTimer = null
             visibleList.value &&= false
           }, 50)
           break
@@ -100,6 +122,14 @@ export default {
           void nextTick(handleSearch)
       }
     }
+
+    onBeforeUnmount(() => {
+      if (routeWatchTimer) clearTimeout(routeWatchTimer)
+      if (blurTimer) clearTimeout(blurTimer)
+      routeWatchTimer = null
+      blurTimer = null
+      tipRequestId += 1
+    })
 
     return {
       searchText,

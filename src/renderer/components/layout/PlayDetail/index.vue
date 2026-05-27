@@ -84,7 +84,27 @@ const getRectStyles = rect => ({
   height: `${rect.height}px`,
 })
 
+const getShellVisualStyles = state => ({
+  background: state?.shellBackground || 'var(--shell-surface-strong, rgba(255, 255, 255, 0.9))',
+  borderColor: state?.shellBorderColor || 'var(--shell-stroke, rgba(255, 255, 255, 0.18))',
+  boxShadow: state?.shellBoxShadow || 'var(--shell-player-shadow, 0 20px 40px rgba(91, 113, 153, 0.18))',
+  backdropFilter: state?.shellBackdropFilter || 'none',
+  WebkitBackdropFilter: state?.shellWebkitBackdropFilter || 'none',
+})
+
+const getShellVisualStylesFromElement = (element) => {
+  const styles = getComputedStyle(element)
+  return getShellVisualStyles({
+    shellBackground: styles.backgroundColor,
+    shellBorderColor: styles.borderTopColor || styles.borderColor,
+    shellBoxShadow: styles.boxShadow,
+    shellBackdropFilter: styles.backdropFilter,
+    shellWebkitBackdropFilter: styles.webkitBackdropFilter,
+  })
+}
+
 const getArtworkElement = el => el.querySelector('[data-play-detail-artwork="true"]')
+const toCssUrl = value => `url("${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}")`
 
 const clampChannel = value => Math.max(0, Math.min(255, Math.round(value)))
 const mixColor = (source, target, ratio) => source.map((value, index) => clampChannel(value * (1 - ratio) + target[index] * ratio))
@@ -249,6 +269,23 @@ const createMotionLayer = () => {
   return layer
 }
 
+const getFloatingIslandElement = () => {
+  return document.querySelector('[data-play-floating-island="true"]')
+}
+
+const hideFloatingIslandShell = () => {
+  const floatingIsland = getFloatingIslandElement()
+  if (!floatingIsland) return null
+  const previousOpacity = floatingIsland.style.opacity
+  const previousVisibility = floatingIsland.style.visibility
+  floatingIsland.style.opacity = '0'
+  floatingIsland.style.visibility = 'hidden'
+  return () => {
+    floatingIsland.style.opacity = previousOpacity
+    floatingIsland.style.visibility = previousVisibility
+  }
+}
+
 const createShellElement = snapshot => {
   const shell = document.createElement('div')
   setStyles(shell, {
@@ -256,9 +293,8 @@ const createShellElement = snapshot => {
     ...getRectStyles(snapshot.shellRect),
     borderRadius: snapshot.shellRadius || '22px',
     overflow: 'hidden',
-    border: '1px solid var(--shell-stroke, rgba(255, 255, 255, 0.18))',
-    background: 'var(--shell-surface-strong, rgba(255, 255, 255, 0.9))',
-    boxShadow: 'var(--shell-player-shadow, 0 20px 40px rgba(91, 113, 153, 0.18))',
+    border: `1px solid ${snapshot.shellBorderColor || 'var(--shell-stroke, rgba(255, 255, 255, 0.18))'}`,
+    ...getShellVisualStyles(snapshot),
     contain: 'paint',
     willChange: 'transform, border-radius, opacity',
     transform: 'translateZ(0)',
@@ -341,9 +377,11 @@ const animatePlayDetail = (el, opening, done) => {
   const artworkTargetRect = artworkElement?.getBoundingClientRect()
   const shellTargetRadius = getComputedStyle(el).borderRadius || '18px'
   const artworkTargetRadius = artworkElement ? getComputedStyle(artworkElement).borderRadius || '28px' : '28px'
+  const shellTargetVisual = getShellVisualStylesFromElement(el)
   const layer = createMotionLayer()
   const shell = createShellElement(snapshot)
   const cover = createCoverElement(snapshot)
+  const restoreFloatingIslandShell = opening ? null : hideFloatingIslandShell()
   layer.appendChild(shell)
   if (cover) layer.appendChild(cover)
 
@@ -370,17 +408,20 @@ const animatePlayDetail = (el, opening, done) => {
         {
           ...getRectStyles(snapshot.shellRect),
           borderRadius: snapshot.shellRadius || '22px',
+          ...getShellVisualStyles(snapshot),
           opacity: 1,
         },
         {
           ...getRectStyles(shellTargetRect),
           borderRadius: shellTargetRadius,
-          opacity: 0.78,
-          offset: 0.84,
+          ...shellTargetVisual,
+          opacity: 1,
+          offset: 0.92,
         },
         {
           ...getRectStyles(shellTargetRect),
           borderRadius: shellTargetRadius,
+          ...shellTargetVisual,
           opacity: 0,
           offset: 1,
         },
@@ -389,11 +430,13 @@ const animatePlayDetail = (el, opening, done) => {
         {
           ...getRectStyles(shellTargetRect),
           borderRadius: shellTargetRadius,
-          opacity: 0.1,
+          ...shellTargetVisual,
+          opacity: 1,
         },
         {
           ...getRectStyles(snapshot.shellRect),
           borderRadius: snapshot.shellRadius || '22px',
+          ...getShellVisualStyles(snapshot),
           opacity: 1,
         },
       ]
@@ -456,6 +499,7 @@ const animatePlayDetail = (el, opening, done) => {
   void Promise.all(animations.map(toAnimationPromise)).then(() => {
     cleanupContentStyle(el)
     layer.remove()
+    restoreFloatingIslandShell?.()
     done()
   })
 }
@@ -546,10 +590,11 @@ export default {
 
     const bgStyle = computed(() => {
       const pic = musicInfo.pic
+      const picUrl = pic ? toCssUrl(pic) : null
       return {
-        backgroundImage: pic ? `url("${String(pic).replace(/"/g, '\\"')}")` : 'none',
-        backgroundPosition: 'center center',
-        backgroundSize: 'cover',
+        backgroundImage: picUrl ? `${picUrl}, ${picUrl}` : 'none',
+        backgroundPosition: 'center center, center center',
+        backgroundSize: 'contain, cover',
       }
     })
 
@@ -615,7 +660,7 @@ export default {
   height: 100%;
   top: 0;
   left: 0;
-  background-color: var(--color-content-background);
+  background-color: rgb(var(--detail-color-deep));
   z-index: 10;
   overflow: hidden;
   border-radius: @radius-border;
@@ -626,6 +671,15 @@ export default {
   backface-visibility: hidden;
 
   box-sizing: border-box;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: rgb(var(--detail-color-deep));
+    pointer-events: none;
+  }
 
   * {
     box-sizing: border-box;
@@ -643,28 +697,25 @@ export default {
   background-size: var(--background-image-size);
   opacity: 1;
   transform: scale(1.15);
-  filter: blur(34px) saturate(235%) brightness(.9);
-  z-index: -1;
+  filter: blur(34px) saturate(220%) brightness(1.04);
+  z-index: 1;
 }
 .bgTint,
 .bgGlow {
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 2;
   pointer-events: none;
 }
 .bgTint {
   background:
-    linear-gradient(180deg, rgba(9, 10, 14, 0.02) 0%, rgba(10, 11, 16, 0.14) 34%, rgba(9, 10, 14, 0.3) 100%),
-    radial-gradient(circle at 14% 18%, rgba(var(--detail-color-warm), 0.4) 0%, rgba(var(--detail-color-warm), 0.16) 26%, transparent 58%),
-    radial-gradient(circle at 28% 72%, rgba(var(--detail-color-base), 0.34) 0%, rgba(var(--detail-color-base), 0.14) 28%, transparent 58%),
-    linear-gradient(112deg, rgba(var(--detail-color-light), 0.16) 0%, rgba(255, 255, 255, 0.03) 24%, rgba(var(--detail-color-base), 0.26) 68%, rgba(var(--detail-color-deep), 0.26) 100%);
+    linear-gradient(180deg, rgba(9, 10, 14, 0) 0%, rgba(10, 11, 16, 0.08) 36%, rgba(9, 10, 14, 0.24) 100%),
+    linear-gradient(112deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.01) 28%, rgba(0, 0, 0, 0.12) 100%);
 }
 .bgGlow {
   background:
-    radial-gradient(circle at 18% 24%, rgba(var(--detail-color-warm), 0.24) 0%, rgba(var(--detail-color-base), 0.1) 24%, transparent 46%),
-    radial-gradient(circle at 54% 38%, rgba(var(--detail-color-light), 0.1) 0%, transparent 32%),
-    radial-gradient(circle at 86% 76%, rgba(var(--detail-color-deep), 0.22) 0%, rgba(var(--detail-color-base), 0.08) 24%, transparent 52%);
+    radial-gradient(circle at 20% 20%, rgba(var(--detail-color-light), 0.08) 0%, transparent 34%),
+    radial-gradient(circle at 84% 78%, rgba(0, 0, 0, 0.14) 0%, transparent 44%);
 }
 
 .main {
@@ -676,6 +727,7 @@ export default {
   gap: clamp(42px, 4.6vw, 88px);
   padding: clamp(12px, 1.7vw, 22px) clamp(24px, 3vw, 42px) clamp(18px, 2vw, 28px);
   position: relative;
+  z-index: 3;
 
   &.showComment {
     :global {
@@ -696,7 +748,6 @@ export default {
   min-width: 320px;
   overflow: visible;
   align-items: flex-start;
-  transition: flex-basis @transition-normal;
 }
 
 .leftInner {
@@ -831,7 +882,7 @@ export default {
   transform: translate3d(34px, 0, 0);
   z-index: 2;
   pointer-events: none;
-  transition: transform @transition-slow, opacity @transition-slow;
+  transition: opacity @transition-fast;
 }
 
 @media (max-width: 1100px) {

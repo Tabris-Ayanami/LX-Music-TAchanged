@@ -781,13 +781,6 @@ const playAllTracks = () => {
   -webkit-box-orient: vertical;
 }
 
-@media (max-width: 1600px) {
-  .gridShell,
-  .artistShell {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 1180px) {
   .gridShell,
   .artistShell {

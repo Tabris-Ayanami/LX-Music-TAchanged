@@ -134,6 +134,13 @@ const isItemActive = item => {
 @import '@renderer/assets/styles/layout.less';
 
 .menu {
+  --sidebar-nav-rail: 42px;
+  --sidebar-nav-height: 46px;
+  --sidebar-nav-radius: 14px;
+  --sidebar-active-left-bleed: 4px;
+  --sidebar-active-right-trim: 8px;
+  --sidebar-motion-duration: .46s;
+  --sidebar-motion-curve: cubic-bezier(.2, 0, 0, 1);
   flex: auto;
   min-height: 0;
   overflow-y: auto;
@@ -141,7 +148,8 @@ const isItemActive = item => {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding: 0 2px 2px;
+  margin-left: calc(var(--sidebar-active-left-bleed) * -1);
+  padding: 0 2px 2px var(--sidebar-active-left-bleed);
   scrollbar-width: none;
 
   &::-webkit-scrollbar {
@@ -167,7 +175,7 @@ const isItemActive = item => {
   text-transform: uppercase;
   color: rgba(86, 100, 120, 0.56);
   overflow: hidden;
-  transition: opacity @transition-fast, color @transition-fast;
+  transition: opacity .28s var(--sidebar-motion-curve), color @transition-fast;
 }
 
 .list {
@@ -184,47 +192,62 @@ const isItemActive = item => {
 }
 
 .link {
+  position: relative;
+  isolation: isolate;
   width: 100%;
   max-width: 100%;
-  height: 48px;
-  min-height: 48px;
-  padding: 3px 12px 3px 0;
+  height: var(--sidebar-nav-height);
+  min-height: var(--sidebar-nav-height);
+  padding: 0 12px 0 0;
   box-sizing: border-box;
-  border-radius: 15px;
+  border-radius: var(--sidebar-nav-radius);
+  corner-shape: squircle;
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-nav-rail) minmax(0, 1fr);
   align-items: center;
   gap: 12px;
   text-decoration: none;
   color: var(--shell-text, var(--color-nav-font));
   overflow: visible;
-  transition: transform @transition-fast, background-color @transition-fast, color @transition-fast;
+  transition: transform .2s var(--sidebar-motion-curve), color @transition-fast;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 2px var(--sidebar-active-right-trim) 2px calc(var(--sidebar-active-left-bleed) * -1);
+    z-index: -1;
+    border-radius: inherit;
+    corner-shape: squircle;
+    background: transparent;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    pointer-events: none;
+  }
 
   &:hover {
     transform: translateY(-1px);
-    background: rgba(255, 255, 255, 0.46);
+
+    &::before {
+      background: rgba(255, 255, 255, 0.46);
+    }
   }
 }
 
 .active {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 82%, white), color-mix(in srgb, var(--color-primary) 58%, white 42%));
   color: #fff;
-}
 
-.menu:not(.collapsed) {
-  .active {
-    // Extend the active shell to the left while keeping the icon center stable.
-    margin-left: -3px;
-    padding-left: 3px;
+  &::before {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 82%, white), color-mix(in srgb, var(--color-primary) 58%, white 42%));
   }
 }
 
 .iconWrap {
   flex: none;
   position: relative;
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
+  width: var(--sidebar-nav-rail);
+  height: var(--sidebar-nav-rail);
+  border-radius: var(--sidebar-nav-radius);
+  corner-shape: squircle;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -241,6 +264,8 @@ const isItemActive = item => {
     transform: translate(-50%, -50%);
     transform-origin: center;
     fill: currentColor;
+    width: 18px;
+    height: 18px;
   }
 }
 
@@ -254,7 +279,7 @@ const isItemActive = item => {
   opacity: 1;
   transform: translateX(0);
   transform-origin: left center;
-  transition: max-width .22s cubic-bezier(0.22, 1, 0.36, 1), opacity .16s ease, transform .22s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: max-width var(--sidebar-motion-duration) var(--sidebar-motion-curve), opacity .28s ease, transform var(--sidebar-motion-duration) var(--sidebar-motion-curve);
   .mixin-ellipsis-1();
 }
 
@@ -264,14 +289,18 @@ const isItemActive = item => {
   }
 
   .link {
-    width: 42px;
-    max-width: 42px;
-    height: 48px;
-    min-height: 48px;
-    padding: 3px 0;
+    width: var(--sidebar-nav-rail);
+    max-width: var(--sidebar-nav-rail);
+    height: var(--sidebar-nav-height);
+    min-height: var(--sidebar-nav-height);
+    padding: 0;
     gap: 0;
     margin: 0;
     justify-items: start;
+
+    &::before {
+      inset: 2px 0 2px calc(var(--sidebar-active-left-bleed) * -1);
+    }
   }
 
   .iconWrap {

@@ -21,6 +21,7 @@
 import { watch, ref, onBeforeUnmount } from '@common/utils/vueTools'
 import { defaultList, loveList, userLists } from '@renderer/store/list/state'
 import { addListMusics, moveListMusics, createUserList, getMusicExistListIds } from '@renderer/store/list/action'
+import { queueNextInDefaultList } from '@renderer/utils/playDefaultList'
 import useKeyDown from '@renderer/utils/compositions/useKeyDown'
 import { useI18n } from '@root/lang'
 import { dialog } from '@renderer/plugins/Dialog'
@@ -151,8 +152,10 @@ export default {
           : width < 3840 ? 5 : 6
     },
     handleClick(index) {
-      if (this.isMove) void moveListMusics(this.fromListId, this.lists[index].id, [this.currentMusicInfo])
-      else void addListMusics(this.lists[index].id, [this.currentMusicInfo])
+      const listId = this.lists[index].id
+      if (this.isMove) void moveListMusics(this.fromListId, listId, [this.currentMusicInfo])
+      else if (listId == defaultList.id) void queueNextInDefaultList([this.currentMusicInfo])
+      else void addListMusics(listId, [this.currentMusicInfo])
 
       this.lists[index].isExist = true
       if (this.keyModDown && !this.isMove) return

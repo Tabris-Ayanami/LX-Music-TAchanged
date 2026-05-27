@@ -1,6 +1,7 @@
 <template>
-  <div :class="$style.page">
+  <div :class="$style.page" :style="detailThemeStyle">
     <section :class="$style.headerCard">
+      <div :class="$style.coverGlow" />
       <div :class="$style.coverFrame">
         <img v-if="detailCover" :src="detailCover" :alt="detailGroup?.name || 'cover'" decoding="async">
         <div v-else :class="$style.coverFallback">{{ detailGroup?.initial || '?' }}</div>
@@ -11,6 +12,16 @@
         <p :class="$style.desc">{{ detailDescription }}</p>
       </div>
       <div :class="$style.headerActions">
+        <button type="button" :class="[$style.iconBtn, $style.playBtn]" :disabled="!detailTracks.length" aria-label="Play" @click.stop.prevent="playFirstTrack">
+          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1024 1024" space="preserve">
+            <use xlink:href="#icon-play" />
+          </svg>
+        </button>
+        <button type="button" :class="[$style.iconBtn, $style.backBtn]" aria-label="Back" @click.stop.prevent="goBack">
+          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" space="preserve">
+            <use xlink:href="#icon-back" />
+          </svg>
+        </button>
         <button type="button" :class="[$style.actionBtn, $style.primary]" :disabled="!detailTracks.length" @click="playFirstTrack">
           播放第一首
         </button>
@@ -58,6 +69,7 @@ const router = useRouter()
 const localListId = ref('')
 const tracks = ref<LX.Music.MusicInfoLocal[]>([])
 const detailCover = ref('')
+const toCssUrl = (value: string) => `url("${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}")`
 
 const detailType = computed(() => route.query.type == 'artists' ? 'artists' : 'albums')
 const detailKey = computed(() => typeof route.query.key == 'string' ? route.query.key : '')
@@ -70,6 +82,9 @@ const groups = computed(() => detailType.value == 'artists'
 const detailGroup = computed(() => groups.value.find(item => item.key == detailKey.value) ?? null)
 const detailItems = computed(() => detailGroup.value?.items ?? [])
 const detailTracks = computed(() => detailItems.value.map(item => item.track))
+const detailThemeStyle = computed(() => ({
+  '--local-detail-cover': detailCover.value ? toCssUrl(detailCover.value) : 'none',
+}))
 
 const detailDescription = computed(() => {
   if (!detailGroup.value) return '从左侧返回本地音乐重新选择。'
@@ -150,34 +165,62 @@ const playFirstTrack = () => {
   height: 100%;
   display: flex;
   flex-flow: column nowrap;
-  gap: 10px;
-  padding: 10px;
+  gap: 0;
+  padding: 0;
   color: var(--shell-text, var(--color-font));
-}
-
-.headerCard,
-.listCard {
-  border-radius: 14px;
-  border: 1px solid var(--shell-stroke, rgba(255, 255, 255, 0.18));
-  background: var(--shell-surface, rgba(255, 255, 255, 0.62));
-  backdrop-filter: blur(18px);
-  box-shadow: 0 12px 28px rgba(32, 50, 80, 0.06);
+  background: var(--color-content-background);
 }
 
 .headerCard {
+  position: relative;
+  flex: none;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px;
+  gap: 28px;
+  min-height: 230px;
+  padding: 28px 30px 26px;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(255, 255, 255, .34);
+}
+
+.coverGlow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -46px -32px auto -32px;
+    height: 320px;
+    background-image: var(--local-detail-cover);
+    background-position: center;
+    background-size: cover;
+    filter: blur(38px) saturate(150%);
+    opacity: .62;
+    transform: scale(1.08);
+  }
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 22% 10%, rgba(255, 255, 255, .3), transparent 34%),
+      linear-gradient(180deg, rgba(255, 255, 255, .36) 0%, color-mix(in srgb, var(--color-primary) 16%, rgba(255, 255, 255, .28)) 100%);
+  }
 }
 
 .coverFrame {
+  position: relative;
+  z-index: 1;
   flex: none;
-  width: 96px;
-  height: 96px;
+  width: 176px;
+  height: 176px;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 46px rgba(0, 0, 0, .22);
 
   img,
   div {
@@ -202,8 +245,12 @@ const playFirstTrack = () => {
 }
 
 .headerMeta {
+  position: relative;
+  z-index: 1;
   flex: auto;
   min-width: 0;
+  align-self: center;
+  padding: 2px 150px 28px 0;
 }
 
 .eyebrow {
@@ -212,54 +259,108 @@ const playFirstTrack = () => {
   font-size: 11px;
   letter-spacing: .16em;
   text-transform: uppercase;
-  color: var(--shell-muted, var(--color-font-label));
+  color: rgba(255, 255, 255, .72);
 }
 
 .title {
   margin: 0;
-  font-size: 28px;
-  line-height: 1.1;
+  font-size: 48px;
+  line-height: 1.14;
+  color: rgba(255, 255, 255, .96);
+  font-weight: 800;
   .mixin-ellipsis-1();
 }
 
 .desc {
   margin: 8px 0 0;
-  font-size: 13px;
-  color: var(--shell-muted, var(--color-font-label));
-  .mixin-ellipsis-2();
+  max-width: 760px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, .78);
+  .mixin-ellipsis(3);
 }
 
 .headerActions {
+  position: relative;
+  z-index: 1;
   flex: none;
   display: flex;
   align-items: center;
-  gap: 8px;
+  align-self: flex-end;
+  gap: 12px;
+  margin-left: -140px;
+  padding-bottom: 2px;
+
+  .actionBtn {
+    display: none;
+  }
 }
 
-.actionBtn {
-  border: 1px solid var(--shell-stroke, rgba(255, 255, 255, 0.2));
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--shell-text, var(--color-font));
-  border-radius: 10px;
-  padding: 0 14px;
-  min-width: 98px;
-  height: 36px;
+.iconBtn {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  color: var(--color-font);
+  background: rgba(255, 255, 255, .34);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .16), inset 0 0 0 1px rgba(255, 255, 255, .38);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
   cursor: pointer;
+  transition: transform .16s ease, background-color .16s ease, box-shadow .16s ease;
+  svg {
+    width: 24px;
+    height: 24px;
+    display: block;
+    margin: auto;
+    pointer-events: none;
+  }
+  &:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, .46);
+  }
+  &:active {
+    transform: translateY(0) scale(.96);
+  }
+  &:disabled {
+    opacity: .45;
+    cursor: default;
+    transform: none;
+  }
 }
 
-.primary {
-  background: linear-gradient(135deg, var(--shell-accent, var(--color-primary)), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 70%, white 30%));
-  border-color: transparent;
+.playBtn {
+  width: 64px;
+  height: 64px;
   color: #fff;
+  background: var(--color-primary);
+  box-shadow: 0 16px 34px color-mix(in srgb, var(--color-primary) 32%, transparent);
+  svg {
+    width: 30px;
+    height: 30px;
+    transform: translateX(2px);
+  }
+  &:hover {
+    background: color-mix(in srgb, var(--color-primary) 86%, white 14%);
+  }
+}
+
+.backBtn {
+  svg {
+    width: 26px;
+    height: 26px;
+  }
 }
 
 .listCard {
   flex: auto;
   min-height: 0;
-  padding: 10px 0 0;
+  padding: 14px 20px 18px;
   display: flex;
   flex-flow: column nowrap;
   overflow: hidden;
+  background: var(--color-content-background);
 }
 
 .emptyState {

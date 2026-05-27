@@ -20,6 +20,7 @@
 import { computed } from '@common/utils/vueTools'
 import { defaultList, loveList, userLists } from '@renderer/store/list/state'
 import { addListMusics, moveListMusics, createUserList } from '@renderer/store/list/action'
+import { queueNextInDefaultList } from '@renderer/utils/playDefaultList'
 import useKeyDown from '@renderer/utils/compositions/useKeyDown'
 import { useI18n } from '@root/lang'
 import { dialog } from '@renderer/plugins/Dialog'
@@ -111,9 +112,11 @@ export default {
     },
     handleClick(index) {
       const list = 'progress' in this.musicList[0] ? this.musicList.map(t => t.metadata.musicInfo) : this.musicList
+      const listId = this.lists[index].id
 
-      if (this.isMove) void moveListMusics(this.fromListId, this.lists[index].id, list)
-      else void addListMusics(this.lists[index].id, list)
+      if (this.isMove) void moveListMusics(this.fromListId, listId, list)
+      else if (listId == defaultList.id) void queueNextInDefaultList(list)
+      else void addListMusics(listId, list)
 
       if (this.keyModDown && !this.isMove) return
       this.$nextTick(() => {

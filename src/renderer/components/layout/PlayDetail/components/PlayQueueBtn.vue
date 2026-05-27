@@ -39,18 +39,26 @@
                   :key="item.id + '_' + item.index"
                   :data-queue-index="item.index"
                   :class="[$style.itemRow, { [$style.activeItem]: currentQueueIndex == item.index }]"
+                  @contextmenu.prevent="handleShowItemMenu($event, item)"
                 >
                   <button
                     type="button"
                     :class="$style.itemMain"
                     @click="handlePlay(item.index)"
                   >
-                    <span :class="$style.index">{{ item.index + 1 }}</span>
+                    <span :class="$style.coverWrap">
+                      <img v-if="item.pic" :class="$style.cover" :src="item.pic" loading="lazy" alt="">
+                      <span v-else :class="$style.coverFallback">{{ item.index + 1 }}</span>
+                      <span :class="$style.playBadge">
+                        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1024 1024" space="preserve">
+                          <use xlink:href="#icon-play" />
+                        </svg>
+                      </span>
+                    </span>
                     <span :class="$style.meta">
                       <strong :class="$style.itemName">{{ item.name || '-' }}</strong>
                       <span :class="$style.itemSub">{{ item.singer || '未知歌手' }}</span>
                     </span>
-                    <span :class="$style.duration">{{ item.interval || '--:--' }}</span>
                   </button>
                   <button
                     v-if="canEditQueue"
@@ -67,6 +75,7 @@
                 <div v-if="!queueList.length" :class="$style.empty">{{ $t('player__queue_empty') }}</div>
               </div>
             </div>
+            <base-menu v-model="isShowItemMenu" :menus="itemMenus" :xy="menuLocation" item-name="name" @menu-click="handleItemMenuClick" />
           </section>
         </div>
       </transition>
@@ -76,12 +85,12 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from '@common/utils/vueTools'
-import { LIST_IDS } from '@common/constants'
 import { playList } from '@renderer/core/player'
 import { dialog } from '@renderer/plugins/Dialog'
 import { clearListMusics, overwriteListMusics, removeListMusics } from '@renderer/store/list/action'
 import { getList } from '@renderer/store/player/action'
 import { playInfo, playMusicInfo } from '@renderer/store/player/state'
+import { getPicPath } from '@renderer/core/music'
 import { toSerializableMusicInfo } from '@renderer/utils/musicInfo'
 
 defineProps({
@@ -100,6 +109,49 @@ const triggerRef = ref(null)
 const drawerRef = ref(null)
 const listRef = ref(null)
 const queueList = ref([])
+const isShowItemMenu = ref(false)
+const menuLocation = ref({ x: 0, y: 0 })
+const menuTarget = ref(null)
+const loadingPicIds = new Set()
+let picRequestId = 0
+
+const getMusicPic = musicInfo => {
+  return musicInfo?.pic || musicInfo?.meta?.picUrl || musicInfo?.img || ''
+}
+
+const getQueueMusicInfo = item => {
+  return 'progress' in item ? item.metadata.musicInfo : item
+}
+
+const applyQueuePic = (item, pic, requestId) => {
+  if (!pic || requestId != picRequestId) return
+  for (const queueItem of queueList.value) {
+    if (queueItem.id != item.id || queueItem.index != item.index) continue
+    queueItem.pic = pic
+    break
+  }
+}
+
+const loadMissingLocalPics = () => {
+  const requestId = ++picRequestId
+  const targets = queueList.value.filter(item => {
+    return !item.pic && item.musicInfo?.source == 'local' && item.musicInfo.meta?.filePath && !loadingPicIds.has(item.id)
+  }).slice(0, 80)
+  if (!targets.length) return
+
+  for (const item of targets) {
+    loadingPicIds.add(item.id)
+    void getPicPath({
+      musicInfo: item.musicInfo,
+      listId: currentListId.value,
+      isRefresh: false,
+    }).then(pic => {
+      applyQueuePic(item, pic, requestId)
+    }).catch(() => {}).finally(() => {
+      loadingPicIds.delete(item.id)
+    })
+  }
+}
 
 const syncQueueList = () => {
   const listId = playInfo.playerListId
@@ -108,23 +160,18 @@ const syncQueueList = () => {
     return
   }
   queueList.value = getList(listId).map((item, index) => {
-    if ('progress' in item) {
-      return {
-        index,
-        id: item.id,
-        name: item.metadata.musicInfo.name,
-        singer: item.metadata.musicInfo.singer,
-        interval: item.metadata.musicInfo.interval,
-      }
-    }
+    const musicInfo = getQueueMusicInfo(item)
     return {
       index,
       id: item.id,
-      name: item.name,
-      singer: item.singer,
-      interval: item.interval,
+      name: musicInfo.name,
+      singer: musicInfo.singer,
+      interval: musicInfo.interval,
+      pic: getMusicPic(musicInfo),
+      musicInfo,
     }
   })
+  if (isVisible.value) loadMissingLocalPics()
 }
 
 const panelTitle = computed(() => window.i18n.t('play_list'))
@@ -132,8 +179,19 @@ const queueSummary = computed(() => window.i18n.t('player__queue_count', { count
 const currentQueueIndex = computed(() => playInfo.playerPlayIndex)
 const currentListId = computed(() => playInfo.playerListId)
 const canLocateCurrent = computed(() => currentQueueIndex.value > -1 && !!playMusicInfo.musicInfo && !!queueList.value.length)
-const canEditQueue = computed(() => currentListId.value == LIST_IDS.TEMP || currentListId.value == LIST_IDS.DEFAULT)
+const canEditQueue = computed(() => !!currentListId.value)
 const canClearQueue = computed(() => canEditQueue.value && !!queueList.value.length)
+const itemMenus = computed(() => [
+  {
+    name: window.i18n.t('list__play'),
+    action: 'play',
+  },
+  {
+    name: window.i18n.t('player__queue_remove'),
+    action: 'remove',
+    disabled: !canEditQueue.value,
+  },
+])
 
 const scrollCurrentIntoView = behavior => {
   if (!canLocateCurrent.value) return
@@ -191,6 +249,29 @@ const handleRemove = async(id) => {
   })
 }
 
+const handleShowItemMenu = (event, item) => {
+  menuTarget.value = item
+  menuLocation.value = {
+    x: event.pageX,
+    y: event.pageY,
+  }
+  isShowItemMenu.value = true
+}
+
+const handleItemMenuClick = item => {
+  const target = menuTarget.value
+  isShowItemMenu.value = false
+  if (!item || !target) return
+  switch (item.action) {
+    case 'play':
+      handlePlay(target.index)
+      break
+    case 'remove':
+      void handleRemove(target.id)
+      break
+  }
+}
+
 const handlePointerDown = event => {
   const target = event.target
   if (drawerRef.value?.contains(target) || triggerRef.value?.contains(target)) return
@@ -227,6 +308,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  picRequestId++
   document.removeEventListener('mousedown', handlePointerDown, true)
   document.removeEventListener('keydown', handleKeydown, true)
   window.app_event.off('myListUpdate', handleQueueListUpdate)
@@ -287,12 +369,12 @@ onBeforeUnmount(() => {
 
 .drawer {
   position: absolute;
-  width: min(468px, calc(100vw - 28px));
+  width: min(388px, calc(100vw - 28px));
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  border-radius: 28px;
+  border-radius: 22px;
   border: 1px solid rgba(255, 255, 255, 0.62);
-  background: rgba(247, 249, 253, 0.86);
+  background: rgba(247, 249, 253, 0.92);
   color: rgba(36, 40, 48, 0.94);
   box-shadow: 0 26px 62px rgba(17, 22, 30, 0.18);
   backdrop-filter: blur(28px) saturate(145%);
@@ -323,8 +405,8 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  padding: 18px 22px 16px;
+  gap: 12px;
+  padding: 12px 16px 10px;
   border-bottom: 1px solid rgba(96, 111, 135, 0.14);
 }
 
@@ -337,14 +419,13 @@ onBeforeUnmount(() => {
   }
 
   strong {
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 800;
-    letter-spacing: -.02em;
   }
 
   span {
-    margin-top: 4px;
-    font-size: 12px;
+    margin-top: 2px;
+    font-size: 11px;
     color: rgba(80, 88, 102, 0.72);
   }
 }
@@ -357,9 +438,9 @@ onBeforeUnmount(() => {
 }
 
 .headerBtn {
-  min-width: 74px;
-  height: 34px;
-  padding: 0 12px;
+  min-width: 68px;
+  height: 30px;
+  padding: 0 10px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.86);
   background: rgba(255, 255, 255, 0.76);
@@ -388,106 +469,155 @@ onBeforeUnmount(() => {
 .list {
   height: 100%;
   overflow-y: auto;
-  padding: 8px 18px 18px;
+  padding: 8px 10px 14px;
 }
 
 .itemRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  position: relative;
+  display: block;
   align-items: center;
-  gap: 10px;
-  min-height: 84px;
-  border-bottom: 1px solid rgba(120, 137, 164, 0.16);
+  min-height: 62px;
+  border-radius: 8px;
+  transition: background-color @transition-fast;
 
-  &:last-child {
-    border-bottom: none;
+  &:hover {
+    background: rgba(206, 213, 224, 0.28);
   }
 }
 
 .itemMain {
   width: 100%;
-  min-height: 84px;
-  padding: 0 14px 0 0;
+  min-height: 62px;
+  padding: 0 42px 0 0;
   border: none;
-  border-radius: 24px;
+  border-radius: 8px;
   background: transparent;
   text-align: left;
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr) auto;
+  grid-template-columns: 44px minmax(0, 1fr);
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   cursor: pointer;
-  transition: background-color @transition-fast, transform @transition-fast;
+  transition: none;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.54);
+    background: transparent;
   }
 }
 
 .activeItem .itemMain {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--color-primary) 18%, rgba(255, 255, 255, 0.95)) 0%, rgba(199, 234, 252, 0.9) 100%);
-  box-shadow: inset 3px 0 0 var(--color-primary);
+  background: transparent;
 }
 
-.index {
-  width: 56px;
+.activeItem {
+  background: rgba(174, 181, 194, 0.26);
+}
+
+.coverWrap {
+  position: relative;
+  width: 44px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: rgba(208, 216, 228, .72);
+}
+
+.cover,
+.coverFallback {
+  width: 100%;
+  height: 100%;
+}
+
+.cover {
+  object-fit: cover;
+}
+
+.coverFallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
   font-weight: 700;
-  color: rgba(112, 118, 130, 0.84);
+  color: rgba(108, 116, 130, .86);
+}
+
+.playBadge {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: rgba(0, 0, 0, .32);
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+    transform: translateX(1px);
+  }
+}
+
+.activeItem .playBadge {
+  display: inline-flex;
 }
 
 .meta {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .itemName,
-.itemSub,
-.duration {
+.itemSub {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .itemName {
-  font-size: 15px;
+  font-size: 14px;
+  line-height: 1.2;
   color: rgba(32, 37, 44, 0.96);
 }
 
-.itemSub,
-.duration {
+.itemSub {
   font-size: 12px;
+  line-height: 1.2;
   color: rgba(112, 118, 130, 0.9);
 }
 
-.duration {
-  min-width: 42px;
-  text-align: right;
-}
-
 .removeBtn {
-  width: 28px;
-  height: 28px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 30px;
+  height: 62px;
   padding: 0;
   border: none;
-  border-radius: 50%;
+  border-radius: 8px;
   background: transparent;
   color: rgba(104, 114, 130, 0.74);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: transform @transition-fast, color @transition-fast, background-color @transition-fast;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity @transition-fast, color @transition-fast, background-color @transition-fast;
+
+  .itemRow:hover &,
+  .itemRow:focus-within & {
+    opacity: 1;
+    pointer-events: auto;
+  }
 
   &:hover {
-    transform: translateY(-1px);
     color: rgba(228, 83, 83, 0.96);
-    background: rgba(255, 255, 255, 0.68);
+    background: rgba(206, 213, 224, 0.32);
   }
 
   svg {

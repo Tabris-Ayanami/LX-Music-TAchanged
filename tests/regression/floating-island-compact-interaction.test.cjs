@@ -25,7 +25,7 @@ test('RG-003: compact floating-island controls keep an interactive hit area', ()
   )
   assert.match(
     floatingIslandSource,
-    /\.iconBtn,\s*\.compactToggleBtn \{[\s\S]*overflow: visible;[\s\S]*-webkit-app-region: no-drag;[\s\S]*svg \{[\s\S]*display: block;[\s\S]*overflow: visible;[\s\S]*transform-origin: center;/,
+    /\.iconBtn,\s*\.compactToggleBtn,\s*\.utilityBtn \{[\s\S]*overflow: visible;[\s\S]*-webkit-app-region: no-drag;[\s\S]*svg \{[\s\S]*display: block;[\s\S]*overflow: visible;[\s\S]*transform-origin: center;/,
     'Compact and expanded floating-island icons should remain unclipped and stay clickable inside the draggable shell',
   )
 })

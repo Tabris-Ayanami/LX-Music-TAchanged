@@ -39,6 +39,8 @@ import NavBar from './NavBar.vue'
 }
 
 .panel {
+  --sidebar-motion-duration: .46s;
+  --sidebar-motion-curve: cubic-bezier(.2, 0, 0, 1);
   -webkit-app-region: drag;
   display: flex;
   flex-flow: column nowrap;
@@ -50,8 +52,8 @@ import NavBar from './NavBar.vue'
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  overflow: hidden;
-  contain: layout paint;
+  overflow: visible;
+  contain: layout style;
   backface-visibility: hidden;
   transform: translateZ(0);
 }
@@ -81,7 +83,7 @@ import NavBar from './NavBar.vue'
   text-decoration: none;
   opacity: 1;
   transform: translateX(0);
-  transition: max-width @transition-fast, opacity @transition-fast, transform @transition-fast;
+  transition: max-width var(--sidebar-motion-duration) var(--sidebar-motion-curve), opacity .28s ease, transform var(--sidebar-motion-duration) var(--sidebar-motion-curve);
 }
 
 .logoBtn {
@@ -102,6 +104,7 @@ import NavBar from './NavBar.vue'
   width: 42px;
   height: 42px;
   border-radius: 12px;
+  corner-shape: squircle;
   display: inline-flex;
   align-items: center;
   justify-content: center;

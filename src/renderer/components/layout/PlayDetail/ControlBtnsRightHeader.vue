@@ -95,6 +95,7 @@ const fullscreenExit = () => {
 }
 .header {
   position: relative;
+  z-index: 3;
   flex: 0 0 @height-toolbar;
   -webkit-app-region: drag;
   width: 100%;

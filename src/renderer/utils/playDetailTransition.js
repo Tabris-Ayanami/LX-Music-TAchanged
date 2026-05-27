@@ -23,6 +23,31 @@ const getTransformValue = (element) => {
   return transform && transform != 'none' ? transform : ''
 }
 
+const getFilterValue = (styles, key) => {
+  const value = styles[key]
+  return value && value != 'none' ? value : ''
+}
+
+const getShellVisualState = (element) => {
+  if (!element) {
+    return {
+      shellBackground: '',
+      shellBorderColor: '',
+      shellBoxShadow: '',
+      shellBackdropFilter: '',
+      shellWebkitBackdropFilter: '',
+    }
+  }
+  const styles = window.getComputedStyle(element)
+  return {
+    shellBackground: styles.backgroundColor || '',
+    shellBorderColor: styles.borderTopColor || styles.borderColor || '',
+    shellBoxShadow: styles.boxShadow || '',
+    shellBackdropFilter: getFilterValue(styles, 'backdropFilter'),
+    shellWebkitBackdropFilter: getFilterValue(styles, 'webkitBackdropFilter'),
+  }
+}
+
 let playDetailOriginSnapshot = null
 
 const getFloatingIslandElement = () => {
@@ -41,6 +66,7 @@ export const capturePlayDetailOrigin = (element) => {
     coverRadius: getRadiusValue(coverElement),
     coverTransform: getTransformValue(coverMotionElement),
     coverSrc: coverImage?.getAttribute('src') ?? '',
+    ...getShellVisualState(element),
     time: Date.now(),
   }
 }
@@ -63,6 +89,7 @@ export const getPlayDetailOrigin = (preferLive = false) => {
     coverRadius: getRadiusValue(coverElement),
     coverTransform: getTransformValue(coverMotionElement),
     coverSrc: coverImage?.getAttribute('src') ?? '',
+    ...getShellVisualState(floatingIslandElement),
   }
 }
 

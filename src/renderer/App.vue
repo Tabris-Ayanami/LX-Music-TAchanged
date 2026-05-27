@@ -168,9 +168,9 @@ body {
     linear-gradient(180deg, color-mix(in srgb, var(--shell-surface-strong, rgba(255, 255, 255, 0.92)) 94%, transparent), color-mix(in srgb, var(--shell-surface-soft, rgba(241, 246, 255, 0.92)) 84%, transparent)),
     linear-gradient(90deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08) 62%, rgba(255, 255, 255, 0.02));
   backdrop-filter: blur(34px) saturate(142%);
-  contain: layout paint;
+  contain: layout style;
   will-change: width;
-  transition: width .24s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: width .46s cubic-bezier(.2, 0, 0, 1);
 }
 #left::before {
   content: '';
