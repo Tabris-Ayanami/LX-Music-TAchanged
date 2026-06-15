@@ -12,8 +12,28 @@ const appSource = fs.readFileSync(appPath, 'utf8')
 test('RG-008: sidebar brand keeps a fixed logo lane while only collapsing the text lane', () => {
   assert.match(
     asideSource,
-    /\.brand \{[\s\S]*grid-template-columns: 42px minmax\(0, 1fr\);/,
+    /\.panel \{[\s\S]*--sidebar-icon-lane: 44px;[\s\S]*--sidebar-logo-size: 34px;[\s\S]*--sidebar-icon-glyph-size: 16px;/,
+    'Sidebar should define a compact shared icon lane with a smaller logo tile and glyph',
+  )
+  assert.match(
+    asideSource,
+    /\.brand \{[\s\S]*grid-template-columns: var\(--sidebar-icon-lane\) minmax\(0, 1fr\);/,
     'Brand row should keep a fixed-width logo lane so the logo anchor does not shift during collapse',
+  )
+  assert.match(
+    asideSource,
+    /\.brandRow \{[\s\S]*height: var\(--sidebar-icon-lane\);[\s\S]*min-height: var\(--sidebar-icon-lane\);[\s\S]*overflow: visible;/m,
+    'Brand row should reserve the full logo lane height and avoid clipping the logo tile',
+  )
+  assert.match(
+    asideSource,
+    /<strong :class="\$style\.brandText">LX MUSIC<\/strong>/,
+    'Sidebar title should use the requested uppercase LX MUSIC text',
+  )
+  assert.doesNotMatch(
+    asideSource,
+    /#icon-lx-note/,
+    'Sidebar brand should draw its own music-note mark instead of reusing the old LX note symbol',
   )
   assert.doesNotMatch(
     asideSource,
@@ -27,8 +47,8 @@ test('RG-008: sidebar brand keeps a fixed logo lane while only collapsing the te
   )
   assert.match(
     asideSource,
-    /\.panel \{[\s\S]*overflow: visible;[\s\S]*contain: layout style;/m,
-    'Sidebar panel should avoid paint containment so continuous corners are not clipped during collapse animation',
+    /\.collapsed \s*\{[\s\S]*\.brand \{[\s\S]*gap: 0;/,
+    'Collapsed brand state should remove the text-lane gap so the logo lane fits the collapsed sidebar exactly',
   )
   assert.match(
     asideSource,
@@ -37,8 +57,18 @@ test('RG-008: sidebar brand keeps a fixed logo lane while only collapsing the te
   )
   assert.match(
     asideSource,
-    /\.logo \{[\s\S]*width: 42px;[\s\S]*height: 42px;[\s\S]*border-radius: 12px;[\s\S]*corner-shape: squircle;/m,
-    'Sidebar logo tile should use a stable square squircle geometry',
+    /\.logo \{[\s\S]*position: absolute;[\s\S]*inset: 50% auto auto 50%;[\s\S]*transform: translate\(-50%, -50%\);[\s\S]*width: var\(--sidebar-logo-size\);[\s\S]*height: var\(--sidebar-logo-size\);[\s\S]*border-radius: var\(--sidebar-item-radius\);[\s\S]*corner-shape: squircle;/m,
+    'Sidebar logo tile should be absolutely centered in the touch lane while keeping stable squircle geometry',
+  )
+  assert.match(
+    appSource,
+    /'--sidebar-width': isSidebarCollapsed \? '80px' : '196px'/m,
+    'The outer sidebar width should fit a 44px icon lane plus the wider sidebar panel gutters',
+  )
+  assert.match(
+    appSource,
+    /#left \{[\s\S]*padding: 0;/m,
+    'Outer sidebar shell should not add a second padding layer around the sidebar panel',
   )
   assert.match(
     appSource,

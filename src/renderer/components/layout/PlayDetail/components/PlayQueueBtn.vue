@@ -392,8 +392,8 @@ onBeforeUnmount(() => {
 }
 
 .detailDrawer {
-  bottom: 18px;
-  height: min(78vh, 760px);
+  bottom: 86px;
+  height: min(calc(100vh - 128px), 700px);
 }
 
 .floatingDrawer {

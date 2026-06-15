@@ -5,17 +5,18 @@
         <div :class="$style.brand">
           <button type="button" :class="$style.logoBtn" :title="isSidebarCollapsed ? '展开侧栏' : '收起侧栏'" @click="toggleSidebarCollapsed">
             <span :class="$style.logo">
-              <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" space="preserve">
-                <use xlink:href="#icon-lx-note" />
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <path d="M15.8 3.7c.58-.12 1.12.32 1.12.91v10.48a3.42 3.42 0 1 1-1.96-3.1V7.54L9 8.77v8.8a3.42 3.42 0 1 1-1.96-3.1V7.42c0-.45.32-.85.76-.94l8-1.78Z" />
               </svg>
             </span>
           </button>
           <router-link to="/search" :class="$style.brandLink">
-            <strong :class="$style.brandText">LX Music</strong>
+            <strong :class="$style.brandText">LX MUSIC</strong>
           </router-link>
         </div>
       </div>
       <NavBar />
+      <NowPlayingList />
     </div>
   </aside>
 </template>
@@ -23,6 +24,7 @@
 <script setup>
 import { isSidebarCollapsed, toggleSidebarCollapsed } from '@renderer/store/ui'
 import NavBar from './NavBar.vue'
+import NowPlayingList from './NowPlayingList.vue'
 </script>
 
 <style lang="less" module>
@@ -39,6 +41,12 @@ import NavBar from './NavBar.vue'
 }
 
 .panel {
+  --sidebar-icon-lane: 44px;
+  --sidebar-logo-size: 34px;
+  --sidebar-icon-glyph-size: 16px;
+  --sidebar-item-height: 40px;
+  --sidebar-item-radius: 12px;
+  --sidebar-panel-x: 18px;
   --sidebar-motion-duration: .46s;
   --sidebar-motion-curve: cubic-bezier(.2, 0, 0, 1);
   -webkit-app-region: drag;
@@ -47,12 +55,12 @@ import NavBar from './NavBar.vue'
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
-  padding: 14px 14px 14px 12px;
+  padding: 22px var(--sidebar-panel-x) 20px;
   box-sizing: border-box;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  overflow: visible;
+  overflow: hidden;
   contain: layout style;
   backface-visibility: hidden;
   transform: translateZ(0);
@@ -63,17 +71,22 @@ import NavBar from './NavBar.vue'
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  margin-bottom: 14px;
-  overflow: hidden;
+  height: var(--sidebar-icon-lane);
+  min-height: var(--sidebar-icon-lane);
+  margin-bottom: 22px;
+  overflow: visible;
 }
 
 .brand {
   min-width: 0;
   width: 100%;
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-icon-lane) minmax(0, 1fr);
   align-items: center;
+  height: var(--sidebar-icon-lane);
+  min-height: var(--sidebar-icon-lane);
   gap: 12px;
+  transition: gap var(--sidebar-motion-duration) var(--sidebar-motion-curve);
 }
 
 .brandLink {
@@ -87,8 +100,13 @@ import NavBar from './NavBar.vue'
 }
 
 .logoBtn {
-  width: 42px;
-  height: 42px;
+  position: relative;
+  width: var(--sidebar-icon-lane);
+  height: var(--sidebar-icon-lane);
+  min-width: var(--sidebar-icon-lane);
+  min-height: var(--sidebar-icon-lane);
+  box-sizing: border-box;
+  line-height: 0;
   padding: 0;
   border: none;
   background: transparent;
@@ -96,14 +114,25 @@ import NavBar from './NavBar.vue'
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  appearance: none;
   flex: none;
   justify-self: start;
 }
 
 .logo {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  width: var(--sidebar-logo-size);
+  height: var(--sidebar-logo-size);
+  min-width: var(--sidebar-logo-size);
+  min-height: var(--sidebar-logo-size);
+  flex: 0 0 var(--sidebar-logo-size);
+  max-width: var(--sidebar-logo-size);
+  max-height: var(--sidebar-logo-size);
+  aspect-ratio: 1 / 1;
+  box-sizing: border-box;
+  border-radius: var(--sidebar-item-radius);
   corner-shape: squircle;
   display: inline-flex;
   align-items: center;
@@ -111,11 +140,12 @@ import NavBar from './NavBar.vue'
   background: linear-gradient(145deg, color-mix(in srgb, var(--color-primary) 80%, white), color-mix(in srgb, var(--color-primary) 58%, white 42%));
   border: 1px solid color-mix(in srgb, var(--color-primary) 20%, rgba(255, 255, 255, 0.76));
   color: #fff;
-  overflow: visible;
+  overflow: hidden;
 
   svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
+    flex: none;
     display: block;
     transform-origin: center;
     fill: currentColor;
@@ -124,9 +154,9 @@ import NavBar from './NavBar.vue'
 
 .brandText {
   display: block;
-  font-size: 19px;
+  font-size: 16px;
   font-weight: 800;
-  letter-spacing: -.03em;
+  letter-spacing: 0;
   white-space: nowrap;
   overflow: hidden;
 }
@@ -134,6 +164,10 @@ import NavBar from './NavBar.vue'
 .collapsed {
   background: transparent;
   box-shadow: none;
+
+  .brand {
+    gap: 0;
+  }
 
   .brandLink {
     max-width: 0;

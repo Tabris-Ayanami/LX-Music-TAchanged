@@ -1,10 +1,22 @@
-import { createUserList, getUserLists } from '@renderer/store/list/action'
+import { createUserList, getListMusics, getUserLists, addListMusics, overwriteListMusics, setFetchingListStatus } from '@renderer/store/list/action'
 import { userLists } from '@renderer/store/list/state'
 import { playMusicInfo } from '@renderer/store/player/state'
 import { playMusicsInDefaultList, queueNextInDefaultList } from './playDefaultList'
+import { readdir } from 'node:fs/promises'
+import { extname, join, normalize, sep } from 'node:path'
 
 export const LOCAL_MUSIC_LIST_ID = 'userlist_local_music'
 export const LOCAL_MUSIC_LIST_NAME = '本地音乐'
+export const LOCAL_MUSIC_LIBRARY_FOLDERS_KEY = 'lx_local_music_library_folders'
+
+const LOCAL_MEDIA_EXTS = new Set(['.mp3', '.flac', '.ogg', '.oga', '.wav', '.m4a'])
+const LOCAL_MUSIC_IMPORT_BATCH_SIZE = 200
+
+interface LocalDirEntry {
+  name: string
+  isDirectory: () => boolean
+  isFile: () => boolean
+}
 
 export interface LocalMusicGroupItem {
   index: number
@@ -51,6 +63,170 @@ export const getCachedLocalTracks = () => localTrackCache
 
 export const setCachedLocalTracks = (tracks: LX.Music.MusicInfoLocal[]) => {
   localTrackCache = tracks
+}
+
+const normalizeLibraryFolder = (folderPath: string) => normalize(folderPath.trim())
+
+const normalizeComparablePath = (path: string) => normalize(path).toLowerCase()
+
+const dedupePaths = (paths: string[]) => {
+  const map = new Map<string, string>()
+  for (const path of paths) {
+    const normalizedPath = normalizeLibraryFolder(path)
+    if (!normalizedPath) continue
+    map.set(normalizeComparablePath(normalizedPath), normalizedPath)
+  }
+  return Array.from(map.values())
+}
+
+const dedupeMusicInfos = (musicInfos: LX.Music.MusicInfo[]) => {
+  const map = new Map<string, LX.Music.MusicInfo>()
+  for (const musicInfo of musicInfos) {
+    if (!musicInfo?.id) continue
+    map.set(musicInfo.id, musicInfo)
+  }
+  return Array.from(map.values())
+}
+
+const isFileUnderFolder = (filePath: string, folderPath: string) => {
+  const normalizedFilePath = normalizeComparablePath(filePath)
+  const normalizedFolderPath = normalizeComparablePath(folderPath)
+  const folderPrefix = normalizedFolderPath.endsWith(sep) ? normalizedFolderPath : `${normalizedFolderPath}${sep}`
+  return normalizedFilePath == normalizedFolderPath || normalizedFilePath.startsWith(folderPrefix)
+}
+
+const isTrackInFolders = (track: LX.Music.MusicInfo, folders: string[]) => {
+  if (track.source != 'local') return false
+  return folders.some(folder => isFileUnderFolder(track.meta.filePath, folder))
+}
+
+export const getLocalMusicLibraryFolders = () => {
+  try {
+    const folders = JSON.parse(window.localStorage.getItem(LOCAL_MUSIC_LIBRARY_FOLDERS_KEY) ?? '[]')
+    if (!Array.isArray(folders)) return []
+    return dedupePaths(folders.filter((path): path is string => typeof path == 'string'))
+  } catch {
+    return []
+  }
+}
+
+export const setLocalMusicLibraryFolders = (folders: string[]) => {
+  const nextFolders = dedupePaths(folders)
+  window.localStorage.setItem(LOCAL_MUSIC_LIBRARY_FOLDERS_KEY, JSON.stringify(nextFolders))
+  return nextFolders
+}
+
+export const addLocalMusicLibraryFolders = (folders: string[]) => {
+  return setLocalMusicLibraryFolders([
+    ...getLocalMusicLibraryFolders(),
+    ...folders,
+  ])
+}
+
+export const removeLocalMusicLibraryFolder = (folderPath: string) => {
+  const targetPath = normalizeComparablePath(folderPath)
+  return setLocalMusicLibraryFolders(getLocalMusicLibraryFolders().filter(path => normalizeComparablePath(path) != targetPath))
+}
+
+export const collectLocalMusicFilesFromDir = async(dirPath: string): Promise<string[]> => {
+  const result: string[] = []
+  let entries: LocalDirEntry[]
+  try {
+    entries = await readdir(dirPath, { withFileTypes: true, encoding: 'utf8' }) as unknown as LocalDirEntry[]
+  } catch {
+    return result
+  }
+
+  for (const entry of entries) {
+    const fullPath = join(dirPath, entry.name)
+    if (entry.isDirectory()) {
+      result.push(...await collectLocalMusicFilesFromDir(fullPath))
+      continue
+    }
+    if (!entry.isFile()) continue
+    if (!LOCAL_MEDIA_EXTS.has(extname(entry.name).toLowerCase())) continue
+    result.push(fullPath)
+  }
+
+  return result
+}
+
+export const collectLocalMusicFilesFromFolders = async(folders: string[]) => {
+  return dedupePaths((await Promise.all(folders.map(async path => collectLocalMusicFilesFromDir(path)))).flat())
+}
+
+const createLocalMusicInfosByPaths = async(filePaths: string[], index: number = 0): Promise<LX.Music.MusicInfoLocal[]> => {
+  const paths = filePaths.slice(index, index + LOCAL_MUSIC_IMPORT_BATCH_SIZE)
+  if (!paths.length) return []
+
+  const musicInfos = await window.lx.worker.main.createLocalMusicInfos(paths)
+  if (filePaths.length <= index + LOCAL_MUSIC_IMPORT_BATCH_SIZE) return musicInfos
+  return [
+    ...musicInfos,
+    ...await createLocalMusicInfosByPaths(filePaths, index + LOCAL_MUSIC_IMPORT_BATCH_SIZE),
+  ]
+}
+
+export const importLocalMusicFiles = async(listId: string, filePaths: string[]) => {
+  if (!filePaths.length) return 0
+  setFetchingListStatus(listId, true)
+  try {
+    const uniquePaths = dedupePaths(filePaths)
+    const musicInfos = await createLocalMusicInfosByPaths(uniquePaths)
+    if (musicInfos.length) await addListMusics(listId, musicInfos)
+    return musicInfos.length
+  } finally {
+    setFetchingListStatus(listId, false)
+  }
+}
+
+export const rescanLocalMusicLibrary = async() => {
+  const list = await ensureLocalMusicList()
+  const folders = getLocalMusicLibraryFolders()
+  setFetchingListStatus(list.id, true)
+  try {
+    const currentTracks = await getListMusics(list.id)
+    const unmanagedTracks = currentTracks.filter(track => !isTrackInFolders(track, folders))
+    const filePaths = await collectLocalMusicFilesFromFolders(folders)
+    const scannedTracks = await createLocalMusicInfosByPaths(filePaths)
+    const nextTracks = dedupeMusicInfos([
+      ...unmanagedTracks,
+      ...scannedTracks,
+    ])
+    await overwriteListMusics({
+      listId: list.id,
+      musicInfos: nextTracks,
+    })
+    setCachedLocalTracks(nextTracks.filter((track): track is LX.Music.MusicInfoLocal => track.source == 'local'))
+    return {
+      listId: list.id,
+      folderCount: folders.length,
+      scannedFileCount: filePaths.length,
+      importedCount: scannedTracks.length,
+      totalCount: nextTracks.length,
+    }
+  } finally {
+    setFetchingListStatus(list.id, false)
+  }
+}
+
+export const removeLocalMusicLibraryFolderTracks = async(folderPath: string) => {
+  const list = await ensureLocalMusicList()
+  setFetchingListStatus(list.id, true)
+  try {
+    const currentTracks = await getListMusics(list.id)
+    const nextTracks = currentTracks.filter(track => {
+      return track.source != 'local' || !isFileUnderFolder(track.meta.filePath, folderPath)
+    })
+    await overwriteListMusics({
+      listId: list.id,
+      musicInfos: nextTracks,
+    })
+    setCachedLocalTracks(nextTracks.filter((track): track is LX.Music.MusicInfoLocal => track.source == 'local'))
+    return nextTracks.length
+  } finally {
+    setFetchingListStatus(list.id, false)
+  }
 }
 
 const isDuplicateListError = (error: unknown) => {

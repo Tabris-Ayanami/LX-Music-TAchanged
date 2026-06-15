@@ -10,18 +10,23 @@ const navBarSource = fs.readFileSync(navBarPath, 'utf8')
 test('RG-007: sidebar collapse keeps a fixed icon column and only collapses the label lane', () => {
   assert.match(
     navBarSource,
-    /\.menu \{[\s\S]*--sidebar-nav-rail: 42px;[\s\S]*--sidebar-nav-height: 46px;[\s\S]*--sidebar-nav-radius: 14px;[\s\S]*--sidebar-active-left-bleed: 4px;[\s\S]*--sidebar-active-right-trim: 8px;[\s\S]*--sidebar-motion-duration: \.46s;[\s\S]*--sidebar-motion-curve: cubic-bezier\(\.2, 0, 0, 1\);[\s\S]*margin-left: calc\(var\(--sidebar-active-left-bleed\) \* -1\);[\s\S]*padding: 0 2px 2px var\(--sidebar-active-left-bleed\);/,
+    /\.menu \{[\s\S]*--sidebar-nav-rail: var\(--sidebar-icon-lane, 44px\);[\s\S]*--sidebar-nav-height: var\(--sidebar-item-height, 40px\);[\s\S]*--sidebar-nav-radius: var\(--sidebar-item-radius, 12px\);[\s\S]*--sidebar-nav-glyph: var\(--sidebar-icon-glyph-size, 16px\);[\s\S]*--sidebar-active-left-bleed: 0px;[\s\S]*--sidebar-active-right-trim: 6px;[\s\S]*--sidebar-motion-duration: \.46s;[\s\S]*--sidebar-motion-curve: cubic-bezier\(\.2, 0, 0, 1\);[\s\S]*margin-left: 0;[\s\S]*padding: 0;/,
     'Sidebar nav should define shared geometry tokens for expanded and collapsed states',
   )
   assert.match(
     navBarSource,
-    /\.link \{[\s\S]*height: var\(--sidebar-nav-height\);[\s\S]*padding: 0 12px 0 0;[\s\S]*grid-template-columns: var\(--sidebar-nav-rail\) minmax\(0, 1fr\);/,
+    /\.link \{[\s\S]*height: var\(--sidebar-nav-height\);[\s\S]*padding: 0 9px 0 0;[\s\S]*grid-template-columns: var\(--sidebar-nav-rail\) minmax\(0, 1fr\);/,
     'Sidebar links should keep a stable icon column in the default layout',
   )
   assert.match(
     navBarSource,
-    /\.iconWrap \{[\s\S]*width: var\(--sidebar-nav-rail\);[\s\S]*height: var\(--sidebar-nav-rail\);[\s\S]*justify-self: center;[\s\S]*overflow: visible;/,
-    'Sidebar icon boxes should fill the fixed 42px lane so icons remain centered in square active tiles',
+    /\.link \{[\s\S]*transition:[\s\S]*width var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\),[\s\S]*max-width var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\),[\s\S]*padding var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\),[\s\S]*gap var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\),/m,
+    'Sidebar links should animate their width, padding, and gap so active tiles morph instead of snapping during collapse',
+  )
+  assert.match(
+    navBarSource,
+    /\.iconWrap \{[\s\S]*width: var\(--sidebar-nav-rail\);[\s\S]*height: var\(--sidebar-nav-rail\);[\s\S]*justify-self: center;[\s\S]*overflow: visible;[\s\S]*svg \{[\s\S]*width: var\(--sidebar-nav-glyph\);[\s\S]*height: var\(--sidebar-nav-glyph\);/m,
+    'Sidebar icon boxes should fill the fixed nav rail so icons remain centered in square active tiles',
   )
   assert.match(
     navBarSource,
@@ -41,7 +46,7 @@ test('RG-007: sidebar collapse keeps a fixed icon column and only collapses the 
   assert.match(
     navBarSource,
     /\.collapsed \s*\{[\s\S]*\.iconWrap \{[\s\S]*grid-column: 1;[\s\S]*justify-self: center;/s,
-    'Collapsed sidebar should keep the icon box on the first grid lane while centering it inside the fixed 42px track',
+    'Collapsed sidebar should keep the icon box on the first grid lane while centering it inside the fixed track',
   )
   assert.match(
     navBarSource,
@@ -50,18 +55,23 @@ test('RG-007: sidebar collapse keeps a fixed icon column and only collapses the 
   )
   assert.doesNotMatch(
     navBarSource,
-    /\.menu:not\(\.collapsed\)[\s\S]*margin-left: -3px|padding-left: 3px;/m,
-    'Expanded active state must not shift the active tile by a few pixels compared with collapsed state',
+    /\.menu:not\(\.collapsed\)[\s\S]*margin-left: -\d+px|padding-left: \d+px;/m,
+    'Expanded active state must not shift the active tile compared with collapsed state',
   )
   assert.match(
     navBarSource,
     /\.link \{[\s\S]*&::before \{[\s\S]*inset: 2px var\(--sidebar-active-right-trim\) 2px calc\(var\(--sidebar-active-left-bleed\) \* -1\);[\s\S]*border-radius: inherit;[\s\S]*corner-shape: squircle;/m,
-    'Expanded active and hover fills should keep the same 42px visual height as collapsed while using shared left bleed and right trim',
+    'Expanded active and hover fills should keep the same visual height as collapsed while using shared left bleed and right trim',
   )
   assert.match(
     navBarSource,
-    /\.collapsed \s*\{[\s\S]*\.link \{[\s\S]*&::before \{[\s\S]*inset: 2px 0 2px calc\(var\(--sidebar-active-left-bleed\) \* -1\);/s,
-    'Collapsed active fill must keep the same left bleed as expanded so the left edge stays pixel-aligned during collapse',
+    /\.link \{[\s\S]*&::before \{[\s\S]*transition: inset var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\), background-color @transition-fast;/m,
+    'Sidebar active fill should animate inset changes so the rectangle-to-square transition is continuous',
+  )
+  assert.match(
+    navBarSource,
+    /\.collapsed \s*\{[\s\S]*\.link \{[\s\S]*&::before \{[\s\S]*inset: 2px calc\(var\(--sidebar-active-left-bleed\) \* -1\) 2px calc\(var\(--sidebar-active-left-bleed\) \* -1\);/s,
+    'Collapsed active fill should keep the expanded-state height and left edge while expanding right equally so its center lines up with the icon center',
   )
   assert.match(
     navBarSource,

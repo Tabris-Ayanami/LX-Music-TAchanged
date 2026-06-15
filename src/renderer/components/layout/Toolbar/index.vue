@@ -5,6 +5,7 @@
     </div>
     <div :class="$style.actions">
       <LiquidGlassLayer variant="capsule" :interactive="true" :active="!isFullscreen" />
+      <SunMoonToggle />
       <router-link to="/setting" :class="$style.settingBtn" :aria-label="t('setting')">
         <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 493.23 436.47" width="16" height="16" space="preserve">
           <use xlink:href="#icon-setting" />
@@ -21,6 +22,7 @@ import { useI18n } from '@renderer/plugins/i18n'
 import LiquidGlassLayer from '@renderer/components/common/liquidGlass/LiquidGlassLayer.vue'
 import ControlBtns from './ControlBtns.vue'
 import SearchInput from './SearchInput.vue'
+import SunMoonToggle from './SunMoonToggle.vue'
 
 const t = useI18n()
 </script>
@@ -30,14 +32,21 @@ const t = useI18n()
 
 .toolbar {
   display: flex;
-  min-height: 56px;
+  min-height: 48px;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  padding: 18px 22px 12px;
+  gap: 14px;
+  padding: 8px 16px 7px 18px;
   -webkit-app-region: drag;
   z-index: 2;
   color: var(--shell-text, var(--color-font));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--shell-surface-strong, rgba(255, 255, 255, 0.88)) 78%, transparent), color-mix(in srgb, var(--shell-surface-soft, rgba(246, 249, 255, 0.78)) 52%, transparent)),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04));
+  border-bottom: 1px solid color-mix(in srgb, var(--shell-text, #182236) 8%, rgba(255, 255, 255, 0.32));
+  box-shadow: 0 10px 26px rgba(45, 62, 92, 0.08);
+  backdrop-filter: blur(34px) saturate(170%);
+  -webkit-backdrop-filter: blur(34px) saturate(170%);
 
   &.fullscreen {
     -webkit-app-region: no-drag;
@@ -45,7 +54,8 @@ const t = useI18n()
 }
 
 .searchSlot {
-  flex: auto;
+  flex: 0 1 360px;
+  max-width: 380px;
   min-width: 0;
   display: flex;
   align-items: center;
@@ -56,10 +66,10 @@ const t = useI18n()
   flex: none;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
   position: relative;
-  min-height: 54px;
-  padding: 8px 12px 8px 14px;
+  min-height: 38px;
+  padding: 4px 8px 4px 10px;
   border-radius: 999px;
   overflow: hidden;
   isolation: isolate;
@@ -72,9 +82,9 @@ const t = useI18n()
 }
 
 .settingBtn {
-  width: 34px;
-  height: 34px;
-  border-radius: 14px;
+  width: 30px;
+  height: 30px;
+  border-radius: 11px;
   border: 1px solid transparent;
   display: inline-flex;
   align-items: center;

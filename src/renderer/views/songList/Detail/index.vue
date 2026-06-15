@@ -344,6 +344,7 @@ export default {
   position: relative;
   z-index: 1;
   flex: none;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 18px;
@@ -417,11 +418,12 @@ export default {
   position: relative;
   z-index: 2;
   flex: none;
+  box-sizing: border-box;
   display: flex;
   flex-flow: row nowrap;
   align-items: flex-start;
   gap: 28px;
-  height: 368px;
+  height: 268px;
   padding: 28px 30px 0;
   overflow: hidden;
   background: var(--color-content-background);

@@ -1,23 +1,5 @@
 <template>
-  <div ref="pageRef" :class="$style.page">
-    <section :class="$style.headerRow">
-      <h1 :class="$style.pageTitle">本地音乐</h1>
-      <div :class="$style.headerActions">
-        <button type="button" :class="[$style.actionBtn, $style.primary]" :disabled="!tracks.length" @click="playAllTracks">
-          播放全部
-        </button>
-        <button type="button" :class="[$style.actionBtn, $style.primary]" @click="handleImport">
-          导入文件
-        </button>
-        <button type="button" :class="$style.actionBtn" @click="handleImportFolder">
-          导入文件夹
-        </button>
-        <button type="button" :class="$style.actionBtn" @click="scrollToTop">
-          回到顶部
-        </button>
-      </div>
-    </section>
-
+  <div :class="$style.page">
     <section :class="$style.contentCard">
       <div :class="$style.searchRow">
         <label :class="$style.searchBox">
@@ -66,7 +48,7 @@
           <div v-else :class="$style.emptyState">没有匹配到本地歌曲。</div>
         </template>
         <template v-else>
-          <MusicList v-if="localListId" ref="musicList" :list-id="localListId" play-mode="single-temp" play-on-click :temp-list-id-prefix="LOCAL_MUSIC_LIST_ID" />
+          <MusicList v-if="localListId" :list-id="localListId" play-mode="single-temp" play-on-click :temp-list-id-prefix="LOCAL_MUSIC_LIST_ID" />
           <div v-else :class="$style.emptyState">正在准备本地曲库...</div>
         </template>
       </div>
@@ -132,12 +114,10 @@ import {
   ensureLocalMusicList,
   getCachedLocalGroupCover,
   getCachedLocalTracks,
-  playLocalTempTracks,
   playSingleLocalTrack,
   setCachedLocalGroupCover,
   setCachedLocalTracks,
 } from '@renderer/utils/localMusic'
-import { addLocalFile, addLocalFolder } from '@renderer/views/List/MyList/actions'
 import MusicList from '@renderer/views/List/MusicList/index.vue'
 
 interface LocalTrackItem {
@@ -150,11 +130,8 @@ const GRID_LOAD_OFFSET = 120
 
 const route = useRoute()
 const router = useRouter()
-const pageRef = ref<HTMLElement | null>(null)
-const musicList = ref<any>(null)
 const albumGridRef = ref<HTMLElement | null>(null)
 const artistGridRef = ref<HTMLElement | null>(null)
-const localListInfo = ref<any>(null)
 const localListId = ref('')
 const tracks = ref<LX.Music.MusicInfoLocal[]>([])
 const albumCovers = ref<Record<string, string>>({})
@@ -352,7 +329,6 @@ const scheduleResolveGroupCovers = (
 
 const init = async() => {
   const list = await ensureLocalMusicList()
-  localListInfo.value = list
   localListId.value = list.id
   const cachedTracks = getCachedLocalTracks()
   if (cachedTracks.length) tracks.value = cachedTracks
@@ -402,34 +378,6 @@ watch([normalizedView, visibleArtists], ([view, groups]) => {
   scheduleResolveGroupCovers('artists', groups, artistCovers)
 }, { immediate: true })
 
-const handleImport = async() => {
-  if (!localListInfo.value) return
-  await addLocalFile(localListInfo.value)
-  await refreshTracks()
-}
-
-const handleImportFolder = async() => {
-  if (!localListInfo.value) return
-  await addLocalFolder(localListInfo.value)
-  await refreshTracks()
-}
-
-const scrollToTop = () => {
-  if (normalizedView.value == 'tracks' && !hasKeyword.value) {
-    musicList.value?.scrollToTop?.()
-    return
-  }
-  if (normalizedView.value == 'albums') {
-    albumGridRef.value?.scrollTo?.({ top: 0, behavior: 'smooth' })
-    return
-  }
-  if (normalizedView.value == 'artists') {
-    artistGridRef.value?.scrollTo?.({ top: 0, behavior: 'smooth' })
-    return
-  }
-  pageRef.value?.scrollTo?.({ top: 0, behavior: 'smooth' })
-}
-
 const openDetail = (type: 'albums' | 'artists', key: string) => {
   void router.push({
     path: '/local/detail',
@@ -443,12 +391,6 @@ const openDetail = (type: 'albums' | 'artists', key: string) => {
 const playTrack = (track: LX.Music.MusicInfoLocal) => {
   void playSingleLocalTrack(track)
 }
-
-const playAllTracks = () => {
-  void playLocalTempTracks(`${LOCAL_MUSIC_LIST_ID}__all`, tracks.value, 0, {
-    interrupt: false,
-  })
-}
 </script>
 
 <style lang="less" module>
@@ -458,13 +400,12 @@ const playAllTracks = () => {
   height: 100%;
   display: flex;
   flex-flow: column nowrap;
-  gap: 10px;
   padding: 10px;
+  box-sizing: border-box;
   color: var(--shell-text, var(--color-font));
   overflow: auto;
 }
 
-.headerRow,
 .contentCard {
   border-radius: 14px;
   border: 1px solid var(--shell-stroke, rgba(255, 255, 255, 0.18));
@@ -473,76 +414,21 @@ const playAllTracks = () => {
   box-shadow: 0 12px 28px rgba(32, 50, 80, 0.06);
 }
 
-.headerRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 18px;
-}
-
-.pageTitle {
-  margin: 0;
-  font-size: 24px;
-  line-height: 1;
-}
-
-.headerActions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.actionBtn {
-  border: 1px solid var(--shell-stroke, rgba(255, 255, 255, 0.2));
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--shell-text, var(--color-font));
-  border-radius: 10px;
-  padding: 0 14px;
-  min-width: 88px;
-  height: 34px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: @transition-fast;
-  transition-property: transform, opacity, background-color, border-color;
-
-  &:hover {
-    opacity: .86;
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    opacity: .72;
-    transform: translateY(0);
-  }
-}
-
-.primary {
-  background: linear-gradient(135deg, var(--shell-accent, var(--color-primary)), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 70%, white 30%));
-  border-color: transparent;
-  color: #fff;
-}
-
 .contentCard {
   position: relative;
   flex: auto;
   min-height: 0;
   display: flex;
   flex-flow: column nowrap;
+  gap: 14px;
   padding: 14px;
   overflow: hidden;
 }
 
 .searchRow {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  right: 14px;
-  z-index: 6;
+  flex: none;
   display: flex;
   align-items: center;
-  pointer-events: none;
 }
 
 .searchBox {
@@ -564,7 +450,6 @@ const playAllTracks = () => {
     0 10px 24px rgba(39, 60, 92, 0.06);
   backdrop-filter: blur(28px) saturate(185%);
   -webkit-backdrop-filter: blur(28px) saturate(185%);
-  pointer-events: auto;
   transition: border-color @transition-fast, box-shadow @transition-fast, background-color @transition-fast;
 
   &:focus-within {
@@ -616,14 +501,13 @@ const playAllTracks = () => {
 }
 
 .listShell {
-  padding-top: 58px;
   display: flex;
   flex-flow: column nowrap;
 }
 
 .gridShell,
 .artistShell {
-  padding-top: 18px;
+  padding-top: 4px;
 }
 
 .gridShell {

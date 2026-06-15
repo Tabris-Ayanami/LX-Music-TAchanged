@@ -37,8 +37,13 @@ test('RG-025: play-detail motion shell interpolates the floating island glass vi
   )
   assert.match(
     playDetailSource,
-    /const hideFloatingIslandShell = \(\) => \{[\s\S]*floatingIsland\.style\.opacity = '0'[\s\S]*floatingIsland\.style\.visibility = 'hidden'[\s\S]*return \(\) => \{[\s\S]*floatingIsland\.style\.opacity = previousOpacity/m,
-    'The real floating-island shell should stay hidden during the close motion so the proxy shell remains visible while shrinking back',
+    /const hideFloatingIslandShell = \(\) => \{[\s\S]*floatingIsland\.style\.opacity = '0'[\s\S]*floatingIsland\.style\.visibility = 'hidden'[\s\S]*return \{[\s\S]*reveal\(\) \{[\s\S]*floatingIsland\.style\.visibility = previousVisibility \|\| 'visible'[\s\S]*floatingIsland\.animate\(\[[\s\S]*restore\(\) \{[\s\S]*floatingIsland\.style\.opacity = previousOpacity/m,
+    'The real floating-island shell should stay hidden during most of the close motion, then fade in before the proxy is removed',
+  )
+  assert.match(
+    playDetailSource,
+    /PLAYER_FLOATING_REVEAL_DELAY[\s\S]*window\.setTimeout\(\(\) => \{[\s\S]*floatingRevealAnimation = floatingIslandShell\.reveal\(\)[\s\S]*\}, PLAYER_FLOATING_REVEAL_DELAY\)/m,
+    'Close motion should reveal the real floating island before the proxy shell is removed to avoid a terminal pop',
   )
 })
 

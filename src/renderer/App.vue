@@ -4,7 +4,7 @@
     class="view-container"
     :class="[themeShouldUseDarkColors ? 'themeShellDark' : 'themeShellLight', { sidebarCollapsed: isSidebarCollapsed }]"
     :style="{
-      '--sidebar-width': isSidebarCollapsed ? '104px' : '232px',
+      '--sidebar-width': isSidebarCollapsed ? '80px' : '196px',
       '--player-window-gutter': '22px',
     }"
   >
@@ -161,7 +161,7 @@ body {
   flex-flow: column nowrap;
   min-height: 0;
   z-index: 3;
-  padding: 12px;
+  padding: 0;
   background:
     radial-gradient(circle at top left, color-mix(in srgb, var(--shell-accent) 24%, rgba(255, 255, 255, 0.26)), transparent 42%),
     radial-gradient(circle at 14% 82%, rgba(255, 255, 255, 0.22), transparent 28%),
@@ -218,6 +218,10 @@ body {
 }
 #toolbar, #player {
   flex: none;
+}
+#toolbar {
+  position: relative;
+  z-index: 5;
 }
 #viewStage {
   position: relative;

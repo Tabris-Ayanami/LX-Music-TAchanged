@@ -17,6 +17,11 @@ test('RG-035: play queue keeps a compact light list with artwork and item contex
   )
   assert.match(
     queueSource,
+    /\.detailDrawer \{[\s\S]*bottom: 86px;[\s\S]*height: min\(calc\(100vh - 128px\), 700px\);/m,
+    'Detail-mode queue drawer should sit above the bottom-left queue button so the trigger remains usable for collapsing it',
+  )
+  assert.match(
+    queueSource,
     /min-height: 62px/m,
     'Queue rows should stay compact enough to show more songs',
   )
@@ -80,8 +85,18 @@ test('RG-036: song-list artwork header fades into the readable light list', () =
   )
   assert.match(
     songListDetailSource,
-    /\.songListHeader \{[\s\S]*height: 368px;[\s\S]*background: var\(--color-content-background\);[\s\S]*isolation: isolate;[\s\S]*&::before \{[\s\S]*background-image: var\(--song-list-cover\)[\s\S]*mask-image: linear-gradient\([\s\S]*transparent 100%[\s\S]*&::after \{[\s\S]*transparent 76%[\s\S]*mask-image: linear-gradient\([\s\S]*transparent 100%/m,
-    'The artwork header itself should include the fade from the play-button area into the list background',
+    /\.songListHeader \{[\s\S]*box-sizing: border-box;[\s\S]*height: 268px;[\s\S]*padding: 28px 30px 0;[\s\S]*background: var\(--color-content-background\);[\s\S]*isolation: isolate;[\s\S]*&::before \{[\s\S]*background-image: var\(--song-list-cover\)[\s\S]*mask-image: linear-gradient\([\s\S]*transparent 100%[\s\S]*&::after \{[\s\S]*transparent 76%[\s\S]*mask-image: linear-gradient\([\s\S]*transparent 100%/m,
+    'The artwork header should attach to the toolbar without a fixed top spacer',
+  )
+  assert.match(
+    songListDetailSource,
+    /\.compact \{[\s\S]*\.compactHeader \{[\s\S]*height: 72px;[\s\S]*opacity: 1;[\s\S]*pointer-events: auto;/m,
+    'Collapsed song-list headers should attach to the toolbar without a fixed top spacer',
+  )
+  assert.doesNotMatch(
+    songListDetailSource,
+    /--song-list-toolbar-overlap|padding-top: var\(--song-list-toolbar-overlap\)|calc\((?:72|268)px \+ var\(--song-list-toolbar-overlap\)\)/m,
+    'Song-list headers should not keep the old toolbar-overlap spacer',
   )
   assert.match(
     songListDetailSource,

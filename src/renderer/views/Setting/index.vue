@@ -58,6 +58,7 @@ import SettingPlayDetail from './components/SettingPlayDetail.vue'
 import SettingDesktopLyric from './components/SettingDesktopLyric.vue'
 import SettingSearch from './components/SettingSearch.vue'
 import SettingList from './components/SettingList.vue'
+import SettingLocalMusicLibrary from './components/SettingLocalMusicLibrary.vue'
 import SettingDownload from './components/SettingDownload.vue'
 import SettingSync from './components/SettingSync/index.vue'
 import SettingOpenAPI from './components/SettingOpenAPI.vue'
@@ -78,6 +79,7 @@ export default {
     SettingDesktopLyric,
     SettingSearch,
     SettingList,
+    SettingLocalMusicLibrary,
     SettingDownload,
     SettingSync,
     SettingOpenAPI,
@@ -103,6 +105,7 @@ export default {
         { id: 'SettingDesktopLyric', title: t('setting__desktop_lyric') },
         { id: 'SettingSearch', title: t('setting__search') },
         { id: 'SettingList', title: t('setting__list') },
+        { id: 'SettingLocalMusicLibrary', title: '本地音乐库' },
         { id: 'SettingDownload', title: t('setting__download') },
         { id: 'SettingHotKey', title: t('setting__hot_key') },
         { id: 'SettingSync', title: t('setting__sync') },

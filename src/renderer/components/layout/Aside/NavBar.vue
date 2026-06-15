@@ -11,7 +11,7 @@
             :aria-label="item.label"
             :to="item.to"
           >
-            <span :class="$style.iconWrap">
+            <span :class="$style.iconWrap" :style="item.iconOffsetX ? { '--sidebar-icon-offset-x': item.iconOffsetX } : null">
               <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" :viewBox="item.iconSize" width="17" height="17" space="preserve">
                 <use :xlink:href="item.icon" />
               </svg>
@@ -40,6 +40,7 @@ const localEntries = [
     to: { path: '/local', query: { view: 'tracks' } },
     icon: '#icon-musicFile',
     iconSize: '0 0 512 512',
+    iconOffsetX: '2px',
     name: 'LocalMusic',
     label: '歌曲',
     localView: 'tracks',
@@ -101,16 +102,11 @@ const menus = computed(() => [
   },
   {
     title: 'LOCAL',
+    items: localEntries,
+  },
+  {
+    title: 'LIST',
     items: [
-      {
-        key: 'local',
-        to: { path: '/local', query: { view: 'albums' } },
-        icon: '#icon-musicFolder',
-        iconSize: '0 0 247.498 247.498',
-        name: 'LocalMusic',
-        label: '本地音乐',
-      },
-      ...localEntries,
       {
         key: 'list',
         to: '/list',
@@ -125,7 +121,6 @@ const menus = computed(() => [
 
 const isItemActive = item => {
   if (item.name != 'LocalMusic') return route.meta.name == item.name
-  if (!item.localView) return route.meta.name == 'LocalMusic'
   return route.meta.name == 'LocalMusic' && currentLocalView.value == item.localView
 }
 </script>
@@ -134,22 +129,23 @@ const isItemActive = item => {
 @import '@renderer/assets/styles/layout.less';
 
 .menu {
-  --sidebar-nav-rail: 42px;
-  --sidebar-nav-height: 46px;
-  --sidebar-nav-radius: 14px;
-  --sidebar-active-left-bleed: 4px;
-  --sidebar-active-right-trim: 8px;
+  --sidebar-nav-rail: var(--sidebar-icon-lane, 44px);
+  --sidebar-nav-height: var(--sidebar-item-height, 40px);
+  --sidebar-nav-radius: var(--sidebar-item-radius, 12px);
+  --sidebar-nav-glyph: var(--sidebar-icon-glyph-size, 16px);
+  --sidebar-active-left-bleed: 0px;
+  --sidebar-active-right-trim: 6px;
   --sidebar-motion-duration: .46s;
   --sidebar-motion-curve: cubic-bezier(.2, 0, 0, 1);
-  flex: auto;
+  flex: 0 0 auto;
   min-height: 0;
-  overflow-y: auto;
+  overflow-y: hidden;
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  margin-left: calc(var(--sidebar-active-left-bleed) * -1);
-  padding: 0 2px 2px var(--sidebar-active-left-bleed);
+  gap: 13px;
+  margin-left: 0;
+  padding: 0;
   scrollbar-width: none;
 
   &::-webkit-scrollbar {
@@ -162,27 +158,28 @@ const isItemActive = item => {
 .section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .sectionTitle {
-  padding: 0 10px;
-  height: 14px;
-  line-height: 14px;
-  font-size: 10px;
+  padding: 0 5px;
+  height: 11px;
+  line-height: 11px;
+  font-size: 9px;
   letter-spacing: .16em;
   text-transform: uppercase;
   color: rgba(86, 100, 120, 0.56);
   overflow: hidden;
-  transition: opacity .28s var(--sidebar-motion-curve), color @transition-fast;
+  transition: height var(--sidebar-motion-duration) var(--sidebar-motion-curve), margin var(--sidebar-motion-duration) var(--sidebar-motion-curve), opacity .28s var(--sidebar-motion-curve), color @transition-fast;
 }
 
 .list {
   -webkit-app-region: no-drag;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -198,18 +195,24 @@ const isItemActive = item => {
   max-width: 100%;
   height: var(--sidebar-nav-height);
   min-height: var(--sidebar-nav-height);
-  padding: 0 12px 0 0;
+  padding: 0 9px 0 0;
   box-sizing: border-box;
   border-radius: var(--sidebar-nav-radius);
   corner-shape: squircle;
   display: grid;
   grid-template-columns: var(--sidebar-nav-rail) minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   text-decoration: none;
   color: var(--shell-text, var(--color-nav-font));
   overflow: visible;
-  transition: transform .2s var(--sidebar-motion-curve), color @transition-fast;
+  transition:
+    width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
+    max-width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
+    padding var(--sidebar-motion-duration) var(--sidebar-motion-curve),
+    gap var(--sidebar-motion-duration) var(--sidebar-motion-curve),
+    transform .2s var(--sidebar-motion-curve),
+    color @transition-fast;
 
   &::before {
     content: '';
@@ -222,6 +225,7 @@ const isItemActive = item => {
     transform: translateZ(0);
     backface-visibility: hidden;
     pointer-events: none;
+    transition: inset var(--sidebar-motion-duration) var(--sidebar-motion-curve), background-color @transition-fast;
   }
 
   &:hover {
@@ -261,18 +265,18 @@ const isItemActive = item => {
     display: block;
     position: absolute;
     inset: 50% auto auto 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(calc(-50% + var(--sidebar-icon-offset-x, 0px)), -50%);
     transform-origin: center;
     fill: currentColor;
-    width: 18px;
-    height: 18px;
+    width: var(--sidebar-nav-glyph);
+    height: var(--sidebar-nav-glyph);
   }
 }
 
 .label {
   min-width: 0;
   max-width: 100%;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
@@ -285,6 +289,8 @@ const isItemActive = item => {
 
 .collapsed {
   .sectionTitle {
+    height: 0;
+    margin: 0;
     opacity: 0;
   }
 
@@ -299,7 +305,7 @@ const isItemActive = item => {
     justify-items: start;
 
     &::before {
-      inset: 2px 0 2px calc(var(--sidebar-active-left-bleed) * -1);
+      inset: 2px calc(var(--sidebar-active-left-bleed) * -1) 2px calc(var(--sidebar-active-left-bleed) * -1);
     }
   }
 

@@ -433,5 +433,53 @@ export default {
   }
 }
 
+.small {
+  border-radius: 20px;
+  box-shadow: 0 10px 22px rgba(44, 61, 88, 0.12), 0 4px 10px rgba(44, 61, 88, 0.08);
+
+  &.active {
+    box-shadow:
+      0 16px 34px rgba(32, 50, 80, 0.16),
+      0 7px 16px rgba(32, 50, 80, 0.1),
+      0 0 0 3px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 10%, transparent);
+  }
+
+  &.expanded {
+    border-radius: 20px 20px 24px 24px;
+  }
+
+  .form {
+    height: 38px;
+
+    input {
+      border-top-left-radius: 19px;
+      border-bottom-left-radius: 19px;
+      padding: 0 12px;
+      font-size: 12px;
+      line-height: 38px;
+    }
+
+    button {
+      padding: 5px 7px;
+
+      svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      &:last-child {
+        border-top-right-radius: 19px;
+        border-bottom-right-radius: 19px;
+        padding-right: 9px;
+
+        svg {
+          width: 16px;
+          height: 16px;
+        }
+      }
+    }
+  }
+}
+
 
 </style>

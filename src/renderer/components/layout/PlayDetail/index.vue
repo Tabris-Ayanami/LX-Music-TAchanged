@@ -1,7 +1,7 @@
 <template lang="pug">
 transition(@before-enter="handleBeforeEnter" @enter="handleEnter" @after-enter="handleAfterEnter" @before-leave="handleBeforeLeave" @leave="handleLeave" @after-leave="handleAfterLeave")
   div(v-if="isShowPlayerDetail" :class="[$style.container, { fullscreen: isFullscreen }]" :style="detailStyle" @contextmenu="handleContextMenu")
-    div(:class="$style.bg" :style="bgStyle")
+    FluidBackground(:class="$style.bg" :cover="musicInfo.pic" :colors="detailColors" :active="visibled")
     div(:class="$style.bgTint")
     div(:class="$style.bgGlow")
     ControlBtnsRightHeader
@@ -46,6 +46,7 @@ import {
 } from '@renderer/store/player/action'
 import LyricPlayer from './LyricPlayer.vue'
 import PlayBar from './PlayBar.vue'
+import FluidBackground from './FluidBackground.vue'
 import MusicComment from './components/MusicComment/index.vue'
 import PlayQueueBtn from './components/PlayQueueBtn.vue'
 import ControlBtnsRightHeader from './ControlBtnsRightHeader.vue'
@@ -57,6 +58,8 @@ import { clearPlayDetailOrigin, getPlayDetailOrigin } from '@renderer/utils/play
 const PLAYER_SHELL_DURATION = 620
 const PLAYER_CONTENT_DURATION = 360
 const PLAYER_CONTENT_DELAY = 28
+const PLAYER_FLOATING_REVEAL_DELAY = 440
+const PLAYER_FLOATING_REVEAL_DURATION = 150
 const PLAYER_MOTION_EASING = 'cubic-bezier(0.2, 0.88, 0.24, 1)'
 const PLAYER_CONTENT_EASING = 'cubic-bezier(0.2, 0.72, 0.2, 1)'
 const DEFAULT_DETAIL_COLORS = {
@@ -104,7 +107,6 @@ const getShellVisualStylesFromElement = (element) => {
 }
 
 const getArtworkElement = el => el.querySelector('[data-play-detail-artwork="true"]')
-const toCssUrl = value => `url("${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}")`
 
 const clampChannel = value => Math.max(0, Math.min(255, Math.round(value)))
 const mixColor = (source, target, ratio) => source.map((value, index) => clampChannel(value * (1 - ratio) + target[index] * ratio))
@@ -278,11 +280,28 @@ const hideFloatingIslandShell = () => {
   if (!floatingIsland) return null
   const previousOpacity = floatingIsland.style.opacity
   const previousVisibility = floatingIsland.style.visibility
+  const previousPointerEvents = floatingIsland.style.pointerEvents
   floatingIsland.style.opacity = '0'
   floatingIsland.style.visibility = 'hidden'
-  return () => {
-    floatingIsland.style.opacity = previousOpacity
-    floatingIsland.style.visibility = previousVisibility
+  floatingIsland.style.pointerEvents = 'none'
+  return {
+    reveal() {
+      floatingIsland.style.visibility = previousVisibility || 'visible'
+      floatingIsland.style.opacity = '0'
+      return floatingIsland.animate([
+        { opacity: 0 },
+        { opacity: previousOpacity || 1 },
+      ], {
+        duration: PLAYER_FLOATING_REVEAL_DURATION,
+        easing: PLAYER_CONTENT_EASING,
+        fill: 'both',
+      })
+    },
+    restore() {
+      floatingIsland.style.opacity = previousOpacity
+      floatingIsland.style.visibility = previousVisibility
+      floatingIsland.style.pointerEvents = previousPointerEvents
+    },
   }
 }
 
@@ -381,7 +400,7 @@ const animatePlayDetail = (el, opening, done) => {
   const layer = createMotionLayer()
   const shell = createShellElement(snapshot)
   const cover = createCoverElement(snapshot)
-  const restoreFloatingIslandShell = opening ? null : hideFloatingIslandShell()
+  const floatingIslandShell = opening ? null : hideFloatingIslandShell()
   layer.appendChild(shell)
   if (cover) layer.appendChild(cover)
 
@@ -448,6 +467,14 @@ const animatePlayDetail = (el, opening, done) => {
   })
 
   const animations = [contentAnimation, shellAnimation]
+  let floatingRevealTimer = null
+  let floatingRevealAnimation = null
+
+  if (floatingIslandShell) {
+    floatingRevealTimer = window.setTimeout(() => {
+      floatingRevealAnimation = floatingIslandShell.reveal()
+    }, PLAYER_FLOATING_REVEAL_DELAY)
+  }
 
   if (cover && artworkTargetRect?.width && artworkTargetRect?.height) {
     const coverFrames = opening
@@ -497,9 +524,11 @@ const animatePlayDetail = (el, opening, done) => {
   }
 
   void Promise.all(animations.map(toAnimationPromise)).then(() => {
+    if (floatingRevealTimer) window.clearTimeout(floatingRevealTimer)
     cleanupContentStyle(el)
     layer.remove()
-    restoreFloatingIslandShell?.()
+    floatingRevealAnimation?.cancel?.()
+    floatingIslandShell?.restore()
     done()
   })
 }
@@ -510,6 +539,7 @@ export default {
     ControlBtnsRightHeader,
     LyricPlayer,
     PlayBar,
+    FluidBackground,
     MusicComment,
     PlayQueueBtn,
   },
@@ -588,21 +618,10 @@ export default {
       '--detail-color-light': detailColors.value.light,
     }))
 
-    const bgStyle = computed(() => {
-      const pic = musicInfo.pic
-      const picUrl = pic ? toCssUrl(pic) : null
-      return {
-        backgroundImage: picUrl ? `${picUrl}, ${picUrl}` : 'none',
-        backgroundPosition: 'center center, center center',
-        backgroundSize: 'contain, cover',
-      }
-    })
-
-
     return {
       appSetting,
       detailStyle,
-      bgStyle,
+      detailColors,
       playMusicInfo,
       isShowPlayerDetail,
       isShowPlayComment,
@@ -687,17 +706,8 @@ export default {
 }
 .bg {
   position: absolute;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  background-image: var(--background-image);
-  background-position: var(--background-image-position);
-  background-repeat: no-repeat;
-  background-size: var(--background-image-size);
+  inset: 0;
   opacity: 1;
-  transform: scale(1.15);
-  filter: blur(34px) saturate(220%) brightness(1.04);
   z-index: 1;
 }
 .bgTint,

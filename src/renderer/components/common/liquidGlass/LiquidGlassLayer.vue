@@ -393,4 +393,5 @@ watch([resolvedBlurAmount, resolvedSaturation, currentVariant, radiusValue], () 
 .variant_island .warp {
   background: transparent;
 }
+
 </style>
