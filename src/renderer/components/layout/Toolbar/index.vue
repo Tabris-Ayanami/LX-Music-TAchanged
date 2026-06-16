@@ -4,7 +4,6 @@
       <SearchInput />
     </div>
     <div :class="$style.actions">
-      <LiquidGlassLayer variant="capsule" :interactive="true" :active="!isFullscreen" />
       <SunMoonToggle />
       <router-link to="/setting" :class="$style.settingBtn" :aria-label="t('setting')">
         <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 493.23 436.47" width="16" height="16" space="preserve">
@@ -19,7 +18,6 @@
 <script setup>
 import { isFullscreen } from '@renderer/store'
 import { useI18n } from '@renderer/plugins/i18n'
-import LiquidGlassLayer from '@renderer/components/common/liquidGlass/LiquidGlassLayer.vue'
 import ControlBtns from './ControlBtns.vue'
 import SearchInput from './SearchInput.vue'
 import SunMoonToggle from './SunMoonToggle.vue'
@@ -67,18 +65,9 @@ const t = useI18n()
   display: flex;
   align-items: center;
   gap: 6px;
-  position: relative;
   min-height: 38px;
-  padding: 4px 8px 4px 10px;
-  border-radius: 999px;
-  overflow: hidden;
-  isolation: isolate;
+  padding: 0;
   -webkit-app-region: no-drag;
-
-  > * {
-    position: relative;
-    z-index: 1;
-  }
 }
 
 .settingBtn {

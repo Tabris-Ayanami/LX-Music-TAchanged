@@ -111,7 +111,8 @@ export default {
 
 .pagination {
   display: inline-block;
-  background-color: var(--color-button-background);
+  background-color: var(--shell-button-bg, var(--color-button-background));
+  border: 1px solid var(--shell-control-border, transparent);
   // border-top-left-radius: 8px;
   border-radius: @radius-border;
   ul {
@@ -137,12 +138,12 @@ export default {
         display: block;
         padding: 7px 12px;
         line-height: 1.2;
-        color: var(--color-button-font);
+        color: var(--shell-button-text, var(--color-button-font));
         font-size: 13px;
       }
       &.active {
         span {
-          background-color: var(--color-button-background-selected);
+          background-color: color-mix(in srgb, var(--color-primary) 24%, var(--shell-button-bg-hover, var(--color-button-background-selected)));
         }
       }
       button {
@@ -152,10 +153,10 @@ export default {
         outline: none;
         transition: background-color .3s ease;
         &:hover {
-          background-color: var(--color-button-background-hover);
+          background-color: var(--shell-button-bg-hover, var(--color-button-background-hover));
         }
         &:active {
-          background-color: var(--color-button-background-active);
+          background-color: color-mix(in srgb, var(--color-primary) 18%, var(--shell-button-bg-hover, var(--color-button-background-active)));
         }
       }
       &.disabled {

@@ -1,7 +1,7 @@
 import { checkUpdate, getEnvParams, getViewPrevState, sendInited } from '@renderer/utils/ipc'
 
 import { proxy, isFullscreen, themeId } from '@renderer/store'
-import { appSetting } from '@renderer/store/setting'
+import { appSetting, updateSetting } from '@renderer/store/setting'
 
 import useSync from './useSync'
 import useOpenAPI from './useOpenAPI'
@@ -23,7 +23,14 @@ export default () => {
   proxy.host = appSetting['network.proxy.host']
   proxy.port = appSetting['network.proxy.port']
   isFullscreen.value = appSetting['common.startInFullscreen']
-  themeId.value = appSetting['theme.id']
+  const activeThemeId = appSetting['theme.id'] == 'auto'
+    ? appSetting['theme.lightId']
+    : appSetting['theme.id']
+  if (appSetting['theme.id'] == 'auto') {
+    appSetting['theme.id'] = activeThemeId
+    updateSetting({ 'theme.id': activeThemeId })
+  }
+  themeId.value = activeThemeId
 
   const router = useRouter()
   const initSyncService = useSync()

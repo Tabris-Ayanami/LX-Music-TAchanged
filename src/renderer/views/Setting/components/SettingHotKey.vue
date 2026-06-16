@@ -258,19 +258,22 @@ export default {
 .hotKeyItemTitle {
   .mixin-ellipsis-1();
   padding-bottom: 5px;
-  color: var(--color-font-label);
+  color: var(--shell-muted, var(--color-font-label));
   font-size: 12px;
 }
 .hotKeyItemInput {
   width: 100%;
   box-sizing: border-box;
+  color: var(--shell-text, var(--color-font));
+  background-color: var(--shell-button-bg, var(--color-button-background));
+  border-color: var(--shell-control-border, transparent);
   // font-family: monospace;
   &:focus {
-    background-color: var(--color-primary-background-active);
+    background-color: var(--shell-button-bg-hover, var(--color-primary-background-active));
     text-decoration: none;
   }
   &::placeholder {
-    color: var(--color-200) !important;
+    color: var(--shell-soft-text, var(--color-font-label)) !important;
   }
 }
 .hotKeyFailed {

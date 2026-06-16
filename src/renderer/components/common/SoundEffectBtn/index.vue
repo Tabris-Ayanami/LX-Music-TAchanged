@@ -10,7 +10,8 @@
     :teleport="teleport"
     :close-btn="false"
     :hide-header="true"
-    overlay-filter-mode="off"
+    overlay-filter-mode="on"
+    host-effect-mode="blur"
     :content-class="$style.modalFrame"
     min-width="0"
     width="min(960px, calc(100vw - 36px))"
@@ -19,6 +20,14 @@
     @close="visible = false"
   >
     <div :class="$style.main">
+      <LiquidGlassLayer
+        variant="island"
+        :active="true"
+        :blur-amount="1.55"
+        :saturation="184"
+        :displacement-scale="20"
+        :over-light="true"
+      />
       <div :class="$style.modalHeader">
         <h2 :class="$style.title">{{ $t('player__sound_effect') }}</h2>
         <button type="button" :class="$style.closeBtn" :aria-label="$t('close')" @click="visible = false">
@@ -48,6 +57,7 @@ import BiquadFilter from './BiquadFilter.vue'
 import AudioPanner from './AudioPanner.vue'
 import AudioConvolution from './AudioConvolution.vue'
 import PitchShifter from './PitchShifter.vue'
+import LiquidGlassLayer from '@renderer/components/common/liquidGlass/LiquidGlassLayer.vue'
 import { appSetting } from '@renderer/store/setting'
 
 defineProps({
@@ -110,6 +120,7 @@ watch(visible, visible => {
 }
 
 .main {
+  position: relative;
   width: min(960px, calc(100vw - 36px));
   max-width: 100%;
   max-height: calc(100vh - 40px);
@@ -120,15 +131,18 @@ watch(visible, visible => {
   padding: 18px 20px 20px;
   border-radius: 24px;
   border: 1px solid rgba(255, 255, 255, 0.58);
-  background: rgba(244, 248, 255, 0.76);
+  background: color-mix(in srgb, var(--shell-surface-strong, rgba(244, 248, 255, 0.82)) 72%, transparent);
   box-shadow: 0 28px 70px rgba(20, 29, 46, 0.22);
-  backdrop-filter: blur(28px) saturate(148%);
-  -webkit-backdrop-filter: blur(28px) saturate(148%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   color: rgba(31, 38, 49, 0.94);
   overflow: hidden;
+  isolation: isolate;
 }
 
 .modalHeader {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -171,10 +185,11 @@ watch(visible, visible => {
 }
 
 .content {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-flow: row nowrap;
   gap: 18px;
-  position: relative;
   min-height: 0;
 
   &:before {
@@ -208,6 +223,8 @@ watch(visible, visible => {
 }
 
 .tip {
+  position: relative;
+  z-index: 1;
   margin: 0;
   font-size: 12px;
   line-height: 1.5;

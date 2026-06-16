@@ -19,7 +19,7 @@
             </div>
           </div>
         </li>
-        <li v-for="(i, index) in 6" :key="index" :class="$style.item" style="margin-bottom: 0;height: 0;" />
+        <li v-for="(i, index) in 6" :key="index" :class="[$style.item, $style.placeholder]" />
       </ul>
       <div :class="$style.pagination">
         <material-pagination :count="props.listInfo.total" :limit="props.listInfo.limit" :page="props.listInfo.page" @btn-click="togglePage" />
@@ -106,7 +106,9 @@ defineExpose({
   flex-flow: column nowrap;
   font-size: 14px;
   box-sizing: border-box;
-  padding: 15px 15px 0;
+  padding: 2px 0 0;
+  color: var(--shell-text, var(--color-font));
+  background: transparent;
 
   ul {
     display: flex;
@@ -119,14 +121,27 @@ defineExpose({
   width: 32%;
   box-sizing: border-box;
   display: flex;
-  // flex-flow: column nowrap;
-  // padding: 10px;
-  margin-bottom: 20px;
+  padding: 10px;
+  margin-bottom: 14px;
+  border: 1px solid var(--shell-control-border);
+  border-radius: 8px;
+  background: var(--shell-card);
+  box-shadow: 0 10px 22px rgba(20, 29, 46, 0.08);
   cursor: pointer;
-  transition: opacity @transition-normal;
+  transition: transform @transition-normal, border-color @transition-normal, background-color @transition-normal;
   &:hover {
-    opacity: .7;
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--color-primary) 44%, var(--shell-control-border));
   }
+}
+.placeholder {
+  height: 0;
+  padding: 0;
+  margin-bottom: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
 }
 .image {
   flex: none;
@@ -134,12 +149,12 @@ defineExpose({
   display: flex;
   background-position: center;
   background-size: cover;
-  border-radius: 4px;
+  border-radius: 8px;
   overflow: hidden;
   opacity: .9;
   aspect-ratio: 1 / 1;
 
-  box-shadow: 0 0 2px 0 rgba(0,0,0,.2);
+  box-shadow: 0 10px 20px rgba(0,0,0,.14);
 }
 .img {
   width: 100%;
@@ -157,6 +172,7 @@ defineExpose({
     text-align: justify;
     line-height: 1.3;
     .mixin-ellipsis-2();
+    color: var(--shell-text, var(--color-font));
   }
 }
 .songlist_info {
@@ -169,7 +185,7 @@ defineExpose({
   text-align: justify;
   line-height: 1.2;
   // text-indent: 24px;
-  color: var(--color-font-label);
+  color: var(--shell-muted, var(--color-font-label));
   svg {
     margin-right: 2px;
   }
@@ -181,7 +197,7 @@ defineExpose({
   text-align: justify;
   line-height: 1.3;
   // text-indent: 24px;
-  color: var(--color-font-label);
+  color: var(--shell-muted, var(--color-font-label));
 }
 .time {
   margin-top: 3px;
@@ -190,11 +206,12 @@ defineExpose({
   text-align: justify;
   line-height: 1.3;
   // text-indent: 24px;
-  color: var(--color-font-label);
+  color: var(--shell-muted, var(--color-font-label));
 }
 .pagination {
   text-align: center;
   padding: 15px 0;
+  background: transparent;
   // left: 50%;
   // transform: translateX(-50%);
 }
@@ -208,6 +225,7 @@ defineExpose({
   flex-flow: column nowrap;
   justify-content: center;
   align-items: center;
+  color: var(--shell-muted, var(--color-font-label));
   // background-color: var(--color-000);
 
   p {

@@ -5,9 +5,11 @@
       <base-tab v-model="searchType" :list="searchTypes" @change="handleTypeChange" />
     </div>
     <div :class="$style.main">
-      <song-list-list v-if="searchType == 'songlist'" v-show="searchText" :page="page" :source-id="source" />
-      <music-list v-else v-show="searchText" :page="page" :source-id="source" />
-      <blank-view :visible="!searchText" :source="source" />
+      <template v-if="searchText">
+        <song-list-list v-if="searchType == 'songlist'" :page="page" :source-id="source" />
+        <music-list v-else :page="page" :source-id="source" />
+      </template>
+      <blank-view v-else :visible="true" :source="source" />
     </div>
   </div>
 </template>
@@ -103,7 +105,6 @@ export default {
       })
     }
 
-
     return {
       sources,
       source,
@@ -127,16 +128,15 @@ export default {
 }
 
 .header {
-  // padding: 5px 0;
-  flex: none;
   display: flex;
   flex-flow: row nowrap;
   justify-content: space-between;
+  flex: none;
 }
 
 .main {
   position: relative;
   flex: auto;
-  // min-height: 0;
+  min-height: 0;
 }
 </style>

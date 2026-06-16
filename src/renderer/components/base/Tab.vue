@@ -59,8 +59,11 @@ export default {
   display: flex;
   flex-flow: row nowrap;
   font-size: 12px;
-  gap: 25px;
-  padding: 0 15px;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--shell-control-border, transparent);
+  border-radius: 8px;
+  background: var(--shell-control, transparent);
 
   &.left {
     justify-content: flex-start;
@@ -74,9 +77,9 @@ export default {
 }
 .listItem {
   display: block;
-  // padding: 5px 15px;
+  border-radius: 7px;
   cursor: pointer;
-  transition: color @transition-normal;
+  transition: color @transition-normal, background-color @transition-normal, box-shadow @transition-normal;
 
 
   &:hover {
@@ -85,7 +88,9 @@ export default {
 
 
   &.active {
-    color: var(--color-primary);
+    color: #fff;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 82%, white), color-mix(in srgb, var(--color-primary) 58%, #111));
+    box-shadow: 0 6px 14px color-mix(in srgb, var(--color-primary) 24%, transparent);
     cursor: default;
 
     >.label {
@@ -101,7 +106,8 @@ export default {
 .label {
   display: block;
   position: relative;
-  padding: 8px 0;
+  padding: 6px 12px;
+  white-space: nowrap;
   &:after {
     .mixin-after();
     left: 0;
@@ -112,7 +118,7 @@ export default {
     background-color: transparent;
     transform: translateY(-4px);
     opacity: 0;
-    background-color: var(--color-primary-alpha-300);
+    background-color: transparent;
     transition: @transition-fast;
     transition-property: transform, opacity;
   }

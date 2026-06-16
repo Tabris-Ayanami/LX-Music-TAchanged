@@ -5,8 +5,8 @@
         variant="search"
         :active="true"
         :interactive="true"
-        :blur-amount="visibleList ? 1.9 : 1.5"
-        :saturation="visibleList ? 220 : 206"
+        :blur-amount="visibleList ? 1.18 : 0.9"
+        :saturation="visibleList ? 168 : 148"
         :over-light="visibleList"
       />
       <div :class="$style.form">
@@ -245,7 +245,7 @@ export default {
   flex-flow: column nowrap;
   background: transparent;
   border: 1px solid transparent;
-  box-shadow: 0 16px 34px rgba(44, 61, 88, 0.14), 0 6px 14px rgba(44, 61, 88, 0.1);
+  box-shadow: 0 10px 22px rgba(12, 16, 24, 0.14), 0 3px 8px rgba(12, 16, 24, 0.1);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   overflow: hidden;
@@ -253,11 +253,11 @@ export default {
   will-change: border-radius, box-shadow, transform;
 
   &.active {
-    border-color: color-mix(in srgb, var(--shell-accent, var(--color-primary)) 34%, white 66%);
+    border-color: color-mix(in srgb, var(--shell-accent, var(--color-primary)) 28%, rgba(255, 255, 255, .32));
     box-shadow:
-      0 24px 50px rgba(32, 50, 80, 0.18),
-      0 10px 22px rgba(32, 50, 80, 0.12),
-      0 0 0 3px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 12%, transparent);
+      0 14px 30px rgba(12, 16, 24, 0.18),
+      0 6px 14px rgba(12, 16, 24, 0.12),
+      0 0 0 2px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 8%, transparent);
     transform: translateY(-1px);
     .form {
       input {
@@ -272,9 +272,9 @@ export default {
   &.expanded {
     border-radius: 24px 24px 28px 28px;
     box-shadow:
-      0 28px 60px rgba(32, 50, 80, 0.22),
-      0 12px 28px rgba(32, 50, 80, 0.14),
-      0 0 0 3px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 12%, transparent);
+      0 16px 36px rgba(12, 16, 24, 0.22),
+      0 7px 16px rgba(12, 16, 24, 0.14),
+      0 0 0 2px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 8%, transparent);
   }
 
   .form {

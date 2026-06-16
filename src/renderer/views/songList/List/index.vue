@@ -124,28 +124,49 @@ export default {
   display: flex;
   flex-flow: column nowrap;
   position: relative;
+  padding: 18px 22px 25px;
+  box-sizing: border-box;
+  gap: 14px;
+  isolation: isolate;
 }
 .header {
   flex: none;
   width: 100%;
   display: flex;
   flex-flow: row nowrap;
-  // padding-right: 5px;
-  // box-sizing: border-box;
-  padding-bottom: 5px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  border: 1px solid var(--shell-control-border);
+  background: var(--color-content-background);
+  box-shadow: var(--shell-panel-shadow);
+  position: relative;
+  z-index: 200;
 }
 .left {
   flex: auto;
   display: flex;
   flex-flow: row nowrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .btn {
-  color: var(--color-font);
-  transition: color @transition-fast;
-  background: none !important;
+  flex: none;
+  color: var(--shell-button-text, var(--color-font)) !important;
+  border: 1px solid var(--shell-control-border) !important;
+  border-radius: 8px !important;
+  background: var(--shell-button-bg) !important;
+  box-shadow: none !important;
+  transition: transform @transition-fast, background-color @transition-fast, border-color @transition-fast;
   &:hover {
-    color: var(--color-primary-font-hover);
+    color: var(--shell-button-text, var(--color-font)) !important;
+    background: var(--shell-button-bg-hover) !important;
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--color-primary) 48%, var(--shell-control-border)) !important;
   }
 }
 
@@ -155,6 +176,7 @@ export default {
   width: auto;
   flex: none;
   padding: 0 5px;
+  z-index: 210;
 
   &:hover {
     :global(.icon) {
@@ -165,18 +187,16 @@ export default {
 
   :global {
     .label-content {
-      background-color: transparent !important;
+      background: var(--shell-control) !important;
+      border: 1px solid var(--shell-control-border);
       transition: color @transition-fast;
-      color: var(--color-font);
-      // line-height: 38px;
-      // height: 38px;
-      border-radius: 0;
+      color: var(--shell-text, var(--color-font));
+      border-radius: 8px;
       &:hover {
-        // background: none !important;
         color: var(--color-primary-font-hover);
+        border-color: color-mix(in srgb, var(--color-primary) 48%, var(--shell-control-border));
         .icon {
           opacity: 1;
-          // color: var(--color-primary-font-hover);
         }
       }
     }
@@ -194,17 +214,25 @@ export default {
 
     .selection-list {
       max-height: 500px;
-      box-shadow: 0 1px 4px 0 rgba(0,0,0,.2);
+      background: color-mix(in srgb, var(--color-content-background) 88%, transparent) !important;
+      border: 1px solid var(--shell-control-border);
+      box-shadow: 0 16px 34px rgba(20, 29, 46, 0.18);
+      backdrop-filter: blur(34px) saturate(170%);
+      -webkit-backdrop-filter: blur(34px) saturate(170%);
+      z-index: 240;
+      opacity: 1;
+      pointer-events: auto;
       li {
-        // background-color: var(--color-main-background);
+        color: var(--shell-text, var(--color-font));
+        background: color-mix(in srgb, var(--color-content-background) 86%, transparent) !important;
         text-align: center;
         line-height: 38px;
         font-size: 13px;
         &:hover {
-          background-color: var(--color-button-background-hover);
+          background-color: var(--shell-button-bg-hover, var(--color-button-background-hover)) !important;
         }
         &:active {
-          background-color: var(--color-button-background-active);
+          background-color: var(--shell-button-bg-hover, var(--color-button-background-active)) !important;
         }
       }
     }

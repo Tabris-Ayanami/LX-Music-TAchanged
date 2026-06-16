@@ -427,6 +427,12 @@ export default {
       box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 56%, rgba(255, 255, 255, 0.58)) !important;
     }
   }
+  :global(.thead) {
+    color: var(--shell-soft-text, var(--color-font-label));
+  }
+  :global(.list) {
+    color: var(--shell-text, var(--color-font));
+  }
   :global {
     .label-source {
       color: var(--color-primary);
@@ -477,6 +483,41 @@ export default {
   p {
     font-size: 24px;
     color: var(--color-font-label);
+  }
+}
+
+:global(.themeShellDark) {
+  .list {
+    color: rgba(246, 247, 248, .94);
+
+    :global(.thead) {
+      color: rgba(235, 238, 241, .72);
+      border-bottom-color: rgba(255, 255, 255, .08);
+    }
+
+    :global(.list-item) {
+      color: rgba(246, 247, 248, .94);
+
+      &:hover {
+        background-color: rgba(255, 255, 255, .075) !important;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1) !important;
+      }
+
+      &.selected {
+        background-color: rgba(255, 255, 255, .09) !important;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14) !important;
+      }
+
+      &.active {
+        color: #101216;
+      }
+    }
+  }
+
+  .noItem {
+    p {
+      color: rgba(235, 238, 241, .72);
+    }
   }
 }
 

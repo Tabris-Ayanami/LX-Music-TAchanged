@@ -99,7 +99,8 @@
       teleport="#root"
       :close-btn="false"
       :hide-header="true"
-      overlay-filter-mode="off"
+      overlay-filter-mode="on"
+      host-effect-mode="blur"
       :content-class="$style.soundModalFrame"
       min-width="0"
       width="min(1080px, calc(100vw - 48px))"
@@ -108,6 +109,14 @@
       @close="soundEffectVisible = false"
     >
       <div :class="$style.soundModal">
+        <LiquidGlassLayer
+          variant="island"
+          :active="true"
+          :blur-amount="1.6"
+          :saturation="184"
+          :displacement-scale="20"
+          :over-light="true"
+        />
         <div :class="$style.soundHeader">
           <strong>{{ $t('player__sound_effect') }}</strong>
           <button type="button" :class="$style.soundCloseBtn" :aria-label="$t('close')" @click="soundEffectVisible = false">
@@ -138,6 +147,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from '@common/utils/
 import AudioConvolution from '@renderer/components/common/SoundEffectBtn/AudioConvolution.vue'
 import AudioPanner from '@renderer/components/common/SoundEffectBtn/AudioPanner.vue'
 import BiquadFilter from '@renderer/components/common/SoundEffectBtn/BiquadFilter.vue'
+import LiquidGlassLayer from '@renderer/components/common/liquidGlass/LiquidGlassLayer.vue'
 import PitchShifter from '@renderer/components/common/SoundEffectBtn/PitchShifter.vue'
 import { playNext, playPrev, togglePlay } from '@renderer/core/player'
 import { playbackRate } from '@renderer/store/player/playbackRate'
@@ -573,6 +583,7 @@ const isTogglePlayActive = computed(() => currentTogglePlayMode.value != 'none')
 }
 
 .soundModal {
+  position: relative;
   width: min(1080px, calc(100vw - 48px));
   max-width: 100%;
   max-height: calc(100vh - 40px);
@@ -582,16 +593,19 @@ const isTogglePlayActive = computed(() => currentTogglePlayMode.value != 'none')
   gap: 0;
   padding: 20px 24px 22px;
   border-radius: 28px;
-  background: rgba(251, 253, 255, 0.92);
+  background: color-mix(in srgb, var(--shell-surface-strong, rgba(251, 253, 255, 0.92)) 72%, transparent);
   border: 1px solid rgba(255, 255, 255, 0.72);
   box-shadow: 0 24px 56px rgba(20, 29, 46, 0.14);
-  backdrop-filter: blur(28px) saturate(148%);
-  -webkit-backdrop-filter: blur(28px) saturate(148%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   color: rgba(31, 38, 49, 0.94);
   overflow: hidden;
+  isolation: isolate;
 }
 
 .soundHeader {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -634,12 +648,13 @@ const isTogglePlayActive = computed(() => currentTogglePlayMode.value != 'none')
 }
 
 .soundColumns {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-flow: row nowrap;
   padding: 0;
   margin: 0;
   gap: 22px;
-  position: relative;
   min-height: 0;
 
   &:before {
@@ -673,6 +688,8 @@ const isTogglePlayActive = computed(() => currentTogglePlayMode.value != 'none')
 }
 
 .soundTip {
+  position: relative;
+  z-index: 1;
   margin: 16px 0 0;
   font-size: 12px;
   line-height: 1.45;

@@ -153,6 +153,16 @@ watch(isFullscreen, isFullscreen => {
 
 export const themeShouldUseDarkColors = ref(window.shouldUseDarkColors)
 
+const SHELL_APPEARANCE_KEY = 'lx_shell_appearance'
+const savedShellAppearance = window.localStorage.getItem(SHELL_APPEARANCE_KEY)
+export const shellIsDark = ref(savedShellAppearance
+  ? savedShellAppearance == 'dark'
+  : window.shouldUseDarkColors)
+
+watch(shellIsDark, isDark => {
+  window.localStorage.setItem(SHELL_APPEARANCE_KEY, isDark ? 'dark' : 'light')
+})
+
 
 export const qualityList = shallowRef<LX.QualityList>({})
 export const setQualityList = (_qualityList: LX.QualityList) => {

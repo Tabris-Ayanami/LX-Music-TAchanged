@@ -185,30 +185,41 @@ export default {
   display: flex;
   flex-flow: row nowrap;
   height: 100%;
-  border-top: var(--color-list-header-border-bottom);
+  padding: 18px 22px 116px;
+  box-sizing: border-box;
+  gap: 16px;
 }
 
 .toc {
-  flex: 0 0 16%;
+  flex: 0 0 190px;
   overflow-y: scroll;
+  border: 1px solid var(--shell-control-border);
+  border-radius: 8px;
+  background: var(--shell-card);
+  box-shadow: var(--shell-panel-shadow);
+  padding: 10px;
+  box-sizing: border-box;
 }
 .tocH2 {
   line-height: 1.5;
   .mixin-ellipsis-1();
   font-size: 13px;
-  color: var(--color-font);
-  padding: 8px 10px;
+  color: var(--shell-text, var(--color-font));
+  padding: 9px 11px;
+  border-radius: 8px;
   transition: @transition-fast;
-  transition-property: background-color, color;
+  transition-property: background-color, color, transform;
 
   &:not(.active) {
     cursor: pointer;
     &:hover {
-      background-color: var(--color-button-background-hover);
+      background: var(--shell-control);
+      transform: translateX(2px);
     }
   }
   &.active {
-    color: var(--color-primary);
+    color: #fff;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 82%, white), color-mix(in srgb, var(--color-primary) 56%, #111));
   }
 }
 .activeIcon {
@@ -232,19 +243,27 @@ export default {
 // }
 
 .setting {
-  padding: 0 15px 15px;
+  padding: 4px 22px 22px;
   font-size: 14px;
   box-sizing: border-box;
   overflow-y: auto;
   height: 100%;
   position: relative;
   width: 100%;
+  border: 1px solid var(--shell-control-border);
+  border-radius: 8px;
+  background: var(--shell-card);
+  box-shadow: var(--shell-panel-shadow);
 
   :global {
     dt {
-      border-left: 5px solid var(--color-primary-alpha-700);
-      padding: 3px 7px;
-      margin: 15px 0;
+      border-left: 5px solid var(--color-primary);
+      padding: 5px 10px;
+      margin: 18px 0;
+      border-radius: 4px;
+      background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+      color: var(--shell-text, var(--color-font));
+      font-weight: 800;
 
       + dd h3 {
         margin-top: 0;
@@ -255,17 +274,18 @@ export default {
       // margin-left: 15px;
       // font-size: 13px;
       > div {
-        padding: 0 15px;
+        padding: 0 12px;
       }
 
     }
     h3 {
       font-size: 12px;
       margin: 25px 0 15px;
+      color: var(--shell-muted, var(--color-font-label));
     }
     .p {
       padding: 3px 0;
-      line-height: 1.3;
+      line-height: 1.5;
       .btn {
         + .btn {
           margin-left: 10px;

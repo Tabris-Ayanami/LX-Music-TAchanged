@@ -122,8 +122,11 @@ onBeforeUnmount(() => {
 .tagList {
   font-size: 12px;
   position: relative;
+  z-index: 220;
 
   &.active {
+    z-index: 260;
+
     .label {
       .icon {
         svg{
@@ -140,18 +143,18 @@ onBeforeUnmount(() => {
 }
 
 .label {
-  padding: 8px 15px;
-  // background-color: var(--color-button-background);
-  transition: color @transition-normal;
-  // border-top: 2px solid @color-tab-border-bottom;
-  // border-left: 2px solid @color-tab-border-bottom;
+  min-height: 32px;
+  padding: 7px 12px;
+  border: 1px solid var(--shell-control-border);
+  border-radius: 8px;
+  background: var(--shell-control);
+  transition: color @transition-normal, border-color @transition-normal, background-color @transition-normal, transform @transition-normal;
   box-sizing: border-box;
   text-align: center;
-  // border-top-left-radius: 3px;
-  color: var(--color-font);
+  color: var(--shell-text, var(--color-font));
   cursor: pointer;
-
   display: flex;
+  align-items: center;
 
   span {
     flex: auto;
@@ -169,6 +172,8 @@ onBeforeUnmount(() => {
 
   &:hover {
     color: var(--color-primary-font-hover);
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--color-primary) 48%, var(--shell-control-border));
   }
   &:active {
     color: var(--color-primary-font-active);
@@ -181,18 +186,22 @@ onBeforeUnmount(() => {
   width: 645px;
   left: 8px;
   margin-top: 12px;
-  border-radius: 4px;
-  background-color: var(--color-content-background);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-content-background) 88%, transparent);
+  border: 1px solid var(--shell-control-border, rgba(0, 0, 0, .08));
   opacity: 0;
   transform: scale(.95, .8);
   transform-origin: 0 0 0;
   transition: .25s ease;
   transition-property: transform, opacity;
   max-height: 250px;
-  z-index: 10;
+  z-index: 280;
   pointer-events: none;
-  filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, .15));
+  box-shadow: 0 18px 44px rgba(20, 29, 46, .18);
+  backdrop-filter: blur(34px) saturate(170%);
+  -webkit-backdrop-filter: blur(34px) saturate(170%);
   display: flex;
+  isolation: isolate;
 
   &:before {
     content: " ";
@@ -203,34 +212,39 @@ onBeforeUnmount(() => {
     height: 0;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
-    border-bottom: 8px solid var(--color-content-background);
+    border-bottom: 8px solid color-mix(in srgb, var(--color-content-background) 88%, transparent);
   }
 }
 .list {
-  padding: 10px;
+  padding: 12px;
   box-sizing: border-box;
-  // box-shadow: 0 0 4px rgba(0, 0, 0, .2);
+  background: color-mix(in srgb, var(--color-content-background) 86%, transparent);
+  border-radius: 8px;
 }
 
 .type {
   padding-top: 10px;
   padding-bottom: 3px;
-  color: var(--color-font-label);
+  color: var(--shell-muted, var(--color-font-label));
 }
 
 .tag {
   display: inline-block;
   margin: 5px;
-  background-color: var(--color-button-background);
+  background: var(--shell-control, var(--color-button-background));
+  border: 1px solid var(--shell-control-border, transparent);
   padding: 8px 10px;
-  border-radius: @radius-progress-border;
-  transition: background-color @transition-normal;
+  border-radius: 8px;
+  transition: background-color @transition-normal, border-color @transition-normal, transform @transition-normal;
   cursor: pointer;
+  color: var(--shell-text, var(--color-font));
   &:hover {
-    background-color: var(--color-button-background-hover);
+    background-color: var(--shell-button-bg-hover, var(--color-button-background-hover));
+    border-color: color-mix(in srgb, var(--color-primary) 42%, var(--shell-control-border));
+    transform: translateY(-1px);
   }
   &:active {
-    background-color: var(--color-button-background-active);
+    background-color: var(--shell-button-bg-hover, var(--color-button-background-active));
   }
 }
 

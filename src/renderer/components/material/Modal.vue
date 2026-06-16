@@ -77,6 +77,10 @@ export default {
       type: String,
       default: 'auto',
     },
+    hostEffectMode: {
+      type: String,
+      default: 'dim',
+    },
   },
   emits: ['after-enter', 'after-leave', 'close'],
   data() {
@@ -175,6 +179,9 @@ export default {
         ? this.teleport == '#root' || this.modalCount > 1
         : this.overlayFilterMode == 'on'
     },
+    hostEffectClass() {
+      return this.hostEffectMode == 'blur' ? 'show-modal-blur' : 'show-modal'
+    },
   },
   watch: {
     show(val) {
@@ -200,8 +207,8 @@ export default {
         this.showModal = true
         void nextTick(() => {
           const node = this.$refs.dom_container.parentNode
-          if (!node.classList.contains('show-modal')) {
-            node.classList.add('show-modal')
+          if (!node.classList.contains(this.hostEffectClass)) {
+            node.classList.add(this.hostEffectClass)
             this.isAddedClass = true
           }
           this.showContent = true
@@ -214,7 +221,7 @@ export default {
     },
     removeClass() {
       if (!this.isAddedClass) return
-      this.$refs.dom_container?.parentNode.classList.remove('show-modal')
+      this.$refs.dom_container?.parentNode.classList.remove(this.hostEffectClass)
     },
     setRandomAnimation() {
       if (appSetting['common.randomAnimate']) {

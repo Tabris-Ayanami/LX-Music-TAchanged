@@ -161,6 +161,8 @@ export default {
     }
     .list {
       opacity: 1;
+      transform: scaleY(1) translateY(0);
+      pointer-events: auto;
     }
     .icon {
       svg{
@@ -171,8 +173,8 @@ export default {
 }
 
 .label {
-  background-color: color-mix(in srgb, var(--color-primary) 34%, rgba(255, 255, 255, 0.95));
-  border: 1px solid color-mix(in srgb, var(--color-primary) 42%, rgba(255, 255, 255, 0.66));
+  background: var(--shell-control, color-mix(in srgb, var(--color-primary) 34%, rgba(255, 255, 255, 0.95)));
+  border: 1px solid var(--shell-control-border, color-mix(in srgb, var(--color-primary) 42%, rgba(255, 255, 255, 0.66)));
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.46);
   padding: 0 10px;
   transition: background-color @transition-normal, border-color @transition-normal, box-shadow @transition-normal;
@@ -180,7 +182,7 @@ export default {
   // line-height: 27px;
   line-height: 1.5;
   box-sizing: border-box;
-  color: var(--color-button-font);
+  color: var(--shell-button-text, var(--color-button-font));
   border-radius: @form-radius;
   cursor: pointer;
   display: flex;
@@ -202,12 +204,12 @@ export default {
   }
 
   &:hover {
-    background-color: color-mix(in srgb, var(--color-primary) 42%, rgba(255, 255, 255, 0.94));
-    border-color: color-mix(in srgb, var(--color-primary) 52%, rgba(255, 255, 255, 0.6));
+    background-color: color-mix(in srgb, var(--color-primary) 24%, var(--shell-card-strong, rgba(255, 255, 255, 0.94)));
+    border-color: color-mix(in srgb, var(--color-primary) 52%, var(--shell-control-border, rgba(255, 255, 255, 0.6)));
   }
   &:active {
-    background-color: color-mix(in srgb, var(--color-primary) 50%, rgba(255, 255, 255, 0.92));
-    border-color: color-mix(in srgb, var(--color-primary) 58%, rgba(255, 255, 255, 0.54));
+    background-color: color-mix(in srgb, var(--color-primary) 32%, var(--shell-card-strong, rgba(255, 255, 255, 0.92)));
+    border-color: color-mix(in srgb, var(--color-primary) 58%, var(--shell-control-border, rgba(255, 255, 255, 0.54)));
   }
 }
 
@@ -216,12 +218,7 @@ export default {
   top: 0;
   left: 0;
   width: 100%;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-primary) 16%, rgba(255, 255, 255, 0.995)),
-      color-mix(in srgb, var(--color-primary) 24%, rgba(255, 255, 255, 0.99))
-    );
+  background: var(--shell-card-strong, var(--color-main-background));
   opacity: 0;
   transform: scaleY(0) translateY(0);
   transform-origin: 0 (@selection-height / 2) 0;
@@ -229,11 +226,12 @@ export default {
   transition-property: transform, opacity;
   z-index: 10;
   border-radius: @form-radius;
-  border: none;
+  border: 1px solid var(--shell-control-border, transparent);
   box-shadow: 0 16px 34px rgba(20, 29, 46, 0.16), 0 6px 16px rgba(20, 29, 46, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.34);
   overflow: auto;
   max-height: 200px;
   isolation: isolate;
+  pointer-events: none;
 }
 .listItem {
   cursor: pointer;
@@ -242,20 +240,21 @@ export default {
   // color: var(--color-button-font);
   outline: none;
   transition: background-color @transition-normal;
-  background-color: color-mix(in srgb, var(--color-primary) 10%, rgba(255, 255, 255, 0.985));
+  background-color: var(--shell-card-strong, color-mix(in srgb, var(--color-primary) 10%, rgba(255, 255, 255, 0.985)));
+  color: var(--shell-text, var(--color-font));
   border: none;
   box-sizing: border-box;
   .mixin-ellipsis-1();
 
   &:hover {
-    background-color: color-mix(in srgb, var(--color-primary) 28%, rgba(255, 255, 255, 0.96));
+    background-color: color-mix(in srgb, var(--color-primary) 24%, var(--shell-card-strong, rgba(255, 255, 255, 0.96)));
   }
   &:active {
-    background-color: color-mix(in srgb, var(--color-primary) 36%, rgba(255, 255, 255, 0.94));
+    background-color: color-mix(in srgb, var(--color-primary) 32%, var(--shell-card-strong, rgba(255, 255, 255, 0.94)));
   }
   &.active {
-    color: var(--color-button-font);
-    background-color: color-mix(in srgb, var(--color-primary) 32%, rgba(255, 255, 255, 0.95));
+    color: var(--shell-button-text, var(--color-button-font));
+    background-color: color-mix(in srgb, var(--color-primary) 34%, var(--shell-card-strong, rgba(255, 255, 255, 0.95)));
   }
 }
 

@@ -432,19 +432,19 @@ input, textarea {
     background-color: rgba(0, 0, 0, 0);
   }
   &::-webkit-scrollbar-track {
-    background-color: var(--color-primary-light-100-alpha-800);
+    background-color: var(--shell-scroll-track, var(--color-primary-light-100-alpha-800));
     border-radius: 3px;
     // background-color: rgba(0, 0, 0, 0.1);
   }
   &::-webkit-scrollbar-thumb {
     border-radius: 3px;
-    background-color: var(--color-primary-alpha-600);
+    background-color: var(--shell-scroll-thumb, var(--color-primary-alpha-600));
     // background-color: rgba(0, 0, 0, 0.2);
     transition: background-color 0.4s ease;
   }
   &::-webkit-scrollbar-thumb:hover {
     border-radius: 3px;
-    background-color: var(--color-primary-alpha-400);
+    background-color: var(--shell-scroll-thumb-hover, var(--color-primary-alpha-400));
     // background-color: rgba(0, 0, 0, 0.4);
     transition: background-color 0.4s ease;
   }

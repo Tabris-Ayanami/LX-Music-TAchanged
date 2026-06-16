@@ -28,11 +28,8 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from '@common/utils/vueTools'
 import { useI18n } from '@renderer/plugins/i18n'
-import { themeId, themeInfo } from '@renderer/store'
-import { appSetting, updateSetting } from '@renderer/store/setting'
-import { applyTheme, findTheme, getThemes } from '@renderer/store/utils'
+import { shellIsDark } from '@renderer/store'
 
 const t = useI18n()
 
@@ -50,28 +47,10 @@ const clouds = [
   { id: 3, style: { '--size': '11px', right: '28px', bottom: '-5px' } },
 ]
 
-const dataPath = ref('')
-
-getThemes((info) => {
-  dataPath.value = info.dataPath
-})
-
-const isNight = computed(() => {
-  const id = themeId.value || appSetting['theme.id']
-  if (id == appSetting['theme.darkId']) return true
-  if (id == appSetting['theme.lightId']) return false
-  return findTheme(themeInfo, id)?.isDark ?? false
-})
-
-watch(() => appSetting['theme.id'], id => {
-  if (id && themeId.value != id) themeId.value = id
-})
+const isNight = shellIsDark
 
 const toggleTheme = () => {
-  const nextId = isNight.value ? appSetting['theme.lightId'] : appSetting['theme.darkId']
-  themeId.value = nextId
-  applyTheme(nextId, appSetting['theme.lightId'], appSetting['theme.darkId'], dataPath.value)
-  updateSetting({ 'theme.id': nextId })
+  shellIsDark.value = !shellIsDark.value
 }
 </script>
 

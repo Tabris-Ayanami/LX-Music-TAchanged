@@ -2,7 +2,7 @@
   <div
     id="container"
     class="view-container"
-    :class="[themeShouldUseDarkColors ? 'themeShellDark' : 'themeShellLight', { sidebarCollapsed: isSidebarCollapsed }]"
+    :class="[shellIsDark ? 'themeShellDark' : 'themeShellLight', { sidebarCollapsed: isSidebarCollapsed }]"
     :style="{
       '--sidebar-width': isSidebarCollapsed ? '80px' : '196px',
       '--player-window-gutter': '22px',
@@ -34,7 +34,7 @@ import { onMounted } from '@common/utils/vueTools'
 // import BubbleCursor from '@common/utils/effects/cursor-effects/bubbleCursor'
 // import '@common/utils/effects/snow.min'
 import useApp from '@renderer/core/useApp'
-import { themeShouldUseDarkColors } from '@renderer/store'
+import { shellIsDark } from '@renderer/store'
 import { isSidebarCollapsed } from '@renderer/store/ui'
 
 useApp()
@@ -285,13 +285,18 @@ body {
 }
 
 .view-container {
-  transition: opacity @transition-normal;
+  transition: opacity @transition-normal, filter @transition-normal;
 }
 #root.show-modal > .view-container {
   opacity: .9;
 }
 #view.show-modal > .view-container {
   opacity: .2;
+}
+#root.show-modal-blur > .view-container,
+#view.show-modal-blur > .view-container {
+  opacity: 1;
+  filter: blur(10px) saturate(116%);
 }
 
 .themeShellLight {
@@ -312,26 +317,46 @@ body {
   --shell-player-shadow: 0 18px 44px rgba(91, 113, 153, 0.18);
   --shell-search-surface: rgba(255, 255, 255, 0.72);
   --shell-search-border: rgba(255, 255, 255, 0.82);
+  --shell-card: rgba(255, 255, 255, 0.72);
+  --shell-card-strong: rgba(255, 255, 255, 0.9);
+  --shell-control: color-mix(in srgb, var(--color-primary) 12%, rgba(255, 255, 255, 0.86));
+  --shell-control-border: color-mix(in srgb, var(--color-primary) 22%, rgba(255, 255, 255, 0.74));
+  --shell-button-bg: rgba(255, 255, 255, 0.82);
+  --shell-button-bg-hover: rgba(255, 255, 255, 0.94);
+  --shell-button-text: #182236;
+  --shell-scroll-track: rgba(255, 255, 255, 0.18);
+  --shell-scroll-thumb: rgba(70, 92, 126, 0.32);
+  --shell-scroll-thumb-hover: rgba(70, 92, 126, 0.48);
 }
 
 .themeShellDark {
-  --shell-app-start: #09110f;
-  --shell-app-end: #101a18;
-  --shell-panel: linear-gradient(180deg, rgba(14, 22, 21, 0.96), rgba(10, 17, 16, 0.985));
+  --shell-app-start: #050607;
+  --shell-app-end: #101112;
+  --shell-panel: linear-gradient(180deg, rgba(20, 22, 24, 0.96), rgba(8, 9, 10, 0.985));
   --shell-panel-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
-  --shell-surface: rgba(19, 28, 27, 0.9);
-  --shell-surface-strong: rgba(21, 31, 29, 0.96);
-  --shell-surface-soft: rgba(25, 36, 34, 0.86);
-  --shell-stroke: rgba(255, 255, 255, 0.08);
-  --shell-text: #f4f7f5;
-  --shell-muted: rgba(216, 225, 221, 0.68);
-  --shell-soft-text: rgba(235, 243, 239, 0.84);
+  --shell-surface: rgba(22, 24, 27, 0.9);
+  --shell-surface-strong: rgba(28, 30, 34, 0.96);
+  --shell-surface-soft: rgba(18, 20, 23, 0.88);
+  --shell-stroke: color-mix(in srgb, var(--color-primary) 18%, rgba(255, 255, 255, 0.08));
+  --shell-text: #f6f7f8;
+  --shell-muted: rgba(222, 226, 230, 0.68);
+  --shell-soft-text: rgba(235, 238, 241, 0.84);
   --shell-accent: var(--color-primary);
-  --shell-accent-glow: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 30%, transparent), transparent 72%);
-  --shell-secondary-glow: radial-gradient(circle, rgba(74, 163, 255, 0.3), rgba(74, 163, 255, 0));
+  --shell-accent-glow: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 34%, transparent), transparent 72%);
+  --shell-secondary-glow: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 18%, transparent), transparent 70%);
   --shell-player-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
   --shell-search-surface: rgba(255, 255, 255, 0.05);
-  --shell-search-border: rgba(255, 255, 255, 0.08);
+  --shell-search-border: color-mix(in srgb, var(--color-primary) 18%, rgba(255, 255, 255, 0.08));
+  --shell-card: rgba(24, 26, 30, 0.82);
+  --shell-card-strong: rgba(30, 32, 36, 0.94);
+  --shell-control: color-mix(in srgb, var(--color-primary) 18%, rgba(255, 255, 255, 0.055));
+  --shell-control-border: color-mix(in srgb, var(--color-primary) 34%, rgba(255, 255, 255, 0.1));
+  --shell-button-bg: rgba(255, 255, 255, 0.08);
+  --shell-button-bg-hover: rgba(255, 255, 255, 0.13);
+  --shell-button-text: #f7f8fa;
+  --shell-scroll-track: rgba(255, 255, 255, 0.035);
+  --shell-scroll-thumb: rgba(255, 255, 255, 0.18);
+  --shell-scroll-thumb-hover: rgba(255, 255, 255, 0.28);
 }
 
 </style>

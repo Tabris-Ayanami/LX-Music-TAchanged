@@ -80,7 +80,7 @@ const menus = computed(() => [
         icon: '#icon-search-2',
         iconSize: '0 0 425.2 425.2',
         name: 'Search',
-        label: t('search'),
+        label: '搜索',
       },
       {
         key: 'songList',

@@ -661,4 +661,69 @@ onBeforeUnmount(() => {
   opacity: 0;
   transform: translate3d(22px, 0, 0);
 }
+
+:global(.themeShellDark) {
+  .drawer {
+    border-color: rgba(255, 255, 255, .12);
+    background: rgba(22, 24, 29, .94);
+    color: rgba(244, 246, 248, .94);
+    box-shadow: 0 30px 70px rgba(0, 0, 0, .42);
+  }
+
+  .header {
+    border-bottom-color: rgba(255, 255, 255, .08);
+  }
+
+  .headerText {
+    span {
+      color: rgba(219, 225, 234, .62);
+    }
+  }
+
+  .headerBtn {
+    border-color: rgba(255, 255, 255, .12);
+    background: rgba(255, 255, 255, .08);
+    color: rgba(245, 247, 250, .9);
+
+    &:hover:not(:disabled) {
+      background: rgba(255, 255, 255, .14);
+    }
+  }
+
+  .itemRow {
+    &:hover {
+      background: rgba(255, 255, 255, .075);
+    }
+  }
+
+  .activeItem {
+    background: rgba(255, 255, 255, .1);
+  }
+
+  .coverWrap {
+    background: rgba(255, 255, 255, .08);
+  }
+
+  .coverFallback {
+    color: rgba(222, 228, 236, .76);
+  }
+
+  .itemName {
+    color: rgba(247, 249, 252, .96);
+  }
+
+  .itemSub,
+  .empty {
+    color: rgba(210, 216, 226, .68);
+  }
+
+  .removeBtn {
+    color: rgba(210, 216, 226, .62);
+
+    &:hover {
+      color: rgba(255, 112, 112, .96);
+      background: rgba(255, 255, 255, .08);
+    }
+  }
+}
 </style>
