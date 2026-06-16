@@ -2,29 +2,37 @@ import { getLocalMusicFileLyric, getLocalMusicFilePic } from '@renderer/utils/mu
 import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs/promises'
+import crypto from 'node:crypto'
 import { checkPath } from '@common/utils/nodejs'
 
-const getTempDir = async() => {
-  const tempDir = path.join(os.tmpdir(), 'lxmusic_temp')
+const getTempDir = async(name = '') => {
+  const tempDir = path.join(os.tmpdir(), 'lxmusic_temp', name)
   if (!await checkPath(tempDir)) {
     await fs.mkdir(tempDir, { recursive: true })
   }
   return tempDir
 }
 
+const getCoverCachePath = async(filePath: string, format: string) => {
+  const stats = await fs.stat(filePath).catch(() => null)
+  const ext = format.split('/')[1] || 'jpg'
+  const hash = crypto
+    .createHash('sha1')
+    .update(`${filePath}:${stats?.mtimeMs ?? 0}:${stats?.size ?? 0}`)
+    .digest('hex')
+  return path.join(await getTempDir('covers'), `${hash}.${ext}`)
+}
+
 export const getMusicFilePic = async(filePath: string) => {
   const picture = await getLocalMusicFilePic(filePath)
   if (!picture) return ''
   if (typeof picture == 'string') return picture
-  if (picture.data.length > 400_000) {
-    try {
-      const tempDir = await getTempDir()
-      const tempFile = path.join(tempDir, path.basename(filePath) + '.' + picture.format.split('/')[1])
-      await fs.writeFile(tempFile, picture.data)
-      return tempFile
-    } catch (err) {
-      console.log(err)
-    }
+  try {
+    const cacheFile = await getCoverCachePath(filePath, picture.format)
+    if (!await checkPath(cacheFile)) await fs.writeFile(cacheFile, picture.data)
+    return cacheFile
+  } catch (err) {
+    console.log(err)
   }
   return `data:${picture.format};base64,${Buffer.from(picture.data).toString('base64')}`
 }

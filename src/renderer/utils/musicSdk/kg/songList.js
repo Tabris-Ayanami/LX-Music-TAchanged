@@ -13,6 +13,12 @@ const handleSignature = (id, page, limit) => new Promise((resolve, reject) => {
   })
 })
 
+const CACHE_LIMIT = 100
+const setLimitedCache = (map, key, value) => {
+  if (map.size >= CACHE_LIMIT) map.delete(map.keys().next().value)
+  map.set(key, value)
+}
+
 export default {
   _requestObj_tags: null,
   _requestObj_listInfo: null,
@@ -531,7 +537,7 @@ export default {
     }).promise
     let result = body.match(/var\sphpParam\s=\s({.+?});/)
     if (result) result = JSON.parse(result[1])
-    this.cache.set(chain, result)
+    setLimitedCache(this.cache, chain, result)
     return result
   },
 
@@ -545,7 +551,7 @@ export default {
     }).promise
     let result = body.match(/var\sdataFromSmarty\s=\s(\[.+?\])/)
     if (result) result = JSON.parse(result[1])
-    this.cache.set(chain, result)
+    setLimitedCache(this.cache, key, result)
     result = await this.getMusicInfos(result)
     // console.log(info, songInfo)
     return result

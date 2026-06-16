@@ -63,6 +63,14 @@ const localEntries = [
     label: '歌手',
     localView: 'artists',
   },
+  {
+    key: 'list',
+    to: '/list',
+    icon: '#icon-love',
+    iconSize: '0 0 444.87 391.18',
+    name: 'List',
+    label: t('my_list'),
+  },
 ]
 
 const currentLocalView = computed(() => {
@@ -103,19 +111,6 @@ const menus = computed(() => [
   {
     title: 'LOCAL',
     items: localEntries,
-  },
-  {
-    title: 'LIST',
-    items: [
-      {
-        key: 'list',
-        to: '/list',
-        icon: '#icon-love',
-        iconSize: '0 0 444.87 391.18',
-        name: 'List',
-        label: t('my_list'),
-      },
-    ],
   },
 ])
 

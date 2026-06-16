@@ -16,6 +16,11 @@ import {
 import { appSetting } from '@renderer/store/setting'
 
 const cache = new Map<string, AudioBuffer>()
+const CACHE_LIMIT = 4
+const setCache = (path: string, buffer: AudioBuffer) => {
+  if (cache.size >= CACHE_LIMIT) cache.delete(cache.keys().next().value!)
+  cache.set(path, buffer)
+}
 const loadBuffer = async(name: string) => new Promise<AudioBuffer>((resolve, reject) => {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const path = require('@renderer/assets/medias/filters/' + name) as string
@@ -35,7 +40,7 @@ const loadBuffer = async(name: string) => new Promise<AudioBuffer>((resolve, rej
         reject(new Error('error decoding file data: ' + path))
         return
       }
-      cache.set(path, buffer)
+      setCache(path, buffer)
       resolve(buffer)
     },
     function(error) {

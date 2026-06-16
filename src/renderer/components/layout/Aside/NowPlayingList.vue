@@ -1,6 +1,6 @@
 <template>
   <section :class="[$style.queue, { [$style.collapsed]: isSidebarCollapsed }]">
-    <p :class="$style.title" :aria-hidden="isSidebarCollapsed">List</p>
+    <p :class="$style.title" :aria-hidden="isSidebarCollapsed">LIST</p>
     <div ref="listRef" :class="['scroll', $style.list]" @wheel.stop>
       <button
         v-for="item in queueList"
@@ -177,9 +177,8 @@ onBeforeUnmount(() => {
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid color-mix(in srgb, var(--shell-text, #182236) 8%, transparent);
+  margin-top: 18px;
+  padding-top: 0;
   overflow: hidden;
   display: flex;
   flex-flow: column nowrap;
@@ -187,11 +186,13 @@ onBeforeUnmount(() => {
 }
 
 .title {
-  padding: 0 8px;
-  height: 12px;
-  line-height: 12px;
+  padding: 0 5px;
+  height: 14px;
+  min-height: 14px;
+  line-height: 14px;
   font-size: 9px;
   letter-spacing: .16em;
+  text-transform: uppercase;
   color: rgba(86, 100, 120, 0.56);
   overflow: hidden;
   transition: height var(--sidebar-motion-duration) var(--sidebar-motion-curve), margin var(--sidebar-motion-duration) var(--sidebar-motion-curve), opacity .28s ease;
@@ -203,7 +204,7 @@ onBeforeUnmount(() => {
   gap: 5px;
   flex: 1 1 auto;
   min-height: 0;
-  margin-top: 8px;
+  margin-top: 6px;
   padding-right: 2px;
   overflow-y: auto;
   overflow-x: hidden;
@@ -323,8 +324,8 @@ onBeforeUnmount(() => {
 
 .collapsed {
   margin-top: 20px;
-  padding-top: 0;
-  border-top: none;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--shell-text, #182236) 10%, transparent);
   opacity: 1;
 
   .title {
@@ -334,7 +335,7 @@ onBeforeUnmount(() => {
   }
 
   .list {
-    margin-top: 0;
+    margin-top: -5px;
     padding-right: 0;
     gap: 7px;
   }

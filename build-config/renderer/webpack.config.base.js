@@ -144,6 +144,7 @@ module.exports = {
       // both options are optional
       filename: isDev ? '[name].css' : '[name].[contenthash:8].css',
       chunkFilename: isDev ? '[id].css' : '[id].[contenthash:8].css',
+      ignoreOrder: true,
     }),
     new ESLintPlugin({
       extensions: ['js', 'vue'],

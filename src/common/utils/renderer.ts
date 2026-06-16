@@ -11,7 +11,7 @@ const noop: Noop = () => {}
 type ScrollElement<T> = {
   lx_scrollLockKey?: number
   lx_scrollNextParams?: [ScrollElement<HTMLElement>, number, number, Noop]
-  lx_scrollTimeout?: number
+  lx_scrollFrame?: number
   lx_scrollDelayTimeout?: number
 } & T
 
@@ -23,8 +23,8 @@ const handleScrollY = (element: ScrollElement<HTMLElement>, to: number, duration
   const clean = () => {
     element.lx_scrollLockKey = undefined
     element.lx_scrollNextParams = undefined
-    if (element.lx_scrollTimeout) window.clearTimeout(element.lx_scrollTimeout)
-    element.lx_scrollTimeout = undefined
+    if (element.lx_scrollFrame) window.cancelAnimationFrame(element.lx_scrollFrame)
+    element.lx_scrollFrame = undefined
   }
   if (element.lx_scrollLockKey) {
     element.lx_scrollNextParams = [element, to, duration, fn]
@@ -43,18 +43,19 @@ const handleScrollY = (element: ScrollElement<HTMLElement>, to: number, duration
     return noop
   }
   const change = to - start
-  const increment = 10
   if (!change) {
     fn()
     return noop
   }
 
-  let currentTime = 0
+  let startTime = 0
   let val: number
   let key = Math.random()
 
-  const animateScroll = () => {
-    element.lx_scrollTimeout = undefined
+  const animateScroll = (timestamp: number) => {
+    element.lx_scrollFrame = undefined
+    if (!startTime) startTime = timestamp
+    const currentTime = Math.min(timestamp - startTime, duration)
     // if (element.lx_scrollLockKey != key) {
     if (element.lx_scrollNextParams && currentTime > duration * 0.75) {
       const [_element, to, duration, fn] = element.lx_scrollNextParams
@@ -63,7 +64,6 @@ const handleScrollY = (element: ScrollElement<HTMLElement>, to: number, duration
       return
     }
 
-    currentTime += increment
     val = Math.trunc(easeInOutQuad(currentTime, start, change, duration))
     if (element.scrollTo) {
       element.scrollTo(0, val)
@@ -71,7 +71,7 @@ const handleScrollY = (element: ScrollElement<HTMLElement>, to: number, duration
       element.scrollTop = val
     }
     if (currentTime < duration) {
-      element.lx_scrollTimeout = window.setTimeout(animateScroll, increment)
+      element.lx_scrollFrame = window.requestAnimationFrame(animateScroll)
     } else {
       if (element.lx_scrollNextParams) {
         const [_element, to, duration, fn] = element.lx_scrollNextParams
@@ -85,7 +85,7 @@ const handleScrollY = (element: ScrollElement<HTMLElement>, to: number, duration
   }
 
   element.lx_scrollLockKey = key
-  animateScroll()
+  element.lx_scrollFrame = window.requestAnimationFrame(animateScroll)
 
   return clean
 }
@@ -130,8 +130,8 @@ const handleScrollX = (element: ScrollElement<HTMLElement>, to: number, duration
   const clean = () => {
     element.lx_scrollLockKey = undefined
     element.lx_scrollNextParams = undefined
-    if (element.lx_scrollTimeout) window.clearTimeout(element.lx_scrollTimeout)
-    element.lx_scrollTimeout = undefined
+    if (element.lx_scrollFrame) window.cancelAnimationFrame(element.lx_scrollFrame)
+    element.lx_scrollFrame = undefined
   }
   if (element.lx_scrollLockKey) {
     element.lx_scrollNextParams = [element, to, duration, fn]
@@ -150,26 +150,26 @@ const handleScrollX = (element: ScrollElement<HTMLElement>, to: number, duration
     return noop
   }
   const change = to - start
-  const increment = 10
   if (!change) {
     fn()
     return noop
   }
 
-  let currentTime = 0
+  let startTime = 0
   let val: number
   let key = Math.random()
 
-  const animateScroll = () => {
-    element.lx_scrollTimeout = undefined
+  const animateScroll = (timestamp: number) => {
+    element.lx_scrollFrame = undefined
+    if (!startTime) startTime = timestamp
+    const currentTime = Math.min(timestamp - startTime, duration)
     if (element.lx_scrollNextParams && currentTime > duration * 0.75) {
       const [_element, to, duration, fn] = element.lx_scrollNextParams
       clean()
-      handleScrollY(_element, to, duration, fn)
+      handleScrollX(_element, to, duration, fn)
       return
     }
 
-    currentTime += increment
     val = Math.trunc(easeInOutQuad(currentTime, start, change, duration))
     if (element.scrollTo) {
       element.scrollTo(val, 0)
@@ -177,12 +177,12 @@ const handleScrollX = (element: ScrollElement<HTMLElement>, to: number, duration
       element.scrollLeft = val
     }
     if (currentTime < duration) {
-      element.lx_scrollTimeout = window.setTimeout(animateScroll, increment)
+      element.lx_scrollFrame = window.requestAnimationFrame(animateScroll)
     } else {
       if (element.lx_scrollNextParams) {
         const [_element, to, duration, fn] = element.lx_scrollNextParams
         clean()
-        handleScrollY(_element, to, duration, fn)
+        handleScrollX(_element, to, duration, fn)
       } else {
         clean()
         fn()
@@ -190,7 +190,7 @@ const handleScrollX = (element: ScrollElement<HTMLElement>, to: number, duration
     }
   }
   element.lx_scrollLockKey = key
-  animateScroll()
+  element.lx_scrollFrame = window.requestAnimationFrame(animateScroll)
   return clean
 }
 /**
@@ -235,8 +235,8 @@ const handleScrollXR = (element: ScrollElement<HTMLElement>, to: number, duratio
   const clean = () => {
     element.lx_scrollLockKey = undefined
     element.lx_scrollNextParams = undefined
-    if (element.lx_scrollTimeout) window.clearTimeout(element.lx_scrollTimeout)
-    element.lx_scrollTimeout = undefined
+    if (element.lx_scrollFrame) window.cancelAnimationFrame(element.lx_scrollFrame)
+    element.lx_scrollFrame = undefined
   }
   if (element.lx_scrollLockKey) {
     element.lx_scrollNextParams = [element, to, duration, fn]
@@ -256,26 +256,26 @@ const handleScrollXR = (element: ScrollElement<HTMLElement>, to: number, duratio
   }
 
   const change = to - start
-  const increment = 10
   if (!change) {
     fn()
     return noop
   }
 
-  let currentTime = 0
+  let startTime = 0
   let val: number
   let key = Math.random()
 
-  const animateScroll = () => {
-    element.lx_scrollTimeout = undefined
+  const animateScroll = (timestamp: number) => {
+    element.lx_scrollFrame = undefined
+    if (!startTime) startTime = timestamp
+    const currentTime = Math.min(timestamp - startTime, duration)
     if (element.lx_scrollNextParams && currentTime > duration * 0.75) {
       const [_element, to, duration, fn] = element.lx_scrollNextParams
       clean()
-      handleScrollY(_element, to, duration, fn)
+      handleScrollXR(_element, to, duration, fn)
       return
     }
 
-    currentTime += increment
     val = Math.trunc(easeInOutQuad(currentTime, start, change, duration))
 
     if (element.scrollTo) {
@@ -284,12 +284,12 @@ const handleScrollXR = (element: ScrollElement<HTMLElement>, to: number, duratio
       element.scrollLeft = val
     }
     if (currentTime < duration) {
-      element.lx_scrollTimeout = window.setTimeout(animateScroll, increment)
+      element.lx_scrollFrame = window.requestAnimationFrame(animateScroll)
     } else {
       if (element.lx_scrollNextParams) {
         const [_element, to, duration, fn] = element.lx_scrollNextParams
         clean()
-        handleScrollY(_element, to, duration, fn)
+        handleScrollXR(_element, to, duration, fn)
       } else {
         clean()
         fn()
@@ -298,7 +298,7 @@ const handleScrollXR = (element: ScrollElement<HTMLElement>, to: number, duratio
   }
 
   element.lx_scrollLockKey = key
-  animateScroll()
+  element.lx_scrollFrame = window.requestAnimationFrame(animateScroll)
 
   return clean
 }
@@ -345,4 +345,3 @@ export const setTitle = (title: string | null) => {
   title ||= 'LX Music'
   dom_title.innerText = title
 }
-

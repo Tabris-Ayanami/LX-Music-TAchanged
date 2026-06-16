@@ -29,7 +29,6 @@ const animateElementScroll = ({
   element,
   to,
   duration = 300,
-  increment = 10,
   scheduler = globalThis,
   onComplete = () => {},
   onCancel = () => {},
@@ -46,28 +45,33 @@ const animateElementScroll = ({
     return () => {}
   }
 
-  let currentTime = 0
-  let timeoutId = null
+  let startTime = 0
+  let frameId = null
   let finished = false
   let cancelCallback = null
 
-  const clearTimer = () => {
-    if (timeoutId != null) {
-      scheduler.clearTimeout(timeoutId)
-      timeoutId = null
+  const requestFrame = scheduler.requestAnimationFrame?.bind(scheduler) ?? (callback => scheduler.setTimeout(() => callback(Date.now()), 16))
+  const cancelFrame = scheduler.cancelAnimationFrame?.bind(scheduler) ?? scheduler.clearTimeout?.bind(scheduler)
+
+  const clearFrame = () => {
+    if (frameId != null) {
+      cancelFrame(frameId)
+      frameId = null
     }
   }
 
   const finish = callback => {
     if (finished) return
     finished = true
-    clearTimer()
+    clearFrame()
     callback?.()
   }
 
-  const step = () => {
+  const step = timestamp => {
     if (finished) return
-    currentTime += increment
+    frameId = null
+    if (!startTime) startTime = timestamp
+    const currentTime = Math.min(timestamp - startTime, duration)
     const value = parseInt(easeInOutQuad(currentTime, start, change, duration))
     setElementScrollTop(element, value)
 
@@ -76,10 +80,10 @@ const animateElementScroll = ({
       return
     }
 
-    timeoutId = scheduler.setTimeout(step, increment)
+    frameId = requestFrame(step)
   }
 
-  step()
+  frameId = requestFrame(step)
 
   return callback => {
     if (finished) return

@@ -37,21 +37,27 @@
             <span :class="[$style.cell, $style.albumCell]">专辑名</span>
             <span :class="[$style.cell, $style.timeCell]">时长</span>
           </div>
-          <div v-if="filteredTrackItems.length" :class="$style.tableBody">
+          <base-virtualized-list
+            v-if="filteredTrackItems.length"
+            v-slot="{ item, index }: { item: LocalTrackItem, index: number }"
+            :list="filteredTrackItems"
+            key-name="id"
+            :item-height="52"
+            :container-class="['scroll', $style.tableBody].join(' ')"
+            content-class="list"
+          >
             <button
-              v-for="(item, rowIndex) in filteredTrackItems"
-              :key="item.track.id"
               type="button"
               :class="$style.row"
               @click="playTrack(item.track)"
             >
-              <span :class="[$style.cell, $style.numCell]">{{ Number(rowIndex) + 1 }}</span>
+              <span :class="[$style.cell, $style.numCell]">{{ Number(index) + 1 }}</span>
               <span :class="[$style.cell, $style.nameCell]" :title="item.track.name">{{ item.track.name }}</span>
               <span :class="[$style.cell, $style.singerCell]" :title="item.track.singer">{{ item.track.singer || '--' }}</span>
               <span :class="[$style.cell, $style.albumCell]" :title="item.track.meta.albumName">{{ item.track.meta.albumName || '--' }}</span>
               <span :class="[$style.cell, $style.timeCell]">{{ item.track.interval || '--/--' }}</span>
             </button>
-          </div>
+          </base-virtualized-list>
           <div v-else :class="$style.emptyState">没有匹配到本地歌曲。</div>
         </template>
         <template v-else>
@@ -152,7 +158,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from '@common/utils/vueTools'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from '@common/utils/vueTools'
 import { useRoute, useRouter } from '@common/utils/vueRouter'
 import { getPicPath } from '@renderer/core/music'
 import LiquidGlassLayer from '@renderer/components/common/liquidGlass/LiquidGlassLayer.vue'
@@ -172,6 +178,7 @@ import {
 import MusicList from '@renderer/views/List/MusicList/index.vue'
 
 interface LocalTrackItem {
+  id: string
   index: number
   track: LX.Music.MusicInfoLocal
 }
@@ -186,11 +193,11 @@ const router = useRouter()
 const albumGridRef = ref<HTMLElement | null>(null)
 const artistGridRef = ref<HTMLElement | null>(null)
 const localListId = ref('')
-const tracks = ref<LX.Music.MusicInfoLocal[]>([])
-const albumCovers = ref<Record<string, string>>({})
-const artistCovers = ref<Record<string, string>>({})
-const defaultAlbumGroups = ref<ReturnType<typeof buildLocalAlbumGroups>>([])
-const defaultArtistGroups = ref<ReturnType<typeof buildLocalArtistGroups>>([])
+const tracks = shallowRef<LX.Music.MusicInfoLocal[]>([])
+const albumCovers = shallowRef<Record<string, string>>({})
+const artistCovers = shallowRef<Record<string, string>>({})
+const defaultAlbumGroups = shallowRef<ReturnType<typeof buildLocalAlbumGroups>>([])
+const defaultArtistGroups = shallowRef<ReturnType<typeof buildLocalArtistGroups>>([])
 const visibleAlbumCount = ref(GRID_BATCH_SIZE)
 const visibleArtistCount = ref(GRID_BATCH_SIZE)
 const activeAlbumIndex = ref(0)
@@ -228,7 +235,7 @@ const matchTrack = (track: LX.Music.MusicInfoLocal) => {
 
 const filteredTrackItems = computed<LocalTrackItem[]>(() => {
   return tracks.value
-    .map((track, index) => ({ track, index }))
+    .map((track, index) => ({ id: `${track.id}_${index}`, track, index }))
     .filter(item => matchTrack(item.track))
 })
 

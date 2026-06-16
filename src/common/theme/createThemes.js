@@ -251,10 +251,10 @@ const defaultThemes = [
     isDark: true,
     isDarkFont: false,
     config: {
-      primary: 'rgb(150, 150, 150)',
-      font: 'rgb(229, 229, 229)',
-      '--color-app-background': 'rgba(0, 0, 0, 0)',
-      '--color-main-background': 'rgba(19, 19, 19, 0.9)',
+      primary: 'rgb(148, 163, 184)',
+      font: 'rgb(232, 238, 244)',
+      '--color-app-background': 'rgba(15, 18, 24, 0.74)',
+      '--color-main-background': 'rgba(24, 29, 38, 0.82)',
       '--color-nav-font': 'var(--color-primary)',
       '--background-image': 'url(./theme_images/landingMoon.png)',
       '--background-image-position': 'center',
@@ -381,4 +381,3 @@ const themes = defaultThemes.map(({ config: { primary, font, ...extInfo }, ...th
 })
 
 fs.writeFileSync(path.join(__dirname, 'index.json'), JSON.stringify(themes, null, 2))
-

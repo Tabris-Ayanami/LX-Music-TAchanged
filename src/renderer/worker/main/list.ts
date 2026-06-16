@@ -287,14 +287,19 @@ export const createSortedList = (list: LX.Music.MusicInfo[], position: number, i
  * @param filePaths 文件路径
  */
 export const createLocalMusicInfos = async(filePaths: string[]): Promise<LX.Music.MusicInfoLocal[]> => {
-  const list: LX.Music.MusicInfoLocal[] = []
-  for await (const path of filePaths) {
-    const musicInfo = await createLocalMusicInfo(path)
-    if (!musicInfo) continue
-    list.push(musicInfo)
+  const concurrency = Math.min(4, Math.max(filePaths.length, 1))
+  const results: Array<LX.Music.MusicInfoLocal | null> = Array(filePaths.length).fill(null)
+  let nextIndex = 0
+
+  const runWorker = async() => {
+    while (nextIndex < filePaths.length) {
+      const index = nextIndex++
+      results[index] = await createLocalMusicInfo(filePaths[index])
+    }
   }
 
-  return list
+  await Promise.all(Array.from({ length: concurrency }, runWorker))
+  return results.filter((musicInfo): musicInfo is LX.Music.MusicInfoLocal => musicInfo != null)
 }
 
 /**

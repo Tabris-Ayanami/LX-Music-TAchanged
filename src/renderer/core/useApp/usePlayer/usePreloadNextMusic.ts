@@ -8,6 +8,9 @@ import { getMusicUrl } from '@renderer/core/music'
 import { appSetting } from '@renderer/store/setting'
 
 let audio: HTMLAudioElement
+const handlePreloadPlaying = () => {
+  audio.pause()
+}
 const initAudio = () => {
   if (audio) return
   audio = new Audio()
@@ -17,9 +20,13 @@ const initAudio = () => {
   audio.muted = true
   audio.volume = 0
   audio.autoplay = true
-  audio.addEventListener('playing', () => {
-    audio.pause()
-  })
+  audio.addEventListener('playing', handlePreloadPlaying)
+}
+const releasePreloadAudio = () => {
+  if (!audio) return
+  audio.pause()
+  audio.removeAttribute('src')
+  audio.load()
 }
 const checkMusicUrl = async(url: string): Promise<boolean> => {
   initAudio()
@@ -31,6 +38,7 @@ const checkMusicUrl = async(url: string): Promise<boolean> => {
     const handleErr = () => {
       clear()
       if (audio?.error?.code !== 1) {
+        releasePreloadAudio()
         resolve(false)
       } else {
         resolve(true)
@@ -55,6 +63,7 @@ const resetPreloadInfo = () => {
   preloadMusicInfo.preProgress = 0
   preloadMusicInfo.info = null
   preloadMusicInfo.isLoading = false
+  releasePreloadAudio()
 }
 const preloadNextMusicUrl = async(curTime: number) => {
   if (preloadMusicInfo.isLoading || curTime - preloadMusicInfo.preProgress < 3) return
@@ -110,5 +119,7 @@ export default () => {
     rOnTimeupdate()
     window.app_event.off('setProgress', setProgress)
     window.app_event.off('musicToggled', handleSetPlayInfo)
+    if (audio) audio.removeEventListener('playing', handlePreloadPlaying)
+    releasePreloadAudio()
   })
 }

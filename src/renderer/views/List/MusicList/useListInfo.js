@@ -1,4 +1,4 @@
-import { ref, watch, computed, onBeforeUnmount } from '@common/utils/vueTools'
+import { ref, shallowRef, watch, computed, onBeforeUnmount } from '@common/utils/vueTools'
 import { playMusicInfo, playInfo } from '@renderer/store/player/state'
 import { getListMusics } from '@renderer/store/list/action'
 import { appSetting } from '@renderer/store/setting'
@@ -13,7 +13,7 @@ export default ({ props, onLoadedList }) => {
   const excludeListIds = computed(() => ([props.listId]))
 
 
-  const list = ref([])
+  const list = shallowRef([])
   watch(() => props.musicList, musicList => {
     if (!Array.isArray(musicList)) return
     list.value = [...musicList]

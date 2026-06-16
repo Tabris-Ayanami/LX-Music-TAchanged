@@ -244,7 +244,7 @@ export default {
   border-radius: 22px;
   border: 1px solid transparent;
   background: transparent;
-  box-shadow: 0 26px 54px rgba(82, 108, 160, 0.12);
+  box-shadow: var(--shell-player-shadow, 0 26px 54px rgba(82, 108, 160, 0.12));
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   color: var(--shell-text, var(--color-font));
@@ -299,16 +299,16 @@ export default {
     content: '';
     position: absolute;
     left: -20px;
-    top: 8px;
-    width: 184px;
-    height: 86px;
+    top: -6px;
+    width: 240px;
+    height: 112px;
     border-radius: 54px;
     background-image: var(--floating-cover-image);
     background-position: 44px center;
     background-size: 84px 84px;
     background-repeat: no-repeat;
-    filter: blur(30px) saturate(180%);
-    opacity: .48;
+    filter: blur(34px) saturate(186%);
+    opacity: .58;
     transform: translateZ(0);
     -webkit-mask-image: radial-gradient(ellipse at 46% 50%, rgba(0, 0, 0, .9), rgba(0, 0, 0, .48) 48%, rgba(0, 0, 0, .08) 78%, rgba(0, 0, 0, 0) 100%);
     mask-image: radial-gradient(ellipse at 46% 50%, rgba(0, 0, 0, .9), rgba(0, 0, 0, .48) 48%, rgba(0, 0, 0, .08) 78%, rgba(0, 0, 0, 0) 100%);
@@ -337,6 +337,9 @@ export default {
   background: transparent;
   line-height: 0;
   pointer-events: none;
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.16) inset;
 }
 
 .player:not(.compact) {
@@ -586,9 +589,9 @@ export default {
 .iconBtn,
 .compactToggleBtn,
 .utilityBtn {
-  --floating-btn-border: rgba(255, 255, 255, 0.34);
-  --floating-btn-fill: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(244, 249, 255, 0.26));
-  --floating-btn-shadow: 0 14px 24px rgba(28, 41, 68, 0.13), 0 6px 12px rgba(28, 41, 68, 0.08), 0 1px 0 rgba(255, 255, 255, 0.76) inset, 0 -1px 0 rgba(27, 39, 65, 0.08) inset, 0 0 0 1px rgba(255, 255, 255, 0.22) inset;
+  --floating-btn-border: var(--shell-control-border, rgba(255, 255, 255, 0.34));
+  --floating-btn-fill: linear-gradient(180deg, color-mix(in srgb, var(--shell-button-bg, rgba(255, 255, 255, 0.5)) 88%, rgba(255, 255, 255, 0.22)), color-mix(in srgb, var(--shell-button-bg, rgba(244, 249, 255, 0.26)) 72%, transparent));
+  --floating-btn-shadow: 0 14px 24px rgba(0, 0, 0, 0.14), 0 6px 12px rgba(0, 0, 0, 0.1), 0 1px 0 rgba(255, 255, 255, 0.38) inset, 0 -1px 0 rgba(0, 0, 0, 0.1) inset, 0 0 0 1px rgba(255, 255, 255, 0.09) inset;
   width: 28px;
   height: 28px;
   border: 1px solid var(--floating-btn-border);
@@ -638,8 +641,8 @@ export default {
   &:hover {
     opacity: .96;
     transform: translateY(-2px);
-    box-shadow: 0 20px 34px rgba(28, 41, 68, 0.2), 0 8px 14px rgba(28, 41, 68, 0.14), 0 1px 0 rgba(255, 255, 255, 0.72) inset, 0 0 0 1px rgba(255, 255, 255, 0.26) inset;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(245, 249, 255, 0.28));
+    box-shadow: 0 20px 34px rgba(0, 0, 0, 0.22), 0 8px 14px rgba(0, 0, 0, 0.14), 0 1px 0 rgba(255, 255, 255, 0.42) inset, 0 0 0 1px rgba(255, 255, 255, 0.16) inset;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--shell-button-bg-hover, rgba(255, 255, 255, 0.5)) 86%, rgba(255, 255, 255, 0.22)), color-mix(in srgb, var(--shell-button-bg-hover, rgba(245, 249, 255, 0.28)) 72%, transparent));
   }
 
   &:active {

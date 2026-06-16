@@ -297,6 +297,10 @@
   --color-button-background-active: color-mix(in srgb, var(--color-primary) 50%, rgba(255, 255, 255, 0.92));
   --color-list-header-border-bottom: 1px solid var(--color-primary-alpha-900);
   --color-content-background: var(--color-primary-light-1000);
+  --surface-glass-bg: var(--shell-card, rgba(255, 255, 255, 0.68));
+  --surface-glass-bg-strong: var(--shell-card-strong, rgba(255, 255, 255, 0.86));
+  --surface-glass-border: var(--shell-card-border, rgba(255, 255, 255, 0.68));
+  --surface-glass-shadow: var(--shell-card-shadow, 0 14px 34px rgba(74, 94, 126, 0.13));
 
 
   --background-image: none;
@@ -476,6 +480,7 @@ table {
     text-align: left;
     line-height: 38px;
     padding: 0 6px;
+    color: var(--shell-muted, var(--color-font-label));
   }
 }
 
@@ -500,20 +505,20 @@ table {
     font-size: 12px;
 
     &:hover {
-      background-color: var(--color-list-hover-background, var(--color-primary-background-hover));
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 45%, rgba(255, 255, 255, 0.7));
+      background-color: var(--shell-list-hover, var(--color-list-hover-background, var(--color-primary-background-hover)));
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 38%, var(--surface-glass-border));
 
       // .list-item-cell-action {
       //   display: block;
       // }
     }
     &.active {
-      background-color: var(--color-list-active-background, var(--color-primary-background-active));
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 52%, rgba(255, 255, 255, 0.64));
+      background-color: var(--shell-list-active, var(--color-list-active-background, var(--color-primary-background-active)));
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 46%, var(--surface-glass-border));
     }
     &.selected {
-      background-color: var(--color-list-hover-background, var(--color-primary-background-hover));
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 45%, rgba(255, 255, 255, 0.7));
+      background-color: var(--shell-list-hover, var(--color-list-hover-background, var(--color-primary-background-hover)));
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 38%, var(--surface-glass-border));
     }
     &.disabled {
       opacity: .5;

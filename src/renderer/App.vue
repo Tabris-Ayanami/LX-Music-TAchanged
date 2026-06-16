@@ -147,8 +147,9 @@ body {
   color: var(--shell-text);
   background-color: var(--shell-app-end, var(--color-content-background));
   background:
-    radial-gradient(circle at top left, rgba(255, 151, 185, 0.26), transparent 30%),
-    radial-gradient(circle at bottom right, rgba(82, 168, 255, 0.24), transparent 34%),
+    radial-gradient(ellipse at 18% 0%, var(--shell-album-wash-a), transparent 38%),
+    radial-gradient(ellipse at 84% 92%, var(--shell-album-wash-b), transparent 42%),
+    linear-gradient(180deg, var(--shell-grain-top), transparent 46%),
     linear-gradient(140deg, var(--shell-app-start), var(--shell-app-end));
 }
 
@@ -163,11 +164,12 @@ body {
   z-index: 3;
   padding: 0;
   background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--shell-accent) 24%, rgba(255, 255, 255, 0.26)), transparent 42%),
-    radial-gradient(circle at 14% 82%, rgba(255, 255, 255, 0.22), transparent 28%),
-    linear-gradient(180deg, color-mix(in srgb, var(--shell-surface-strong, rgba(255, 255, 255, 0.92)) 94%, transparent), color-mix(in srgb, var(--shell-surface-soft, rgba(241, 246, 255, 0.92)) 84%, transparent)),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08) 62%, rgba(255, 255, 255, 0.02));
+    linear-gradient(155deg, var(--shell-panel-highlight), transparent 48%),
+    var(--shell-panel),
+    linear-gradient(90deg, var(--shell-edge-light), transparent 68%);
   backdrop-filter: blur(34px) saturate(142%);
+  -webkit-backdrop-filter: blur(34px) saturate(142%);
+  box-shadow: var(--shell-panel-shadow);
   contain: layout style;
   will-change: width;
   transition: width .46s cubic-bezier(.2, 0, 0, 1);
@@ -178,8 +180,8 @@ body {
   inset: 0;
   border-radius: inherit;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.06) 18%, transparent 26%, transparent 76%, rgba(255, 255, 255, 0.1)),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.16), transparent 12%, transparent 88%, rgba(255, 255, 255, 0.06));
+    linear-gradient(180deg, var(--shell-glass-sheen), transparent 30%, transparent 76%, var(--shell-glass-foot)),
+    linear-gradient(90deg, var(--shell-edge-light), transparent 14%, transparent 88%, var(--shell-edge-shadow));
   mask-image:
     linear-gradient(180deg, #000 0 14px, transparent 40px calc(100% - 40px), #000 calc(100% - 14px)),
     linear-gradient(90deg, #000 0 14px, transparent 40px calc(100% - 40px), #000 calc(100% - 14px));
@@ -188,7 +190,7 @@ body {
     linear-gradient(180deg, #000 0 14px, transparent 40px calc(100% - 40px), #000 calc(100% - 14px)),
     linear-gradient(90deg, #000 0 14px, transparent 40px calc(100% - 40px), #000 calc(100% - 14px));
   -webkit-mask-composite: source-in;
-  opacity: .7;
+  opacity: var(--shell-panel-sheen-opacity);
   pointer-events: none;
 }
 #left::after {
@@ -198,8 +200,8 @@ body {
   right: 0;
   bottom: 12px;
   width: 1px;
-  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--shell-text) 12%, rgba(255, 255, 255, 0.3)), transparent);
-  opacity: .12;
+  background: linear-gradient(180deg, transparent, var(--shell-divider), transparent);
+  opacity: .72;
   pointer-events: none;
 }
 #right {
@@ -213,8 +215,8 @@ body {
   position: relative;
   z-index: 1;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--shell-surface, rgba(255, 255, 255, 0.82)) 26%, transparent), transparent 24%),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04), transparent 12%);
+    linear-gradient(180deg, color-mix(in srgb, var(--shell-surface, rgba(255, 255, 255, 0.82)) 34%, transparent), transparent 28%),
+    linear-gradient(90deg, var(--shell-stage-edge), transparent 14%);
 }
 #toolbar, #player {
   flex: none;
@@ -253,9 +255,10 @@ body {
 
 .shellOrb {
   position: absolute;
-  filter: blur(12px);
+  filter: blur(18px);
   pointer-events: none;
   z-index: 0;
+  opacity: var(--shell-ambient-opacity);
 }
 .shellOrbA {
   inset: -12% auto auto -8%;
@@ -275,11 +278,11 @@ body {
   position: absolute;
   inset: 0;
   z-index: 0;
-  opacity: .28;
+  opacity: var(--shell-grid-opacity);
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+    linear-gradient(var(--shell-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--shell-grid-line) 1px, transparent 1px);
   background-size: 120px 120px;
   mask-image: radial-gradient(circle at center, rgba(0, 0, 0, .75), transparent 78%);
 }
@@ -300,63 +303,99 @@ body {
 }
 
 .themeShellLight {
-  --shell-app-start: #f5f8ff;
-  --shell-app-end: #edf3ff;
-  --shell-panel: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(246, 249, 255, 0.96));
-  --shell-panel-shadow: 0 16px 34px rgba(108, 129, 167, 0.12);
-  --shell-surface: rgba(255, 255, 255, 0.82);
-  --shell-surface-strong: rgba(255, 255, 255, 0.94);
-  --shell-surface-soft: rgba(248, 250, 255, 0.88);
-  --shell-stroke: rgba(255, 255, 255, 0.72);
-  --shell-text: #182236;
-  --shell-muted: rgba(53, 71, 96, 0.68);
-  --shell-soft-text: rgba(77, 92, 116, 0.88);
+  --shell-app-start: #f4f7fb;
+  --shell-app-end: #eaf0f8;
+  --shell-grain-top: rgba(255, 255, 255, 0.64);
+  --shell-panel: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(244, 248, 253, 0.9));
+  --shell-panel-highlight: rgba(255, 255, 255, 0.56);
+  --shell-panel-shadow: 18px 0 46px rgba(82, 103, 137, 0.13), inset -1px 0 0 rgba(255, 255, 255, 0.48);
+  --shell-panel-sheen-opacity: .72;
+  --shell-surface: rgba(255, 255, 255, 0.72);
+  --shell-surface-strong: rgba(255, 255, 255, 0.9);
+  --shell-surface-soft: rgba(246, 249, 253, 0.78);
+  --shell-stroke: rgba(255, 255, 255, 0.76);
+  --shell-text: #1e2736;
+  --shell-muted: rgba(58, 73, 96, 0.7);
+  --shell-soft-text: rgba(68, 84, 106, 0.86);
+  --shell-divider: rgba(73, 92, 122, 0.18);
+  --shell-edge-light: rgba(255, 255, 255, 0.26);
+  --shell-edge-shadow: rgba(92, 112, 144, 0.08);
+  --shell-glass-sheen: rgba(255, 255, 255, 0.34);
+  --shell-glass-foot: rgba(255, 255, 255, 0.12);
+  --shell-stage-edge: rgba(255, 255, 255, 0.12);
   --shell-accent: var(--color-primary);
-  --shell-accent-glow: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 40%, transparent), transparent 72%);
-  --shell-secondary-glow: radial-gradient(circle, rgba(106, 181, 255, 0.44), rgba(106, 181, 255, 0));
-  --shell-player-shadow: 0 18px 44px rgba(91, 113, 153, 0.18);
-  --shell-search-surface: rgba(255, 255, 255, 0.72);
-  --shell-search-border: rgba(255, 255, 255, 0.82);
-  --shell-card: rgba(255, 255, 255, 0.72);
-  --shell-card-strong: rgba(255, 255, 255, 0.9);
-  --shell-control: color-mix(in srgb, var(--color-primary) 12%, rgba(255, 255, 255, 0.86));
-  --shell-control-border: color-mix(in srgb, var(--color-primary) 22%, rgba(255, 255, 255, 0.74));
-  --shell-button-bg: rgba(255, 255, 255, 0.82);
-  --shell-button-bg-hover: rgba(255, 255, 255, 0.94);
+  --shell-accent-glow: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 34%, transparent), transparent 72%);
+  --shell-secondary-glow: radial-gradient(circle, rgba(102, 155, 218, 0.34), rgba(102, 155, 218, 0));
+  --shell-album-wash-a: color-mix(in srgb, var(--color-primary) 20%, rgba(255, 255, 255, 0.1));
+  --shell-album-wash-b: rgba(100, 143, 198, 0.22);
+  --shell-ambient-opacity: .72;
+  --shell-grid-opacity: .18;
+  --shell-grid-line: rgba(71, 92, 120, 0.08);
+  --shell-player-shadow: 0 20px 52px rgba(76, 99, 133, 0.16);
+  --shell-search-surface: rgba(255, 255, 255, 0.68);
+  --shell-search-border: rgba(255, 255, 255, 0.78);
+  --shell-card: rgba(255, 255, 255, 0.66);
+  --shell-card-strong: rgba(255, 255, 255, 0.86);
+  --shell-card-border: rgba(255, 255, 255, 0.7);
+  --shell-card-shadow: 0 14px 34px rgba(74, 94, 126, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  --shell-control: color-mix(in srgb, var(--color-primary) 10%, rgba(255, 255, 255, 0.82));
+  --shell-control-border: color-mix(in srgb, var(--color-primary) 20%, rgba(255, 255, 255, 0.72));
+  --shell-button-bg: rgba(255, 255, 255, 0.76);
+  --shell-button-bg-hover: rgba(255, 255, 255, 0.92);
   --shell-button-text: #182236;
+  --shell-list-hover: color-mix(in srgb, var(--color-primary) 18%, rgba(255, 255, 255, 0.72));
+  --shell-list-active: color-mix(in srgb, var(--color-primary) 26%, rgba(255, 255, 255, 0.78));
   --shell-scroll-track: rgba(255, 255, 255, 0.18);
   --shell-scroll-thumb: rgba(70, 92, 126, 0.32);
   --shell-scroll-thumb-hover: rgba(70, 92, 126, 0.48);
 }
 
 .themeShellDark {
-  --shell-app-start: #050607;
-  --shell-app-end: #101112;
-  --shell-panel: linear-gradient(180deg, rgba(20, 22, 24, 0.96), rgba(8, 9, 10, 0.985));
-  --shell-panel-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
-  --shell-surface: rgba(22, 24, 27, 0.9);
-  --shell-surface-strong: rgba(28, 30, 34, 0.96);
-  --shell-surface-soft: rgba(18, 20, 23, 0.88);
-  --shell-stroke: color-mix(in srgb, var(--color-primary) 18%, rgba(255, 255, 255, 0.08));
-  --shell-text: #f6f7f8;
-  --shell-muted: rgba(222, 226, 230, 0.68);
-  --shell-soft-text: rgba(235, 238, 241, 0.84);
+  --shell-app-start: #141820;
+  --shell-app-end: #0d1016;
+  --shell-grain-top: rgba(255, 255, 255, 0.025);
+  --shell-panel: linear-gradient(180deg, rgba(33, 37, 46, 0.82), rgba(19, 22, 29, 0.9));
+  --shell-panel-highlight: color-mix(in srgb, var(--color-primary) 12%, rgba(255, 255, 255, 0.06));
+  --shell-panel-shadow: 18px 0 46px rgba(0, 0, 0, 0.24), inset -1px 0 0 rgba(255, 255, 255, 0.055);
+  --shell-panel-sheen-opacity: .45;
+  --shell-surface: rgba(28, 32, 40, 0.72);
+  --shell-surface-strong: rgba(37, 42, 52, 0.86);
+  --shell-surface-soft: rgba(22, 26, 34, 0.68);
+  --shell-stroke: color-mix(in srgb, var(--color-primary) 20%, rgba(255, 255, 255, 0.13));
+  --shell-text: #eef3f7;
+  --shell-muted: rgba(202, 211, 222, 0.66);
+  --shell-soft-text: rgba(219, 226, 234, 0.78);
+  --shell-divider: rgba(220, 230, 242, 0.11);
+  --shell-edge-light: rgba(255, 255, 255, 0.07);
+  --shell-edge-shadow: rgba(0, 0, 0, 0.16);
+  --shell-glass-sheen: rgba(255, 255, 255, 0.1);
+  --shell-glass-foot: rgba(255, 255, 255, 0.035);
+  --shell-stage-edge: rgba(255, 255, 255, 0.035);
   --shell-accent: var(--color-primary);
-  --shell-accent-glow: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 34%, transparent), transparent 72%);
-  --shell-secondary-glow: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 18%, transparent), transparent 70%);
-  --shell-player-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
-  --shell-search-surface: rgba(255, 255, 255, 0.05);
-  --shell-search-border: color-mix(in srgb, var(--color-primary) 18%, rgba(255, 255, 255, 0.08));
-  --shell-card: rgba(24, 26, 30, 0.82);
-  --shell-card-strong: rgba(30, 32, 36, 0.94);
-  --shell-control: color-mix(in srgb, var(--color-primary) 18%, rgba(255, 255, 255, 0.055));
-  --shell-control-border: color-mix(in srgb, var(--color-primary) 34%, rgba(255, 255, 255, 0.1));
-  --shell-button-bg: rgba(255, 255, 255, 0.08);
-  --shell-button-bg-hover: rgba(255, 255, 255, 0.13);
+  --shell-accent-glow: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 28%, rgba(92, 139, 190, 0.1)), transparent 72%);
+  --shell-secondary-glow: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 14%, rgba(116, 151, 193, 0.12)), transparent 70%);
+  --shell-album-wash-a: color-mix(in srgb, var(--color-primary) 16%, rgba(57, 82, 112, 0.18));
+  --shell-album-wash-b: rgba(42, 58, 78, 0.38);
+  --shell-ambient-opacity: .48;
+  --shell-grid-opacity: .13;
+  --shell-grid-line: rgba(225, 235, 245, 0.04);
+  --shell-player-shadow: 0 24px 60px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(255, 255, 255, 0.035);
+  --shell-search-surface: rgba(33, 38, 48, 0.58);
+  --shell-search-border: color-mix(in srgb, var(--color-primary) 22%, rgba(255, 255, 255, 0.13));
+  --shell-card: rgba(31, 36, 46, 0.66);
+  --shell-card-strong: rgba(42, 48, 60, 0.82);
+  --shell-card-border: rgba(255, 255, 255, 0.09);
+  --shell-card-shadow: 0 16px 40px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --shell-control: color-mix(in srgb, var(--color-primary) 16%, rgba(255, 255, 255, 0.075));
+  --shell-control-border: color-mix(in srgb, var(--color-primary) 34%, rgba(255, 255, 255, 0.12));
+  --shell-button-bg: rgba(255, 255, 255, 0.095);
+  --shell-button-bg-hover: rgba(255, 255, 255, 0.16);
   --shell-button-text: #f7f8fa;
-  --shell-scroll-track: rgba(255, 255, 255, 0.035);
-  --shell-scroll-thumb: rgba(255, 255, 255, 0.18);
-  --shell-scroll-thumb-hover: rgba(255, 255, 255, 0.28);
+  --shell-list-hover: color-mix(in srgb, var(--color-primary) 22%, rgba(255, 255, 255, 0.075));
+  --shell-list-active: color-mix(in srgb, var(--color-primary) 34%, rgba(255, 255, 255, 0.105));
+  --shell-scroll-track: rgba(255, 255, 255, 0.045);
+  --shell-scroll-thumb: rgba(235, 242, 249, 0.19);
+  --shell-scroll-thumb-hover: rgba(235, 242, 249, 0.31);
 }
 
 </style>

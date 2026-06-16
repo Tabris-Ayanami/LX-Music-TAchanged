@@ -22,7 +22,7 @@
         <li v-for="(i, index) in 6" :key="index" :class="[$style.item, $style.placeholder]" />
       </ul>
       <div :class="$style.pagination">
-        <material-pagination :count="props.listInfo.total" :limit="props.listInfo.limit" :page="props.listInfo.page" @btn-click="togglePage" />
+        <liquid-glass-pagination :count="props.listInfo.total" :limit="props.listInfo.limit" :page="props.listInfo.page" @btn-click="togglePage" />
       </div>
     </div>
     <transition enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
@@ -37,6 +37,7 @@
 import { ref } from '@common/utils/vueTools'
 import type { ListInfo, ListInfoItem } from '@renderer/store/songList/state'
 import { useRoute, useRouter } from '@common/utils/vueRouter'
+import LiquidGlassPagination from '@renderer/components/common/liquidGlass/LiquidGlassPagination.vue'
 
 
 const props = withDefaults(defineProps<{

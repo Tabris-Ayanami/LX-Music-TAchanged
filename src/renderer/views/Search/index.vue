@@ -1,8 +1,8 @@
 <template>
   <div :class="$style.container">
     <div :class="$style.header">
-      <base-tab v-model="source" :list="sources" @change="handleSourceChange" />
-      <base-tab v-model="searchType" :list="searchTypes" @change="handleTypeChange" />
+      <liquid-glass-segmented-nav v-model="source" :items="sourceItems" @change="handleSourceChange" />
+      <liquid-glass-segmented-nav v-model="searchType" :items="searchTypeItems" @change="handleTypeChange" />
     </div>
     <div :class="$style.main">
       <template v-if="searchText">
@@ -23,6 +23,7 @@ import { sources as _sources } from '@renderer/store/search/music'
 import MusicList from './MusicList/index.vue'
 import SongListList from './SongListList/index.vue'
 import BlankView from './components/BlankView.vue'
+import LiquidGlassSegmentedNav from '@renderer/components/common/liquidGlass/LiquidGlassSegmentedNav.vue'
 import { computed, ref } from '@common/utils/vueTools'
 import { sourceNames } from '@renderer/store'
 
@@ -64,6 +65,7 @@ export default {
     MusicList,
     SongListList,
     BlankView,
+    LiquidGlassSegmentedNav,
   },
   beforeRouteEnter: verifyQueryParams,
   beforeRouteUpdate: verifyQueryParams,
@@ -71,12 +73,12 @@ export default {
     const route = useRoute()
     const router = useRouter()
 
-    const sources = _sources.map(id => {
+    const sourceItems = computed(() => _sources.map(id => {
       return {
-        id,
         label: sourceNames.value[id],
+        value: id,
       }
-    })
+    }))
     const handleSourceChange = (id) => {
       void router.replace({
         path: route.path,
@@ -88,10 +90,10 @@ export default {
       })
     }
 
-    const searchTypes = computed(() => {
+    const searchTypeItems = computed(() => {
       return [
-        { label: window.i18n.t('search__type_music'), id: 'music' },
-        { label: window.i18n.t('search__type_songlist'), id: 'songlist' },
+        { label: window.i18n.t('search__type_music'), value: 'music' },
+        { label: window.i18n.t('search__type_songlist'), value: 'songlist' },
       ]
     })
     const handleTypeChange = (type) => {
@@ -106,10 +108,10 @@ export default {
     }
 
     return {
-      sources,
+      sourceItems,
       source,
       handleSourceChange,
-      searchTypes,
+      searchTypeItems,
       searchType,
       handleTypeChange,
       page,
@@ -131,6 +133,9 @@ export default {
   display: flex;
   flex-flow: row nowrap;
   justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px 10px;
   flex: none;
 }
 

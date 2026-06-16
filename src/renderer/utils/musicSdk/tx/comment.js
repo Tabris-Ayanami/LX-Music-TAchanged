@@ -73,6 +73,11 @@ const emojis = {
 
 const songIdMap = new Map()
 const promises = new Map()
+const SONG_ID_CACHE_LIMIT = 200
+const setLimitedCache = (map, key, value, limit = SONG_ID_CACHE_LIMIT) => {
+  if (map.size >= limit) map.delete(map.keys().next().value)
+  map.set(key, value)
+}
 
 export default {
   _requestObj: null,
@@ -82,11 +87,14 @@ export default {
     if (songIdMap.has(songmid)) return songIdMap.get(songmid)
     if (promises.has(songmid)) return (await promises.get(songmid)).songId
     const promise = getMusicInfo(songmid)
-    promises.set(promise)
-    const info = await promise
-    songIdMap.set(songmid, info.songId)
-    promises.delete(songmid)
-    return info.songId
+    promises.set(songmid, promise)
+    try {
+      const info = await promise
+      setLimitedCache(songIdMap, songmid, info.songId)
+      return info.songId
+    } finally {
+      promises.delete(songmid)
+    }
   },
   async getComment(mInfo, page = 1, limit = 20) {
     if (this._requestObj) this._requestObj.cancelHttp()

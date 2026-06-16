@@ -1,7 +1,7 @@
 <template>
   <div :class="$style.download">
     <div :class="$style.header">
-      <base-tab v-model="activeTab" :class="$style.tab" :list="tabs" />
+      <liquid-glass-segmented-nav v-model="activeTab" :class="$style.tab" :items="tabItems" />
     </div>
     <div :class="$style.content">
       <div class="thead" :class="$style.thead">
@@ -70,8 +70,9 @@
 <script>
 // import { checkPath, openDirInExplorer, openUrl } from '@common/utils/electron'
 
-import { ref, watch } from '@common/utils/vueTools'
+import { computed, ref, watch } from '@common/utils/vueTools'
 import listActionRunner from '@renderer/utils/listActionRunner.cjs'
+import LiquidGlassSegmentedNav from '@renderer/components/common/liquidGlass/LiquidGlassSegmentedNav.vue'
 import useListInfo from './useListInfo'
 import useList from './useList'
 import useTab from './useTab'
@@ -86,9 +87,16 @@ const { runListAction } = listActionRunner
 
 export default {
   name: 'Download',
+  components: {
+    LiquidGlassSegmentedNav,
+  },
   setup() {
     const listRef = ref()
     const { tabs, activeTab } = useTab()
+    const tabItems = computed(() => tabs.value.map(tab => ({
+      label: tab.label,
+      value: tab.id,
+    })))
 
     const {
       rightClickSelectedIndex,
@@ -233,6 +241,7 @@ export default {
       rightClickSelectedIndex,
       dom_listContent,
       tabs,
+      tabItems,
       activeTab,
       selectedList,
       listItemHeight,
@@ -306,6 +315,17 @@ export default {
 
   color: var(--color-button-font);
   opacity: .7;
+}
+
+.header {
+  flex: none;
+  padding: 12px 18px 10px;
+  display: flex;
+  align-items: center;
+}
+
+.tab {
+  flex: none;
 }
 
 .content {

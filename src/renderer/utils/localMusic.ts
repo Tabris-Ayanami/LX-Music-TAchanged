@@ -37,6 +37,7 @@ export interface LocalMusicGroup {
 }
 
 const groupCoverCache = new Map<string, string>()
+const GROUP_COVER_CACHE_LIMIT = 500
 const albumGroupCache = new WeakMap<LX.Music.MusicInfoLocal[], LocalMusicGroup[]>()
 const artistGroupCache = new WeakMap<LX.Music.MusicInfoLocal[], LocalMusicGroup[]>()
 let localTrackCache: LX.Music.MusicInfoLocal[] = []
@@ -56,6 +57,7 @@ export const getCachedLocalGroupCover = (type: 'albums' | 'artists', key: string
 
 export const setCachedLocalGroupCover = (type: 'albums' | 'artists', key: string, cover: string) => {
   if (!cover) return
+  if (groupCoverCache.size >= GROUP_COVER_CACHE_LIMIT) groupCoverCache.delete(groupCoverCache.keys().next().value!)
   groupCoverCache.set(getGroupCacheKey(type, key), cover)
 }
 

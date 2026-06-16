@@ -8,3 +8,8 @@ export interface VGlassProps {
   numOctaves?: number
 }
 
+export interface LiquidGlassSegmentedNavItem {
+  label: string
+  value: string | number
+  disabled?: boolean
+}

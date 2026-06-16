@@ -39,10 +39,10 @@ const t = useI18n()
   z-index: 2;
   color: var(--shell-text, var(--color-font));
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--shell-surface-strong, rgba(255, 255, 255, 0.88)) 78%, transparent), color-mix(in srgb, var(--shell-surface-soft, rgba(246, 249, 255, 0.78)) 52%, transparent)),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04));
-  border-bottom: 1px solid color-mix(in srgb, var(--shell-text, #182236) 8%, rgba(255, 255, 255, 0.32));
-  box-shadow: 0 10px 26px rgba(45, 62, 92, 0.08);
+    linear-gradient(180deg, color-mix(in srgb, var(--shell-surface-strong, rgba(255, 255, 255, 0.88)) 82%, transparent), color-mix(in srgb, var(--shell-surface-soft, rgba(246, 249, 255, 0.78)) 58%, transparent)),
+    linear-gradient(90deg, var(--shell-edge-light, rgba(255, 255, 255, 0.22)), transparent);
+  border-bottom: 1px solid var(--shell-divider, color-mix(in srgb, var(--shell-text, #182236) 8%, rgba(255, 255, 255, 0.32)));
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(34px) saturate(170%);
   -webkit-backdrop-filter: blur(34px) saturate(170%);
 
@@ -79,14 +79,14 @@ const t = useI18n()
   align-items: center;
   justify-content: center;
   color: var(--shell-text, var(--color-font));
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--shell-button-bg, rgba(255, 255, 255, 0.06));
   box-shadow: none;
   transition: transform .22s ease-out, opacity .22s ease-out, background-color .22s ease-out;
 
   &:hover {
     opacity: .86;
     transform: translateY(-1px);
-    background: rgba(255, 255, 255, 0.14);
+    background: var(--shell-button-bg-hover, rgba(255, 255, 255, 0.14));
   }
 }
 
