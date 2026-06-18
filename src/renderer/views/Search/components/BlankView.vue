@@ -46,6 +46,9 @@ if (appSetting['search.isShowHotSearch']) {
     if (!visible) return
     void getList(props.source).then(list => {
       hotSearchList.value = list
+    }).catch(err => {
+      console.log(err)
+      hotSearchList.value = []
     })
   }, {
     immediate: true,
@@ -56,6 +59,10 @@ if (appSetting['search.isShowHotSearch']) {
     void getList(source).then(list => {
       if (source != props.source) return
       hotSearchList.value = list
+    }).catch(err => {
+      console.log(err)
+      if (source != props.source) return
+      hotSearchList.value = []
     })
   })
 }

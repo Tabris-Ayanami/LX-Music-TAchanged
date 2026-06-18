@@ -78,7 +78,7 @@ test('RG-040: floating-island floating controls can paint beyond the shell and u
   )
   assert.match(
     floatingIslandSource,
-    /<span :class="\$style\.coverAura"[\s\S]*\.coverAura \{[\s\S]*overflow: hidden;[\s\S]*&::before \{[\s\S]*background-image: var\(--floating-cover-image\);[\s\S]*filter: blur\(30px\) saturate\(180%\);/m,
+    /<span :class="\$style\.coverAura"[\s\S]*\.coverAura \{[\s\S]*overflow: hidden;[\s\S]*&::before \{[\s\S]*background-image: var\(--floating-cover-image\);[\s\S]*filter: blur\(34px\) saturate\(186%\);/m,
     'The cover glow should be generated from the album art inside the island bounds instead of spilling outside the shell',
   )
   assert.doesNotMatch(

@@ -22,13 +22,13 @@
       <div v-if="lowPerformance" :class="$style.fallbackGlass">
         <span :class="$style.fallbackTint" />
         <span :class="$style.fallbackEdge" />
-        <span :class="$style.fallbackGloss" />
       </div>
       <LiquidGlassLayer
         v-else
         variant="capsule"
         active
         interactive
+        :highlight="false"
         :displacement-scale="pillFloating ? 28 : 22"
         :blur-amount="pillFloating ? 1.25 : 1"
         corner-radius="inherit"
@@ -254,14 +254,14 @@ onBeforeUnmount(() => {
   gap: 4px;
   min-height: 34px;
   padding: 4px;
-  border: 1px solid color-mix(in srgb, var(--shell-control-border, rgba(255, 255, 255, .22)) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--shell-control-border, rgba(255, 255, 255, .22)) 86%, rgba(255, 255, 255, .12));
   border-radius: 999px;
   background:
-    radial-gradient(120% 160% at 8% 0%, rgba(255, 255, 255, .22), rgba(255, 255, 255, 0) 58%),
-    color-mix(in srgb, var(--shell-control, rgba(255, 255, 255, .18)) 84%, transparent);
+    radial-gradient(120% 160% at 8% 0%, rgba(255, 255, 255, .18), rgba(255, 255, 255, 0) 58%),
+    color-mix(in srgb, var(--shell-surface-strong, rgba(42, 48, 60, .86)) 78%, rgba(255, 255, 255, .1));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .3),
-    0 10px 24px rgba(18, 28, 44, .08);
+    inset 0 1px 0 rgba(255, 255, 255, .18),
+    0 10px 24px rgba(18, 28, 44, .12);
   isolation: isolate;
   overflow: hidden;
   user-select: none;
@@ -297,17 +297,21 @@ onBeforeUnmount(() => {
     height 230ms cubic-bezier(.2, .85, .24, 1),
     filter 220ms ease,
     box-shadow 220ms ease;
-  filter: saturate(1.18);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 84%, #fff 16%), color-mix(in srgb, var(--color-primary) 68%, #2c5fc7 32%));
+  filter: saturate(1.12);
   box-shadow:
-    0 12px 28px rgba(16, 26, 44, .14),
-    0 2px 8px rgba(255, 255, 255, .18);
+    0 12px 28px color-mix(in srgb, var(--color-primary) 26%, rgba(16, 26, 44, .2)),
+    inset 0 1px 0 rgba(255, 255, 255, .34),
+    inset 0 -1px 0 rgba(0, 0, 0, .14);
 }
 
 .floating .pill {
-  filter: saturate(1.35);
+  filter: saturate(1.18);
   box-shadow:
-    0 18px 38px rgba(13, 23, 42, .2),
-    0 4px 14px rgba(255, 255, 255, .22);
+    0 18px 38px color-mix(in srgb, var(--color-primary) 30%, rgba(13, 23, 42, .22)),
+    inset 0 1px 0 rgba(255, 255, 255, .36),
+    inset 0 -1px 0 rgba(0, 0, 0, .14);
 }
 
 .item {
@@ -318,8 +322,9 @@ onBeforeUnmount(() => {
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: color-mix(in srgb, var(--color-theme, var(--color-primary)) 52%, var(--color-font, #23262f));
+  color: color-mix(in srgb, var(--shell-text, var(--color-font, #23262f)) 78%, var(--color-primary) 22%);
   font-size: 12px;
+  font-weight: 600;
   line-height: 28px;
   white-space: nowrap;
   cursor: pointer;
@@ -331,7 +336,7 @@ onBeforeUnmount(() => {
 
 .item:hover,
 .item:focus-visible {
-  color: var(--color-primary);
+  color: var(--shell-text, var(--color-font));
   outline: none;
 }
 
@@ -340,8 +345,8 @@ onBeforeUnmount(() => {
 }
 
 .active {
-  color: color-mix(in srgb, var(--color-primary) 82%, #10131a);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, .34);
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, .28);
 }
 
 .disabled {
@@ -375,8 +380,7 @@ onBeforeUnmount(() => {
 
 .fallbackTint {
   background:
-    radial-gradient(105% 85% at 18% 0%, rgba(255, 255, 255, .52), rgba(255, 255, 255, 0) 58%),
-    linear-gradient(135deg, rgba(255, 255, 255, .24), rgba(255, 255, 255, .08));
+    linear-gradient(135deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .06));
 }
 
 .fallbackEdge {

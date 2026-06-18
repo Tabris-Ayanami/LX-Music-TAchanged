@@ -84,6 +84,26 @@ declare global {
       'common.showChangeLog': boolean
 
       /**
+       * B站账号 Cookie
+       */
+      'account.bili.cookie': string
+
+      /**
+       * 网易云账号 Cookie（占位）
+       */
+      'account.wy.cookie': string
+
+      /**
+       * QQ音乐账号 Cookie（占位）
+       */
+      'account.tx.cookie': string
+
+      /**
+       * 酷狗账号 Cookie（占位）
+       */
+      'account.kg.cookie': string
+
+      /**
        * 启动时自动播放歌曲
        */
       'player.startupAutoPlay': boolean

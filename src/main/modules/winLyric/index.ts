@@ -7,6 +7,7 @@ import { closeWindow, createWindow, isExistWindow } from './main'
 // import { Event, EVENT_NAMES } from './event'
 
 let isMainWidnowFullscreen = false
+const isDesktopLyricDisabled = true
 
 export default () => {
   initRendererEvent()
@@ -16,7 +17,7 @@ export default () => {
   global.lx.event_app.on('main_window_inited', () => {
     isMainWidnowFullscreen = global.lx.appSetting['common.startInFullscreen']
 
-    if (global.lx.appSetting['desktopLyric.enable']) {
+    if (!isDesktopLyricDisabled && global.lx.appSetting['desktopLyric.enable']) {
       if (global.lx.appSetting['desktopLyric.fullscreenHide'] && isMainWidnowFullscreen) {
         closeWindow()
       } else {
@@ -27,6 +28,11 @@ export default () => {
   })
   global.lx.event_app.on('updated_config', (keys, setting) => {
     setLrcConfig(keys, setting)
+    if (isDesktopLyricDisabled && global.lx.appSetting['desktopLyric.enable']) {
+      global.lx.event_app.update_config({ 'desktopLyric.enable': false })
+      closeWindow()
+      return
+    }
     if (keys.includes('desktopLyric.fullscreenHide') && global.lx.appSetting['desktopLyric.enable'] && isMainWidnowFullscreen) {
       if (global.lx.appSetting['desktopLyric.fullscreenHide']) closeWindow()
       else if (!isExistWindow()) createWindow()
@@ -52,6 +58,7 @@ export default () => {
   global.lx.event_app.on('hot_key_down', ({ type, key }) => {
     let info = global.lx.hotKey.config.global.keys[key]
     if (!info || info.type != APP_EVENT_NAMES.winLyricName) return
+    if (isDesktopLyricDisabled) return
     let newSetting: Partial<LX.AppSetting> = {}
     let settingKey: keyof LX.AppSetting
     switch (info.action) {

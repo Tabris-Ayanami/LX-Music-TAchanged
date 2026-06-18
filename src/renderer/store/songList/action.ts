@@ -2,6 +2,7 @@
 import { deduplicationList, toNewMusicInfo } from '@renderer/utils'
 import musicSdk from '@renderer/utils/musicSdk'
 import { markRaw, markRawList } from '@common/utils/vueTools'
+import { createLimitedCache } from '@renderer/utils/limitedCache'
 import {
   tags,
   listInfo,
@@ -17,7 +18,7 @@ import type {
   TagInfo,
 } from './state'
 
-const cache = new Map<string, any>()
+const cache = createLimitedCache(60, 30 * 60 * 1000)
 
 export const setTags = (tagInfo: TagInfo, source: LX.OnlineSource) => {
   tags[source] = markRaw(tagInfo)
@@ -114,6 +115,7 @@ export const getAndSetList = async(source: LX.OnlineSource, tabId: string, sortI
     if (key != listInfo.key) return
     setList(result, tabId, sortId, page)
   }).catch((error: any) => {
+    if (key != listInfo.key) return
     clearList()
     listInfo.noItemLabel = window.i18n.t('list__load_failed')
     console.log(error)
@@ -196,6 +198,7 @@ export const getAndSetListDetail = async(id: string, source: LX.OnlineSource, pa
     if (key != listDetailInfo.key) return
     setListDetail(result, id, page)
   }).catch((error: any) => {
+    if (key != listDetailInfo.key) return
     clearListDetail()
     listDetailInfo.noItemLabel = window.i18n.t('list__load_failed')
     console.log(error)

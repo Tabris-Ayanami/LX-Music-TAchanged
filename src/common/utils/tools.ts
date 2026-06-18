@@ -48,6 +48,16 @@ export const toNewMusicInfo = (oldMusicInfo: any): LX.Music.MusicInfo => {
         meta.mrcUrl = oldMusicInfo.mrcUrl
         meta.trcUrl = oldMusicInfo.trcUrl
         break
+      case 'bili':
+        meta.bvid = oldMusicInfo.bvid
+        meta.aid = oldMusicInfo.aid
+        meta.cid = oldMusicInfo.cid
+        meta.page = oldMusicInfo.page
+        meta.pageTitle = oldMusicInfo.pageTitle
+        meta.pageCount = oldMusicInfo.pageCount
+        meta.videoTitle = oldMusicInfo.videoTitle
+        meta.ownerMid = oldMusicInfo.ownerMid
+        break
     }
   }
 
@@ -90,6 +100,16 @@ export const toOldMusicInfo = (minfo: LX.Music.MusicInfo) => {
         oInfo.lrcUrl = minfo.meta.lrcUrl
         oInfo.mrcUrl = minfo.meta.mrcUrl
         oInfo.trcUrl = minfo.meta.trcUrl
+        break
+      case 'bili':
+        oInfo.bvid = minfo.meta.bvid
+        oInfo.aid = minfo.meta.aid
+        oInfo.cid = minfo.meta.cid
+        oInfo.page = minfo.meta.page
+        oInfo.pageTitle = minfo.meta.pageTitle
+        oInfo.pageCount = minfo.meta.pageCount
+        oInfo.videoTitle = minfo.meta.videoTitle
+        oInfo.ownerMid = minfo.meta.ownerMid
         break
     }
   }
@@ -147,4 +167,3 @@ export const clipNameLength = (name: string) => {
 export const clipFileNameLength = (name: string) => {
   return name.length > MAX_FILE_NAME_LENGTH ? name.substring(0, MAX_FILE_NAME_LENGTH) : name
 }
-

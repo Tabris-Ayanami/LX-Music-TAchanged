@@ -5,7 +5,79 @@ import wy from './wy/index'
 import mg from './mg/index'
 import bd from './bd/index'
 import xm from './xm'
+import bili from './bili/index'
 import { supportQuality } from './api-source'
+
+const LOCAL_COMMENT_MATCH_SOURCES = ['wy', 'tx', 'kw', 'kg', 'mg']
+
+const localCommentMatchCache = new Map()
+
+const getIntervalSeconds = interval => {
+  if (!interval || typeof interval != 'string') return 0
+  const nums = interval.split(':').map(num => parseInt(num))
+  if (nums.some(num => Number.isNaN(num))) return 0
+  return nums.reduce((sum, num) => sum * 60 + num, 0)
+}
+
+const normalizeSearchText = text => String(text || '')
+  .replace(/\.[a-z\d]{2,5}$/i, '')
+  .replace(/\s|'|\.|,|，|&|"|、|\(|\)|（|）|`|~|-|<|>|\||\/|\]|\[|!|！/g, '')
+  .toLowerCase()
+
+const isLocalCommentMatched = (localInfo, onlineInfo) => {
+  const localName = normalizeSearchText(localInfo.name)
+  const onlineName = normalizeSearchText(onlineInfo.name)
+  if (!localName || !onlineName) return false
+  if (localName != onlineName && !localName.includes(onlineName) && !onlineName.includes(localName)) return false
+
+  const localSinger = normalizeSearchText(localInfo.singer)
+  const onlineSinger = normalizeSearchText(onlineInfo.singer)
+  if (localSinger && onlineSinger && !localSinger.includes(onlineSinger) && !onlineSinger.includes(localSinger)) return false
+
+  const localInterval = getIntervalSeconds(localInfo.interval)
+  const onlineInterval = getIntervalSeconds(onlineInfo.interval)
+  return !localInterval || !onlineInterval || Math.abs(localInterval - onlineInterval) < 8
+}
+
+const findLocalCommentMusic = async(localInfo) => {
+  const cacheKey = `${localInfo.name}__${localInfo.singer}__${localInfo.interval}`
+  if (localCommentMatchCache.has(cacheKey)) return localCommentMatchCache.get(cacheKey)
+
+  const keyword = `${localInfo.name || ''} ${localInfo.singer || ''}`.trim()
+  for (const source of LOCAL_COMMENT_MATCH_SOURCES) {
+    const sdk = sources[source]
+    if (!sdk?.musicSearch?.search || !sdk.comment) continue
+    try {
+      const result = await sdk.musicSearch.search(keyword, 1, 10)
+      const list = result?.list || []
+      const matched = list.find(item => isLocalCommentMatched(localInfo, item)) || list[0]
+      if (!matched) continue
+      localCommentMatchCache.set(cacheKey, matched)
+      return matched
+    } catch (err) {
+      console.log(err)
+    }
+  }
+
+  throw new Error('未找到可匹配评论的在线歌曲')
+}
+
+const local = {
+  comment: {
+    async getComment(musicInfo, page = 1, limit = 20) {
+      const matched = await findLocalCommentMusic(musicInfo)
+      const sdk = sources[matched.source]
+      if (!sdk?.comment?.getComment) throw new Error('匹配源不支持评论')
+      return sdk.comment.getComment(matched, page, limit)
+    },
+    async getHotComment(musicInfo, page = 1, limit = 20) {
+      const matched = await findLocalCommentMusic(musicInfo)
+      const sdk = sources[matched.source]
+      if (!sdk?.comment?.getHotComment) throw new Error('匹配源不支持热门评论')
+      return sdk.comment.getHotComment(matched, page, limit)
+    },
+  },
+}
 
 
 const sources = {
@@ -34,6 +106,10 @@ const sources = {
       name: '虾米音乐',
       id: 'xm',
     },
+    {
+      name: 'B站音乐',
+      id: 'bili',
+    },
     // {
     //   name: '百度音乐',
     //   id: 'bd',
@@ -46,8 +122,11 @@ const sources = {
   mg,
   bd,
   xm,
+  bili,
+  local,
 }
-export default {
+/** @type {any} */
+const musicSdk = {
   ...sources,
   init() {
     const tasks = []
@@ -63,7 +142,7 @@ export default {
     const trimStr = str => typeof str == 'string' ? str.trim() : str
     const musicName = trimStr(name)
     const tasks = []
-    const excludeSource = ['xm']
+    const excludeSource = ['xm', 'bili']
     for (const source of sources.sources) {
       if (!sources[source.id].musicSearch || source.id == s || excludeSource.includes(source.id)) continue
       tasks.push(sources[source.id].musicSearch.search(`${musicName} ${singer || ''}`.trim(), 1, limit).catch(_ => null))
@@ -167,3 +246,5 @@ export default {
     return newResult
   },
 }
+
+export default musicSdk

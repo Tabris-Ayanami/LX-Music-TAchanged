@@ -1,6 +1,7 @@
 import { httpFetch } from '../../request'
 import { weapi } from './utils/crypto'
 import { dateFormat2 } from '../../index'
+import { createLimitedCache } from '@renderer/utils/limitedCache'
 
 const emojis = [
   ['大笑', '😃'],
@@ -71,10 +72,13 @@ const applyEmoji = text => {
 }
 
 let cursorTools = {
-  cache: {},
+  cache: createLimitedCache(80, 30 * 60 * 1000),
   getCursor(id, page, limit) {
-    let cacheData = this.cache[id]
-    if (!cacheData) cacheData = this.cache[id] = {}
+    let cacheData = this.cache.get(id)
+    if (!cacheData) {
+      cacheData = {}
+      this.cache.set(id, cacheData)
+    }
     let orderType
     let cursor
     let offset
@@ -104,8 +108,11 @@ let cursorTools = {
     }
   },
   setCursor(id, cursor, orderType, offset, page) {
-    let cacheData = this.cache[id]
-    if (!cacheData) cacheData = this.cache[id] = {}
+    let cacheData = this.cache.get(id)
+    if (!cacheData) {
+      cacheData = {}
+      this.cache.set(id, cacheData)
+    }
     cacheData.prevCursor = cacheData.cursor
     cacheData.cursor = cursor
     cacheData.orderType = orderType

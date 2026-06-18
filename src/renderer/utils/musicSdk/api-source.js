@@ -19,10 +19,17 @@ const allApi = {
 }
 
 const apiList = {}
-const supportQuality = {}
+const supportQuality = {
+  temp: {
+    bili: ['flac24bit', '320k', '192k', '128k'],
+  },
+}
 
 for (const api of apiSourceInfo) {
-  supportQuality[api.id] = api.supportQualitys
+  supportQuality[api.id] = {
+    ...api.supportQualitys,
+    bili: ['flac24bit', '320k', '192k', '128k'],
+  }
   for (const source of Object.keys(api.supportQualitys)) {
     apiList[`${api.id}_api_${source}`] = allApi[`${api.id}_${source}`]
   }

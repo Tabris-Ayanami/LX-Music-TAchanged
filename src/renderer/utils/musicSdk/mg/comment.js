@@ -1,6 +1,7 @@
 import { httpFetch } from '../../request'
 import getSongId from './songId'
 import { dateFormat2 } from '../../index'
+import { setLimitedCache } from '@renderer/utils/limitedCache'
 
 export default {
   _requestObj: null,
@@ -29,7 +30,7 @@ export default {
     if (statusCode != 200 || body.code !== '000000') throw new Error('获取评论失败')
     const total = parseInt(body.data.commentNums)
     const list = this.filterComment(body.data.comments)
-    this.lastCommentIds.set(String(page + 1), list.length ? list[list.length - 1].id : '')
+    setLimitedCache(this.lastCommentIds, String(page + 1), list.length ? list[list.length - 1].id : '', 20)
     return { source: 'mg', comments: list, total, page, limit, maxPage: Math.ceil(total / limit) || 1 }
   },
   async getHotComment(musicInfo, page = 1, limit = 20) {

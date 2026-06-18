@@ -87,7 +87,7 @@ export default {
     let startIndex = -1
     let endIndex = -1
     let scrollTop = -1
-    let cachedList = []
+    let cachedList = new Map()
     let cancelScroll = null
     let isAutoScrolling = false
     let scrollToValue = 0
@@ -124,20 +124,37 @@ export default {
     }
 
     const createList = (startIndex, endIndex) => {
-      const cache = cachedList.slice(startIndex, endIndex)
-      const list = props.list.slice(startIndex, endIndex).map((item, i) => {
-        if (cache[i]) return cache[i]
-        const top = (startIndex + i) * props.itemHeight
-        const index = startIndex + i
-        return cachedList[index] = {
+      const list = []
+      for (let index = startIndex; index < endIndex; index++) {
+        const item = props.list[index]
+        if (!item) continue
+        const cached = cachedList.get(index)
+        if (cached?.item === item) {
+          list.push(cached)
+          continue
+        }
+        const top = index * props.itemHeight
+        const viewItem = {
           item,
           top,
           style: { position: 'absolute', left: 0, right: 0, top: top + 'px', height: props.itemHeight + 'px' },
           index,
           key: item[props.keyName],
         }
-      })
+        cachedList.set(index, viewItem)
+        list.push(viewItem)
+      }
+      pruneCache(startIndex, endIndex)
       return list
+    }
+
+    const pruneCache = (startIndex, endIndex) => {
+      const buffer = Math.max(Math.ceil((endIndex - startIndex) * 3), 30)
+      const min = Math.max(startIndex - buffer, 0)
+      const max = endIndex + buffer
+      for (const index of cachedList.keys()) {
+        if (index < min || index > max) cachedList.delete(index)
+      }
     }
 
     const updateView = currentScrollTop => {
@@ -278,10 +295,10 @@ export default {
     })
 
     const handleReset = list => {
-      cachedList = Array(list.length)
+      cachedList.clear()
       startIndex = -1
       endIndex = -1
-      if (cachedList.length) {
+      if (list.length) {
         scheduleUpdateViewAfterNextTick()
       } else {
         views.value = []
@@ -311,7 +328,7 @@ export default {
         })
         resizeObserver.observe(container)
       }
-      cachedList = Array(props.list.length)
+      cachedList.clear()
       startIndex = -1
       endIndex = -1
 
@@ -331,6 +348,7 @@ export default {
         cancelScroll()
         cancelScroll = null
       }
+      cachedList.clear()
       isAutoScrolling = false
     })
 

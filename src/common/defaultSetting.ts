@@ -23,6 +23,11 @@ const defaultSetting: LX.AppSetting = {
   'common.tryAutoUpdate': true,
   'common.showChangeLog': true,
 
+  'account.bili.cookie': '',
+  'account.wy.cookie': '',
+  'account.tx.cookie': '',
+  'account.kg.cookie': '',
+
   'player.startupAutoPlay': false,
   'player.togglePlayMethod': 'listLoop',
   'player.playQuality': '128k',

@@ -16,12 +16,15 @@ const props = withDefaults(defineProps<VGlassProps>(), {
   xChannelSelector: 'R',
   yChannelSelector: 'G',
   numOctaves: 2,
+  disableDistortion: false,
 })
 
 const filterId = generateFilterId()
 
 const styles = computed(() => {
-  const filterValue = `url(#${filterId}) blur(${props.blur}px)`
+  const filterValue = props.disableDistortion
+    ? `blur(${Math.min(props.blur, 18)}px)`
+    : `url(#${filterId}) blur(${props.blur}px)`
 
   return {
     backdropFilter: filterValue,
@@ -36,6 +39,7 @@ defineExpose({ filterId })
   <component :is="as" v-bind="$attrs" :style="styles">
     <slot />
     <svg
+      v-if="!disableDistortion"
       aria-hidden="true"
       focusable="false"
       role="presentation"
@@ -59,4 +63,3 @@ defineExpose({ filterId })
     </svg>
   </component>
 </template>
-

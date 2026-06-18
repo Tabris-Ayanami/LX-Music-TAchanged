@@ -37,6 +37,20 @@ declare namespace LX {
     }
 
 
+    interface MusicInfoMeta_bili extends MusicInfoMeta_online {
+      bvid: string
+      aid?: number
+      cid: number
+      page: number
+      pageTitle: string
+      pageCount: number
+      videoTitle: string
+      ownerMid?: number
+    }
+    interface MusicInfo_bili extends MusicInfoBase<'bili'> {
+      meta: MusicInfoMeta_bili
+    }
+
     interface MusicInfoBase<S = LX.Source> {
       id: string
       name: string // 歌曲名
@@ -82,7 +96,7 @@ declare namespace LX {
       meta: MusicInfoMeta_mg
     }
 
-    type MusicInfoOnline = MusicInfo_online_common | MusicInfo_kg | MusicInfo_tx | MusicInfo_mg
+    type MusicInfoOnline = MusicInfo_online_common | MusicInfo_kg | MusicInfo_tx | MusicInfo_mg | MusicInfo_bili
     type MusicInfo = MusicInfoOnline | MusicInfoLocal
 
     interface LyricInfo {

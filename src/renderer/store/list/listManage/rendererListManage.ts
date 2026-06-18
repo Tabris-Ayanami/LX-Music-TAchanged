@@ -17,7 +17,7 @@ import {
   setUserLists,
   listMusicClear,
 } from './action'
-import { allMusicList } from './state'
+import { allMusicList, touchMusicListCache } from './state'
 
 /**
  * 获取用户列表
@@ -68,7 +68,10 @@ export const updateUserListPosition = async(data: LX.List.ListActionUpdatePositi
  */
 export const getListMusics = async(listId: string | null): Promise<LX.Music.MusicInfo[]> => {
   if (!listId) return []
-  if (allMusicList.has(listId)) return allMusicList.get(listId)!
+  if (allMusicList.has(listId)) {
+    touchMusicListCache(listId)
+    return allMusicList.get(listId)!
+  }
   const list = await rendererInvoke<string, LX.Music.MusicInfo[]>(PLAYER_EVENT_NAME.list_music_get, listId)
   return setMusicList(listId, list)
 }

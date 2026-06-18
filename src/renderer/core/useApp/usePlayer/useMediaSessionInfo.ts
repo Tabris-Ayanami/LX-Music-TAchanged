@@ -14,7 +14,7 @@ export default () => {
   emptyAudio.onplaying = () => {
     emptyAudio.pause()
   }
-  void emptyAudio.play()
+  void emptyAudio.play().catch(_ => _)
   let prevPicUrl = ''
 
   const updateMediaSessionInfo = () => {
@@ -73,7 +73,7 @@ export default () => {
     navigator.mediaSession.playbackState = 'none'
   }
   const handleSetPlayInfo = () => {
-    void emptyAudio.play().finally(() => {
+    void emptyAudio.play().catch(_ => _).finally(() => {
       updateMediaSessionInfo()
       updatePositionState({
         position: playProgress.nowPlayTime,

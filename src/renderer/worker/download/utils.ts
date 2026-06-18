@@ -3,6 +3,10 @@ import { filterFileName } from '@common/utils/common'
 import { buildLyrics } from './lrcTool'
 import fs from 'fs'
 import { clipFileNameLength, clipNameLength } from '@common/utils/tools'
+import { spawn } from 'node:child_process'
+
+const BILI_DOWNLOAD_QUALITYS: LX.Quality[] = ['flac24bit', '320k', '192k', '128k']
+declare const __non_webpack_require__: NodeRequire
 
 /**
  * 保存歌词文件
@@ -48,6 +52,11 @@ export const getExt = (type: string): LX.Download.FileExt => {
   }
 }
 
+const getBiliExt = (format: LX.Download.FileExt | undefined, type: LX.Quality): LX.Download.FileExt => {
+  if (format) return format
+  return type == 'flac24bit' ? 'flac' : 'mp3'
+}
+
 /**
  * 获取音乐音质
  * @param musicInfo
@@ -55,7 +64,7 @@ export const getExt = (type: string): LX.Download.FileExt => {
  * @param qualityList
  */
 export const getMusicType = (musicInfo: LX.Music.MusicInfoOnline, type: LX.Quality, qualityList: LX.QualityList): LX.Quality => {
-  let list = qualityList[musicInfo.source]
+  let list = musicInfo.source == 'bili' ? BILI_DOWNLOAD_QUALITYS : qualityList[musicInfo.source]
   if (!list) return '128k'
   if (!list.includes(type)) type = list[list.length - 1]
   const rangeType = QUALITYS.slice(QUALITYS.indexOf(type))
@@ -69,9 +78,9 @@ export const getMusicType = (musicInfo: LX.Music.MusicInfoOnline, type: LX.Quali
 //   return list.some(s => s.id === musicInfo.id && (s.metadata.type === type || s.metadata.ext === ext))
 // }
 
-export const createDownloadInfo = (musicInfo: LX.Music.MusicInfoOnline, type: LX.Quality, fileName: string, qualityList: LX.QualityList, listId?: string) => {
+export const createDownloadInfo = (musicInfo: LX.Music.MusicInfoOnline, type: LX.Quality, fileName: string, qualityList: LX.QualityList, listId?: string, format?: LX.Download.FileExt) => {
   type = getMusicType(musicInfo, type, qualityList)
-  let ext = getExt(type)
+  let ext = musicInfo.source == 'bili' ? getBiliExt(format, type) : getExt(type)
   const key = `${musicInfo.id}_${type}_${ext}`
   // if (checkExistList(list, musicInfo, type, ext)) return null
   const downloadInfo: LX.Download.ListItem = {
@@ -109,4 +118,51 @@ export const createDownloadInfo = (musicInfo: LX.Music.MusicInfoOnline, type: LX
   // })
 
   return downloadInfo
+}
+
+export const shouldConvertDownload = (downloadInfo: LX.Download.ListItem) => {
+  return downloadInfo.metadata.musicInfo.source == 'bili' && ['mp3', 'flac', 'wav'].includes(downloadInfo.metadata.ext)
+}
+
+const getMp3Bitrate = (quality: LX.Quality) => {
+  switch (quality) {
+    case '320k':
+      return '320k'
+    case '192k':
+      return '192k'
+    case '128k':
+    default:
+      return '128k'
+  }
+}
+
+export const convertAudio = async(inputPath: string, outputPath: string, ext: LX.Download.FileExt, quality: LX.Quality) => {
+  const ffmpeg = __non_webpack_require__('@ffmpeg-installer/ffmpeg') as { path: string }
+  const args = ['-y', '-i', inputPath, '-vn']
+  switch (ext) {
+    case 'flac':
+      args.push('-codec:a', 'flac')
+      break
+    case 'wav':
+      args.push('-codec:a', 'pcm_s16le')
+      break
+    case 'mp3':
+    default:
+      args.push('-codec:a', 'libmp3lame', '-b:a', getMp3Bitrate(quality))
+      break
+  }
+  args.push(outputPath)
+
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn(ffmpeg.path, args, { windowsHide: true })
+    let stderr = ''
+    child.stderr.on('data', data => {
+      stderr += String(data)
+    })
+    child.on('error', reject)
+    child.on('close', code => {
+      if (code == 0) resolve()
+      else reject(new Error(stderr.trim() || `ffmpeg exited with code ${code ?? 'unknown'}`))
+    })
+  })
 }

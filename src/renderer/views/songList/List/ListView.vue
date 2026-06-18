@@ -36,6 +36,8 @@ const getListData = async(source: LX.OnlineSource, tabId: string, sortId: string
         list_ref.value.scrollTo(0)
       })
     }
+  }).catch(err => {
+    console.log(err)
   })
 }
 

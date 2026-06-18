@@ -1,8 +1,11 @@
 import { markRaw, markRawList, toRaw } from '@common/utils/vueTools'
 import {
   allMusicList,
+  deleteMusicListCache,
   defaultList,
   loveList,
+  touchMusicListCache,
+  trimMusicListCache,
   tempList,
   userLists,
 } from './state'
@@ -18,6 +21,8 @@ export const setUserLists = (lists: LX.List.UserListInfo[]) => {
 export const setMusicList = (listId: string, musicList: LX.Music.MusicInfo[]) => {
   const list = markRawList(musicList)
   allMusicList.set(listId, list)
+  touchMusicListCache(listId)
+  trimMusicListCache()
   return list
 }
 
@@ -31,9 +36,11 @@ const overwriteMusicList = (id: string, list: LX.Music.MusicInfo[]) => {
   } else {
     allMusicList.set(id, list)
   }
+  touchMusicListCache(id)
+  trimMusicListCache()
 }
 const removeMusicList = (id: string) => {
-  allMusicList.delete(id)
+  deleteMusicListCache(id)
 }
 
 const createUserList = ({

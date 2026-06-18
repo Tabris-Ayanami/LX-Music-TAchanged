@@ -1,15 +1,15 @@
 import { BaseBackgroundRender } from './BaseBackgroundRender'
 
 type WorkerCommand =
-  | { type: 'init'; canvas: OffscreenCanvas; width: number; height: number; colors: string[] }
-  | { type: 'resize'; width: number; height: number }
-  | { type: 'colors'; colors: string[] }
-  | { type: 'play'; isPlaying: boolean }
-  | { type: 'pause'; paused: boolean }
-  | { type: 'coverImage'; imageData: ImageBitmap }
+  | { type: 'init', canvas: OffscreenCanvas, width: number, height: number, colors: string[] }
+  | { type: 'resize', width: number, height: number }
+  | { type: 'colors', colors: string[] }
+  | { type: 'play', isPlaying: boolean }
+  | { type: 'pause', paused: boolean }
+  | { type: 'coverImage', imageData: ImageBitmap }
 
 export class WebWorkerBackgroundRender extends BaseBackgroundRender {
-  private canvas: HTMLCanvasElement
+  private readonly canvas: HTMLCanvasElement
   private worker: Worker | null = null
 
   constructor(canvas: HTMLCanvasElement, targetFps: number = 60) {

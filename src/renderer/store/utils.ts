@@ -12,7 +12,7 @@ import { getThemes as getTheme } from '@renderer/utils/ipc'
 import { qualityList, themeInfo, themeShouldUseDarkColors } from './index'
 
 export const assertApiSupport = (source: LX.Source): boolean => {
-  return source == 'local' || qualityList.value[source] != null
+  return source == 'local' || source == 'bili' || qualityList.value[source] != null
 }
 
 export const buildBgUrl = (originUrl: string, dataPath: string): string => {

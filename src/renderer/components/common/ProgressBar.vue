@@ -42,6 +42,8 @@ export default {
     const handleMsDown = event => {
       msEvent.isMsDown = true
       msEvent.msDownX = event.clientX
+      document.addEventListener('mousemove', handleMsMove)
+      document.addEventListener('mouseup', handleMsUp)
 
       let val = event.offsetX / dom_progress.value.clientWidth
       if (val < 0) val = 0
@@ -53,6 +55,8 @@ export default {
       if (msEvent.isMsDown) setProgress(dragProgress.value * playProgress.maxPlayTime)
       msEvent.isMsDown = false
       dragging.value = false
+      document.removeEventListener('mousemove', handleMsMove)
+      document.removeEventListener('mouseup', handleMsUp)
     }
     const handleMsMove = event => {
       if (!msEvent.isMsDown) return
@@ -64,8 +68,6 @@ export default {
       dragProgress.value = progress
     }
 
-    document.addEventListener('mousemove', handleMsMove)
-    document.addEventListener('mouseup', handleMsUp)
     onBeforeUnmount(() => {
       document.removeEventListener('mousemove', handleMsMove)
       document.removeEventListener('mouseup', handleMsUp)

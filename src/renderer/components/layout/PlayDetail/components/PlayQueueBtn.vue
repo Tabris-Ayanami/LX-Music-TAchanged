@@ -85,6 +85,7 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from '@common/utils/vueTools'
+import { encodePath } from '@common/utils/common'
 import { playList } from '@renderer/core/player'
 import { dialog } from '@renderer/plugins/Dialog'
 import { clearListMusics, overwriteListMusics, removeListMusics } from '@renderer/store/list/action'
@@ -115,8 +116,17 @@ const menuTarget = ref(null)
 const loadingPicIds = new Set()
 let picRequestId = 0
 
+const normalizePicUrl = pic => {
+  if (!pic || /^(?:https?:|data:|blob:|file:)/i.test(pic)) return pic || ''
+  return `file:///${encodePath(pic)}`
+}
+
+const isBiliProxyPic = pic => /^http:\/\/(?:127\.0\.0\.1|localhost):\d+\/bili\/image\?/i.test(pic)
+
 const getMusicPic = musicInfo => {
-  return musicInfo?.pic || musicInfo?.meta?.picUrl || musicInfo?.img || ''
+  const pic = musicInfo?.pic || musicInfo?.meta?.picUrl || musicInfo?.img || ''
+  if (musicInfo?.source == 'bili' && pic && !isBiliProxyPic(pic)) return ''
+  return normalizePicUrl(pic)
 }
 
 const getQueueMusicInfo = item => {
@@ -125,9 +135,11 @@ const getQueueMusicInfo = item => {
 
 const applyQueuePic = (item, pic, requestId) => {
   if (!pic || requestId != picRequestId) return
+  const picUrl = normalizePicUrl(pic)
   for (const queueItem of queueList.value) {
     if (queueItem.id != item.id || queueItem.index != item.index) continue
-    queueItem.pic = pic
+    queueItem.pic = picUrl
+    if (queueItem.musicInfo?.meta) queueItem.musicInfo.meta.picUrl = picUrl
     break
   }
 }
@@ -135,7 +147,9 @@ const applyQueuePic = (item, pic, requestId) => {
 const loadMissingLocalPics = () => {
   const requestId = ++picRequestId
   const targets = queueList.value.filter(item => {
-    return !item.pic && item.musicInfo?.source == 'local' && item.musicInfo.meta?.filePath && !loadingPicIds.has(item.id)
+    if (item.pic || loadingPicIds.has(item.id)) return false
+    if (item.musicInfo?.source == 'local') return !!item.musicInfo.meta?.filePath
+    return item.musicInfo?.source == 'bili' && !!item.musicInfo.meta?.bvid
   }).slice(0, 80)
   if (!targets.length) return
 

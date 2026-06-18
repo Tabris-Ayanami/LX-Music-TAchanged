@@ -164,11 +164,12 @@ body {
   z-index: 3;
   padding: 0;
   background:
-    linear-gradient(155deg, var(--shell-panel-highlight), transparent 48%),
-    var(--shell-panel),
+    radial-gradient(120% 90% at 0% 0%, var(--shell-sidebar-glow), transparent 58%),
+    linear-gradient(155deg, var(--shell-sidebar-highlight), transparent 52%),
+    var(--shell-sidebar-panel, var(--shell-panel)),
     linear-gradient(90deg, var(--shell-edge-light), transparent 68%);
-  backdrop-filter: blur(34px) saturate(142%);
-  -webkit-backdrop-filter: blur(34px) saturate(142%);
+  backdrop-filter: blur(38px) saturate(156%);
+  -webkit-backdrop-filter: blur(38px) saturate(156%);
   box-shadow: var(--shell-panel-shadow);
   contain: layout style;
   will-change: width;
@@ -309,6 +310,9 @@ body {
   --shell-panel: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(244, 248, 253, 0.9));
   --shell-panel-highlight: rgba(255, 255, 255, 0.56);
   --shell-panel-shadow: 18px 0 46px rgba(82, 103, 137, 0.13), inset -1px 0 0 rgba(255, 255, 255, 0.48);
+  --shell-sidebar-panel: linear-gradient(180deg, rgba(232, 240, 251, 0.74), rgba(217, 228, 243, 0.66));
+  --shell-sidebar-highlight: rgba(255, 255, 255, 0.46);
+  --shell-sidebar-glow: color-mix(in srgb, var(--color-primary) 16%, rgba(141, 170, 210, 0.18));
   --shell-panel-sheen-opacity: .72;
   --shell-surface: rgba(255, 255, 255, 0.72);
   --shell-surface-strong: rgba(255, 255, 255, 0.9);
@@ -357,6 +361,9 @@ body {
   --shell-panel: linear-gradient(180deg, rgba(33, 37, 46, 0.82), rgba(19, 22, 29, 0.9));
   --shell-panel-highlight: color-mix(in srgb, var(--color-primary) 12%, rgba(255, 255, 255, 0.06));
   --shell-panel-shadow: 18px 0 46px rgba(0, 0, 0, 0.24), inset -1px 0 0 rgba(255, 255, 255, 0.055);
+  --shell-sidebar-panel: linear-gradient(180deg, rgba(42, 48, 60, 0.62), rgba(25, 30, 40, 0.72));
+  --shell-sidebar-highlight: color-mix(in srgb, var(--color-primary) 16%, rgba(255, 255, 255, 0.045));
+  --shell-sidebar-glow: color-mix(in srgb, var(--color-primary) 18%, rgba(62, 84, 112, 0.2));
   --shell-panel-sheen-opacity: .45;
   --shell-surface: rgba(28, 32, 40, 0.72);
   --shell-surface-strong: rgba(37, 42, 52, 0.86);

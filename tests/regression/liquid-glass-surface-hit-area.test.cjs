@@ -26,9 +26,9 @@ test('RG-019: glass search and toolbar surfaces keep live controls above the ove
     /\.list \{[\s\S]*position: relative;[\s\S]*z-index: 1;/m,
     'Suggestion lists should render above the glass layer so hover and click selection continue to work when the panel expands',
   )
-  assert.match(
+  assert.doesNotMatch(
     toolbarSource,
-    /\.actions \{[\s\S]*position: relative;[\s\S]*overflow: hidden;[\s\S]*isolation: isolate;[\s\S]*> \* \{[\s\S]*z-index: 1;/m,
-    'Toolbar actions should isolate the glass shell and keep the settings button plus window controls in the interactive foreground',
+    /\.actions \{[\s\S]*overflow: hidden;[\s\S]*> \* \{/m,
+    'Toolbar actions should remain a simple control group and not clip optimized button effects',
   )
 })

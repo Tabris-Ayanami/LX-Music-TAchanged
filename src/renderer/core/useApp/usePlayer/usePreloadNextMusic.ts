@@ -8,6 +8,7 @@ import { getMusicUrl } from '@renderer/core/music'
 import { appSetting } from '@renderer/store/setting'
 
 let audio: HTMLAudioElement
+let preloadTaskId = 0
 const handlePreloadPlaying = () => {
   audio.pause()
 }
@@ -15,11 +16,11 @@ const initAudio = () => {
   if (audio) return
   audio = new Audio()
   audio.controls = false
-  audio.preload = 'auto'
+  audio.preload = 'metadata'
   audio.crossOrigin = 'anonymous'
   audio.muted = true
   audio.volume = 0
-  audio.autoplay = true
+  audio.autoplay = false
   audio.addEventListener('playing', handlePreloadPlaying)
 }
 const releasePreloadAudio = () => {
@@ -28,12 +29,18 @@ const releasePreloadAudio = () => {
   audio.removeAttribute('src')
   audio.load()
 }
-const checkMusicUrl = async(url: string): Promise<boolean> => {
+const checkMusicUrl = async(url: string, taskId: number): Promise<boolean> => {
   initAudio()
   return new Promise((resolve) => {
+    const timeout = window.setTimeout(() => {
+      clear()
+      if (taskId == preloadTaskId) releasePreloadAudio()
+      resolve(false)
+    }, 8000)
     const clear = () => {
+      window.clearTimeout(timeout)
       audio.removeEventListener('error', handleErr)
-      audio.removeEventListener('canplay', handlePlay)
+      audio.removeEventListener('loadedmetadata', handleLoaded)
     }
     const handleErr = () => {
       clear()
@@ -44,13 +51,14 @@ const checkMusicUrl = async(url: string): Promise<boolean> => {
         resolve(true)
       }
     }
-    const handlePlay = () => {
+    const handleLoaded = () => {
       clear()
       resolve(true)
     }
     audio.addEventListener('error', handleErr)
-    audio.addEventListener('canplay', handlePlay)
+    audio.addEventListener('loadedmetadata', handleLoaded)
     audio.src = url
+    audio.load()
   })
 }
 
@@ -60,6 +68,7 @@ const preloadMusicInfo = {
   info: null as LX.Player.PlayMusicInfo | null,
 }
 const resetPreloadInfo = () => {
+  preloadTaskId += 1
   preloadMusicInfo.preProgress = 0
   preloadMusicInfo.info = null
   preloadMusicInfo.isLoading = false
@@ -68,22 +77,26 @@ const resetPreloadInfo = () => {
 const preloadNextMusicUrl = async(curTime: number) => {
   if (preloadMusicInfo.isLoading || curTime - preloadMusicInfo.preProgress < 3) return
   preloadMusicInfo.isLoading = true
+  const taskId = ++preloadTaskId
   console.log('preload next music url')
   const info = await getNextPlayMusicInfo()
+  if (taskId != preloadTaskId) return
   if (info) {
     preloadMusicInfo.info = info
     const url = await getMusicUrl({ musicInfo: info.musicInfo }).catch(() => '')
+    if (taskId != preloadTaskId) return
     if (url) {
       console.log('preload url', url)
-      const result = await checkMusicUrl(url)
+      const result = await checkMusicUrl(url, taskId)
+      if (taskId != preloadTaskId) return
       if (!result) {
         const url = await getMusicUrl({ musicInfo: info.musicInfo, isRefresh: true }).catch(() => '')
-        void checkMusicUrl(url)
+        if (taskId == preloadTaskId && url) void checkMusicUrl(url, taskId)
         console.log('preload url refresh', url)
       }
     }
   }
-  preloadMusicInfo.isLoading = false
+  if (taskId == preloadTaskId) preloadMusicInfo.isLoading = false
 }
 
 export default () => {

@@ -80,10 +80,24 @@ const handleMenuClick = (action) => {
 
 watch(() => props.source, async(source) => {
   // const source = (await getLeaderboardSetting()).source as LX.OnlineSource
-  let boardList = boards[source]
-  if (boardList == null) setBoard(boardList = await getBoardsList(source), source)
-  list.splice(0, list.length, ...boardList.list)
-  if (!props.boardId && boardList.list.length) handleToggleList(boardList.list[0].id)
+  try {
+    let boardList = boards[source]
+    if (boardList == null) {
+      boardList = await getBoardsList(source)
+      if (source != props.source) return
+      if (!boardList) {
+        list.splice(0, list.length)
+        return
+      }
+      setBoard(boardList, source)
+    }
+    list.splice(0, list.length, ...boardList.list)
+    if (!props.boardId && boardList.list.length) handleToggleList(boardList.list[0].id)
+  } catch (err) {
+    console.log(err)
+    if (source != props.source) return
+    list.splice(0, list.length)
+  }
 }, {
   immediate: true,
 })
@@ -149,4 +163,3 @@ defineExpose({ hideMenu: handleMenuClick })
 
 
 </style>
-

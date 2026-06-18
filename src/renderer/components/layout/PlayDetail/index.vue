@@ -26,7 +26,7 @@ transition(@before-enter="handleBeforeEnter" @enter="handleEnter" @after-enter="
         svg(version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" space="preserve")
           use(xlink:href="#icon-comment-modern")
     transition(enter-active-class="animated-slow fadeIn" leave-active-class="animated-slow fadeOut")
-      common-audio-visualizer(v-if="appSetting['player.audioVisualization'] && visibled")
+      common-audio-visualizer(v-if="appSetting['common.isShowAnimation'] && appSetting['player.audioVisualization'] && visibled")
 </template>
 
 

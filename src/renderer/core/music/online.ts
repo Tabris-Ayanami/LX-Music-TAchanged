@@ -52,12 +52,15 @@ export const getMusicUrl = async({ musicInfo, quality, isRefresh, allowToggleSou
   //   // return Promise.reject(new Error('该歌曲没有可播放的音频'))
   // }
   const targetQuality = quality ?? getPlayQuality(appSetting['player.playQuality'], musicInfo)
-  const cachedUrl = await getStoreMusicUrl(musicInfo, targetQuality)
+  const shouldCacheUrl = musicInfo.source != 'bili'
+  const cachedUrl = shouldCacheUrl ? await getStoreMusicUrl(musicInfo, targetQuality) : null
   if (cachedUrl && !isRefresh) return cachedUrl
 
   return handleGetOnlineMusicUrl({ musicInfo, quality, onToggleSource, isRefresh, allowToggleSource }).then(({ url, quality: targetQuality, musicInfo: targetMusicInfo, isFromCache }) => {
-    if (targetMusicInfo.id != musicInfo.id && !isFromCache) void saveMusicUrl(targetMusicInfo, targetQuality, url)
-    void saveMusicUrl(musicInfo, targetQuality, url)
+    if (shouldCacheUrl) {
+      if (targetMusicInfo.id != musicInfo.id && !isFromCache) void saveMusicUrl(targetMusicInfo, targetQuality, url)
+      void saveMusicUrl(musicInfo, targetQuality, url)
+    }
     return url
   })
 }
@@ -69,7 +72,7 @@ export const getPicUrl = async({ musicInfo, listId, isRefresh, allowToggleSource
   allowToggleSource?: boolean
   onToggleSource?: (musicInfo?: LX.Music.MusicInfoOnline) => void
 }): Promise<string> => {
-  if (musicInfo.meta.picUrl && !isRefresh) return musicInfo.meta.picUrl
+  if (musicInfo.meta.picUrl && !isRefresh && (musicInfo.source != 'bili' || musicInfo.meta.picUrl.startsWith('http://127.0.0.1:'))) return musicInfo.meta.picUrl
   return handleGetOnlinePicUrl({ musicInfo, onToggleSource, isRefresh, allowToggleSource }).then(({ url, musicInfo: targetMusicInfo, isFromCache }) => {
     // picRequest = null
     if (listId) {

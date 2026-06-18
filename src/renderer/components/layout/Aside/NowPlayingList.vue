@@ -1,7 +1,7 @@
 <template>
   <section :class="[$style.queue, { [$style.collapsed]: isSidebarCollapsed }]">
     <p :class="$style.title" :aria-hidden="isSidebarCollapsed">LIST</p>
-    <div ref="listRef" :class="['scroll', $style.list]" @wheel.stop>
+    <div ref="listRef" :class="['scroll', $style.list]" @wheel.stop @scroll.passive="handleListScroll">
       <button
         v-for="item in queueList"
         :key="item.id + '_' + item.index"
@@ -26,6 +26,7 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from '@common/utils/vueTools'
+import { encodePath } from '@common/utils/common'
 import { getPicPath } from '@renderer/core/music'
 import { playList } from '@renderer/core/player'
 import { getList } from '@renderer/store/player/action'
@@ -35,52 +36,111 @@ import { isSidebarCollapsed } from '@renderer/store/ui'
 const listRef = ref(null)
 const queueList = ref([])
 const loadingPicIds = new Set()
+const failedPicIds = new Set()
 let picRequestId = 0
+let loadPicFrame = 0
+
+const LOCAL_PIC_BATCH_SIZE = 12
+const LOCAL_PIC_OVERSCAN = 8
+const LOCAL_PIC_ROW_HEIGHT = 49
+
+const normalizePicUrl = pic => {
+  if (!pic || /^(?:https?:|data:|blob:|file:)/i.test(pic)) return pic || ''
+  return `file:///${encodePath(pic)}`
+}
+
+const isBiliProxyPic = pic => /^http:\/\/(?:127\.0\.0\.1|localhost):\d+\/bili\/image\?/i.test(pic)
 
 const getMusicPic = musicInfo => {
-  return musicInfo?.pic || musicInfo?.meta?.picUrl || musicInfo?.img || ''
+  const pic = musicInfo?.pic || musicInfo?.meta?.picUrl || musicInfo?.img || ''
+  if (musicInfo?.source == 'bili' && pic && !isBiliProxyPic(pic)) return ''
+  return normalizePicUrl(pic)
 }
 
 const getQueueMusicInfo = item => {
   return 'progress' in item ? item.metadata.musicInfo : item
 }
 
+const getQueueItemKey = item => `${item.id}_${item.index}`
+
+const isMissingLazyPic = item => {
+  const itemKey = getQueueItemKey(item)
+  if (item.pic || loadingPicIds.has(itemKey) || failedPicIds.has(itemKey)) return false
+  if (item.musicInfo?.source == 'local') return !!item.musicInfo.meta?.filePath
+  return item.musicInfo?.source == 'bili' && !!item.musicInfo.meta?.bvid
+}
+
 const applyQueuePic = (item, pic, requestId) => {
   if (!pic || requestId != picRequestId) return
+  const picUrl = normalizePicUrl(pic)
   for (const queueItem of queueList.value) {
     if (queueItem.id != item.id || queueItem.index != item.index) continue
-    queueItem.pic = pic
+    queueItem.pic = picUrl
+    if (queueItem.musicInfo?.meta) queueItem.musicInfo.meta.picUrl = picUrl
     break
   }
 }
 
+const getVisibleLocalPicTargets = () => {
+  const listEl = listRef.value
+  if (!listEl) return queueList.value.filter(isMissingLazyPic).slice(0, LOCAL_PIC_BATCH_SIZE)
+
+  const firstIndex = Math.max(0, Math.floor(listEl.scrollTop / LOCAL_PIC_ROW_HEIGHT) - LOCAL_PIC_OVERSCAN)
+  const visibleCount = Math.ceil(listEl.clientHeight / LOCAL_PIC_ROW_HEIGHT) + LOCAL_PIC_OVERSCAN * 2
+  return queueList.value
+    .slice(firstIndex, firstIndex + visibleCount)
+    .filter(isMissingLazyPic)
+    .slice(0, LOCAL_PIC_BATCH_SIZE)
+}
+
 const loadMissingLocalPics = () => {
-  const requestId = ++picRequestId
-  const targets = queueList.value.filter(item => {
-    return !item.pic && item.musicInfo?.source == 'local' && item.musicInfo.meta?.filePath && !loadingPicIds.has(item.id)
-  }).slice(0, 24)
+  const requestId = picRequestId
+  const targets = getVisibleLocalPicTargets()
   if (!targets.length) return
 
   for (const item of targets) {
-    loadingPicIds.add(item.id)
+    const itemKey = getQueueItemKey(item)
+    loadingPicIds.add(itemKey)
     void getPicPath({
       musicInfo: item.musicInfo,
       listId: currentListId.value,
       isRefresh: false,
     }).then(pic => {
+      if (requestId != picRequestId) return
+      if (!pic) {
+        failedPicIds.add(itemKey)
+        return
+      }
       applyQueuePic(item, pic, requestId)
-    }).catch(() => {}).finally(() => {
-      loadingPicIds.delete(item.id)
+    }).catch(() => {
+      if (requestId == picRequestId) failedPicIds.add(itemKey)
+    }).finally(() => {
+      loadingPicIds.delete(itemKey)
+      if (requestId == picRequestId) scheduleLoadMissingLocalPics()
     })
   }
+}
+
+const scheduleLoadMissingLocalPics = () => {
+  if (loadPicFrame) return
+  loadPicFrame = requestAnimationFrame(() => {
+    loadPicFrame = 0
+    loadMissingLocalPics()
+  })
 }
 
 const syncQueueList = () => {
   const listId = playInfo.playerListId
   if (!listId) {
+    picRequestId++
+    loadingPicIds.clear()
+    failedPicIds.clear()
     queueList.value = []
     return
   }
+  picRequestId++
+  loadingPicIds.clear()
+  failedPicIds.clear()
   queueList.value = getList(listId).map((item, index) => {
     const musicInfo = getQueueMusicInfo(item)
     return {
@@ -92,7 +152,7 @@ const syncQueueList = () => {
       musicInfo,
     }
   })
-  loadMissingLocalPics()
+  void nextTick(scheduleLoadMissingLocalPics)
 }
 
 const currentQueueIndex = computed(() => playInfo.playerPlayIndex)
@@ -138,6 +198,10 @@ const handlePlay = index => {
   scrollToCurrentTop('smooth')
 }
 
+const handleListScroll = () => {
+  scheduleLoadMissingLocalPics()
+}
+
 const handleQueueListUpdate = ids => {
   if (!currentListId.value || !ids.includes(currentListId.value)) return
   syncQueueList()
@@ -160,6 +224,9 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   picRequestId++
+  if (loadPicFrame) cancelAnimationFrame(loadPicFrame)
+  loadingPicIds.clear()
+  failedPicIds.clear()
   window.app_event.off('myListUpdate', handleQueueListUpdate)
 })
 </script>
@@ -218,6 +285,8 @@ onBeforeUnmount(() => {
 }
 
 .row {
+  position: relative;
+  isolation: isolate;
   width: 100%;
   min-width: 0;
   height: 44px;
@@ -240,10 +309,40 @@ onBeforeUnmount(() => {
     padding var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     gap var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     background-color @transition-fast,
+    color @transition-fast,
+    text-shadow @transition-fast,
     transform @transition-fast;
 
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 1px 2px;
+    z-index: -1;
+    border-radius: inherit;
+    corner-shape: squircle;
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 78%, #fff 22%), color-mix(in srgb, var(--color-primary) 58%, #2c5fc7 42%));
+    box-shadow:
+      0 12px 24px color-mix(in srgb, var(--color-primary) 20%, rgba(16, 26, 44, .16)),
+      inset 0 1px 0 rgba(255, 255, 255, .18),
+      inset 0 -1px 0 rgba(0, 0, 0, .12);
+    opacity: 0;
+    transform: scale(.96);
+    transition:
+      opacity 220ms ease,
+      transform 260ms cubic-bezier(.2, .9, .22, 1.12),
+      box-shadow 220ms ease;
+    pointer-events: none;
+  }
+
   &:hover {
-    background: rgba(255, 255, 255, 0.42);
+    color: #fff;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, .28);
+
+    &::before {
+      opacity: .92;
+      transform: scale(1);
+    }
   }
 
   &:active {
@@ -252,7 +351,13 @@ onBeforeUnmount(() => {
 }
 
 .active {
-  background: rgba(126, 136, 152, 0.22);
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, .28);
+
+  &::before {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .coverWrap {
@@ -313,7 +418,13 @@ onBeforeUnmount(() => {
     font-size: 10px;
     line-height: 1.2;
     color: var(--shell-muted, rgba(65, 78, 96, 0.68));
+    transition: color @transition-fast;
   }
+}
+
+.row:hover .meta span,
+.active .meta span {
+  color: rgba(255, 255, 255, .74);
 }
 
 .empty {
@@ -352,6 +463,10 @@ onBeforeUnmount(() => {
     overflow: visible;
     justify-items: center;
     background: transparent;
+
+    &::before {
+      inset: 2px;
+    }
   }
 
   .coverWrap {

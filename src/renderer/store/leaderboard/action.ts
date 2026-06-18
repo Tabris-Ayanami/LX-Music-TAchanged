@@ -3,8 +3,9 @@ import { deduplicationList, toNewMusicInfo } from '@renderer/utils'
 import musicSdk from '@renderer/utils/musicSdk'
 import { markRaw, markRawList } from '@common/utils/vueTools'
 import { boards, type Board, listDetailInfo, type ListDetailInfo } from './state'
+import { createLimitedCache } from '@renderer/utils/limitedCache'
 
-const cache = new Map<string, any>()
+const cache = createLimitedCache(40, 30 * 60 * 1000)
 
 export const setBoard = (board: Board, source: LX.OnlineSource) => {
   boards[source] = markRaw(board)
@@ -118,6 +119,7 @@ export const getAndSetListDetail = async(id: string, page: number, isRefresh = f
     if (key != listDetailInfo.key) return
     setListDetail(result, id, page)
   }).catch((error: any) => {
+    if (key != listDetailInfo.key) return
     clearListDetail()
     listDetailInfo.noItemLabel = window.i18n.t('list__load_failed')
     console.log(error)

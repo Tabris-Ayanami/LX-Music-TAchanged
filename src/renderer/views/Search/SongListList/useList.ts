@@ -24,7 +24,9 @@ export default () => {
 
   const search = (text: string, source: SearchSource, page: number) => {
     // console.log(text, source, page)
-    listInfo.value = listInfos[source] as SearchListInfo
+    const targetListInfo = listInfos[source]
+    if (!targetListInfo) return
+    listInfo.value = targetListInfo as SearchListInfo
     if (text.length) void addHistoryWord(text)
     void searchSongList(text, page, source).then((list: ListInfoItem[]) => {
       // console.log(list)

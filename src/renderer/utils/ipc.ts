@@ -1,5 +1,5 @@
 import { rendererSend, rendererInvoke, rendererOn, rendererOff } from '@common/rendererIpc'
-import { HOTKEY_RENDERER_EVENT_NAME, WIN_MAIN_RENDERER_EVENT_NAME, CMMON_EVENT_NAME } from '@common/ipcNames'
+import { HOTKEY_RENDERER_EVENT_NAME, WIN_MAIN_RENDERER_EVENT_NAME, CMMON_EVENT_NAME, BILI_RENDERER_EVENT_NAME } from '@common/ipcNames'
 import { type ProgressInfo, type UpdateDownloadedEvent, type UpdateInfo } from 'electron-updater'
 import { markRaw } from '@common/utils/vueTools'
 import * as hotKeys from '@common/hotKey'
@@ -538,6 +538,46 @@ export const getCacheSize = async() => {
  */
 export const clearCache = async() => {
   await rendererInvoke(WIN_MAIN_RENDERER_EVENT_NAME.clear_cache)
+}
+
+export const getBiliAccount = async(): Promise<LX.Bili.AccountInfo> => {
+  return rendererInvoke<LX.Bili.AccountInfo>(BILI_RENDERER_EVENT_NAME.account_get)
+}
+
+export const setBiliCookie = async(cookie: string): Promise<LX.Bili.AccountInfo> => {
+  return rendererInvoke<string, LX.Bili.AccountInfo>(BILI_RENDERER_EVENT_NAME.account_set_cookie, cookie)
+}
+
+export const clearBiliAccount = async(): Promise<LX.Bili.AccountInfo> => {
+  return rendererInvoke<LX.Bili.AccountInfo>(BILI_RENDERER_EVENT_NAME.account_clear)
+}
+
+export const biliSearch = async(params: LX.Bili.SearchParams): Promise<LX.Bili.SearchResult> => {
+  return rendererInvoke<LX.Bili.SearchParams, LX.Bili.SearchResult>(BILI_RENDERER_EVENT_NAME.search, params)
+}
+
+export const getBiliMusicUrl = async(info: LX.Bili.TrackParams, type: LX.Quality): Promise<LX.Bili.MusicUrlResult> => {
+  return rendererInvoke<{ info: LX.Bili.TrackParams, type: LX.Quality }, LX.Bili.MusicUrlResult>(BILI_RENDERER_EVENT_NAME.get_music_url, { info, type })
+}
+
+export const getBiliMusicQualitys = async(info: LX.Bili.TrackParams): Promise<LX.Bili.MusicQualityInfo> => {
+  return rendererInvoke<LX.Bili.TrackParams, LX.Bili.MusicQualityInfo>(BILI_RENDERER_EVENT_NAME.get_music_qualitys, info)
+}
+
+export const getBiliPic = async(info: LX.Bili.TrackParams): Promise<string> => {
+  return rendererInvoke<LX.Bili.TrackParams, string>(BILI_RENDERER_EVENT_NAME.get_pic, info)
+}
+
+export const getBiliLyric = async(info: LX.Bili.TrackParams): Promise<LX.Music.LyricInfo> => {
+  return rendererInvoke<LX.Bili.TrackParams, LX.Music.LyricInfo>(BILI_RENDERER_EVENT_NAME.get_lyric, info)
+}
+
+export const getBiliComment = async(info: LX.Bili.CommentParams): Promise<LX.Bili.CommentInfo> => {
+  return rendererInvoke<LX.Bili.CommentParams, LX.Bili.CommentInfo>(BILI_RENDERER_EVENT_NAME.get_comment, info)
+}
+
+export const getBiliSongListDetail = async(info: LX.Bili.SongListDetailParams): Promise<LX.Bili.SongListDetail> => {
+  return rendererInvoke<LX.Bili.SongListDetailParams, LX.Bili.SongListDetail>(BILI_RENDERER_EVENT_NAME.get_songlist_detail, info)
 }
 
 /**

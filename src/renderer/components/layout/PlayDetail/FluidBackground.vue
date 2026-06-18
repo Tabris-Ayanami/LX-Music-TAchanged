@@ -45,6 +45,8 @@ export default {
     let renderer = null
     let resizeObserver = null
     let coverTaskId = 0
+    let initTimer = null
+    let disposed = false
 
     const fallbackStyle = computed(() => ({
       background: `radial-gradient(circle at 20% 20%, rgba(${props.colors.light || DEFAULT_COLORS.light}, 0.34), transparent 36%),
@@ -74,6 +76,10 @@ export default {
     }
 
     const cleanup = () => {
+      if (initTimer != null) {
+        window.clearTimeout(initTimer)
+        initTimer = null
+      }
       resizeObserver?.disconnect()
       resizeObserver = null
       window.removeEventListener('resize', resize)
@@ -82,6 +88,7 @@ export default {
     }
 
     const init = () => {
+      if (disposed) return
       const canvas = canvasRef.value
       if (!canvas) return
 
@@ -110,11 +117,16 @@ export default {
     onMounted(init)
 
     onBeforeUnmount(() => {
+      disposed = true
       cleanup()
     })
 
     watch(canvasKey, () => {
-      setTimeout(init)
+      if (initTimer != null) window.clearTimeout(initTimer)
+      initTimer = window.setTimeout(() => {
+        initTimer = null
+        init()
+      })
     })
 
     watch(() => props.active, active => {

@@ -49,7 +49,7 @@
             </template>
             <template #footer>
               <div :class="$style.pagination">
-                <material-pagination :count="total" :limit="limit" :page="page" @btn-click="$emit('togglePage', $event)" />
+                <liquid-glass-pagination :count="total" :limit="limit" :page="page" @btn-click="$emit('togglePage', $event)" />
               </div>
             </template>
           </base-virtualized-list>
@@ -74,7 +74,7 @@
             </template>
             <template #footer>
               <div :class="$style.pagination">
-                <material-pagination :count="total" :limit="limit" :page="page" @btn-click="$emit('togglePage', $event)" />
+                <liquid-glass-pagination :count="total" :limit="limit" :page="page" @btn-click="$emit('togglePage', $event)" />
               </div>
             </template>
           </base-virtualized-list>
@@ -110,10 +110,14 @@ import useMusicDownload from './useMusicDownload'
 import useMusicAdd from './useMusicAdd'
 import useMusicActions from './useMusicActions'
 import { appSetting } from '@renderer/store/setting'
+import LiquidGlassPagination from '@renderer/components/common/liquidGlass/LiquidGlassPagination.vue'
 
 const { runListAction } = listActionRunner
 export default {
   name: 'MaterialOnlineList',
+  components: {
+    LiquidGlassPagination,
+  },
   props: {
     list: {
       type: Array,

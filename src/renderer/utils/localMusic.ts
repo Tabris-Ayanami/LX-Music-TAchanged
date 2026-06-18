@@ -40,7 +40,9 @@ const groupCoverCache = new Map<string, string>()
 const GROUP_COVER_CACHE_LIMIT = 500
 const albumGroupCache = new WeakMap<LX.Music.MusicInfoLocal[], LocalMusicGroup[]>()
 const artistGroupCache = new WeakMap<LX.Music.MusicInfoLocal[], LocalMusicGroup[]>()
+const LOCAL_TRACK_CACHE_TTL = 5 * 60 * 1000
 let localTrackCache: LX.Music.MusicInfoLocal[] = []
+let localTrackCacheTime = 0
 let ensureLocalMusicListPromise: Promise<LX.List.UserListInfo> | null = null
 
 const getText = (value: string | null | undefined, fallback: string) => {
@@ -61,10 +63,17 @@ export const setCachedLocalGroupCover = (type: 'albums' | 'artists', key: string
   groupCoverCache.set(getGroupCacheKey(type, key), cover)
 }
 
-export const getCachedLocalTracks = () => localTrackCache
+export const getCachedLocalTracks = () => {
+  if (Date.now() - localTrackCacheTime > LOCAL_TRACK_CACHE_TTL) {
+    localTrackCache = []
+    return localTrackCache
+  }
+  return localTrackCache
+}
 
 export const setCachedLocalTracks = (tracks: LX.Music.MusicInfoLocal[]) => {
   localTrackCache = tracks
+  localTrackCacheTime = Date.now()
 }
 
 const normalizeLibraryFolder = (folderPath: string) => normalize(folderPath.trim())
@@ -157,16 +166,12 @@ export const collectLocalMusicFilesFromFolders = async(folders: string[]) => {
   return dedupePaths((await Promise.all(folders.map(async path => collectLocalMusicFilesFromDir(path)))).flat())
 }
 
-const createLocalMusicInfosByPaths = async(filePaths: string[], index: number = 0): Promise<LX.Music.MusicInfoLocal[]> => {
-  const paths = filePaths.slice(index, index + LOCAL_MUSIC_IMPORT_BATCH_SIZE)
-  if (!paths.length) return []
-
-  const musicInfos = await window.lx.worker.main.createLocalMusicInfos(paths)
-  if (filePaths.length <= index + LOCAL_MUSIC_IMPORT_BATCH_SIZE) return musicInfos
-  return [
-    ...musicInfos,
-    ...await createLocalMusicInfosByPaths(filePaths, index + LOCAL_MUSIC_IMPORT_BATCH_SIZE),
-  ]
+const createLocalMusicInfosByPaths = async(filePaths: string[]): Promise<LX.Music.MusicInfoLocal[]> => {
+  const result: LX.Music.MusicInfoLocal[] = []
+  for (let index = 0; index < filePaths.length; index += LOCAL_MUSIC_IMPORT_BATCH_SIZE) {
+    result.push(...await window.lx.worker.main.createLocalMusicInfos(filePaths.slice(index, index + LOCAL_MUSIC_IMPORT_BATCH_SIZE)))
+  }
+  return result
 }
 
 export const importLocalMusicFiles = async(listId: string, filePaths: string[]) => {

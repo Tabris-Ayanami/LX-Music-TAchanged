@@ -354,11 +354,11 @@ const filterTask = (list: LX.Download.ListItem[]) => {
  * @param list 要下载的歌曲
  * @param quality 下载音质
  */
-export const createDownloadTasks = async(list: LX.Music.MusicInfoOnline[], quality: LX.Quality, listId?: string) => {
+export const createDownloadTasks = async(list: LX.Music.MusicInfoOnline[], quality: LX.Quality, listId?: string, format?: LX.Download.FileExt) => {
   if (!list.length) return
   const tasks = filterTask(await window.lx.worker.download.createDownloadTasks(list, quality,
     appSetting['download.fileName'],
-    toRaw(qualityList.value), listId),
+    toRaw(qualityList.value), listId, format),
   )
 
   if (tasks.length) await addTasks(tasks)

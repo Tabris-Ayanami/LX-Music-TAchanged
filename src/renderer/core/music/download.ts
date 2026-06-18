@@ -1,4 +1,5 @@
 import { getDownloadFilePath } from '@renderer/utils/music'
+import { pathToFileURL } from 'node:url'
 
 import {
   getMusicUrl as getOnlineMusicUrl,
@@ -7,6 +8,10 @@ import {
 } from './online'
 import { buildLyricInfo, getCachedLyricInfo } from './utils'
 import { buildSavePath } from '@renderer/store/download/utils'
+
+const normalizePicUrl = (pic: string) => {
+  return /^(?:https?:|data:|blob:|file:)/i.test(pic) ? pic : pathToFileURL(pic).href
+}
 
 export const getMusicUrl = async({ musicInfo, isRefresh, allowToggleSource = true, onToggleSource = () => {} }: {
   musicInfo: LX.Download.ListItem
@@ -32,7 +37,7 @@ export const getPicUrl = async({ musicInfo, isRefresh, listId, onToggleSource = 
     const path = await getDownloadFilePath(musicInfo, buildSavePath(musicInfo))
     if (path) {
       const pic = await window.lx.worker.main.getMusicFilePic(path)
-      if (pic) return pic
+      if (pic) return normalizePicUrl(pic)
     }
 
     const onlineMusicInfo = musicInfo.metadata.musicInfo

@@ -172,6 +172,18 @@ const modules = {
     status: 'status',
     set_config: 'set_config',
   },
+  bili: {
+    account_get: 'account_get',
+    account_set_cookie: 'account_set_cookie',
+    account_clear: 'account_clear',
+    search: 'search',
+    get_music_qualitys: 'get_music_qualitys',
+    get_music_url: 'get_music_url',
+    get_pic: 'get_pic',
+    get_lyric: 'get_lyric',
+    get_comment: 'get_comment',
+    get_songlist_detail: 'get_songlist_detail',
+  },
 }
 
 
@@ -196,3 +208,4 @@ export const DISLIKE_EVENT_NAME = modules.dislike
 export const WIN_MAIN_RENDERER_EVENT_NAME = modules.winMain
 export const WIN_LYRIC_RENDERER_EVENT_NAME = modules.winLyric
 export const HOTKEY_RENDERER_EVENT_NAME = modules.hotKey
+export const BILI_RENDERER_EVENT_NAME = modules.bili

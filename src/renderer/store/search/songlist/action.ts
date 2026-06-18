@@ -86,7 +86,8 @@ export const resetListInfo = (sourceId: LX.OnlineSource | 'all'): [] => {
 }
 
 export const search = async(text: string, page: number, sourceId: LX.OnlineSource | 'all'): Promise<ListInfoItem[]> => {
-  const listInfo = listInfos[sourceId]!
+  const listInfo = listInfos[sourceId]
+  if (!listInfo) return []
   if (!text) return resetListInfo(sourceId)
   const key = `${page}__${sourceId}__${text}`
   if (listInfo.key == key && listInfo.list.length) return listInfo.list

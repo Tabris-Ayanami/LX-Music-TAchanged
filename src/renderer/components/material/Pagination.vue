@@ -111,10 +111,16 @@ export default {
 
 .pagination {
   display: inline-block;
-  background-color: var(--shell-button-bg, var(--color-button-background));
-  border: 1px solid var(--shell-control-border, transparent);
+  background:
+    radial-gradient(120% 140% at 10% 0%, rgba(255, 255, 255, .12), rgba(255, 255, 255, 0) 58%),
+    color-mix(in srgb, var(--shell-surface-strong, rgba(42, 48, 60, .86)) 82%, rgba(255, 255, 255, .08));
+  border: 1px solid color-mix(in srgb, var(--shell-control-border, rgba(255, 255, 255, .16)) 86%, rgba(255, 255, 255, .12));
   // border-top-left-radius: 8px;
   border-radius: @radius-border;
+  box-shadow:
+    0 12px 28px rgba(13, 20, 32, .16),
+    inset 0 1px 0 rgba(255, 255, 255, .16);
+  overflow: hidden;
   ul {
     display: flex;
     flex-flow: row nowrap;
@@ -138,12 +144,20 @@ export default {
         display: block;
         padding: 7px 12px;
         line-height: 1.2;
-        color: var(--shell-button-text, var(--color-button-font));
+        color: color-mix(in srgb, var(--shell-text, var(--color-font)) 82%, var(--color-primary) 18%);
         font-size: 13px;
+        font-weight: 600;
       }
       &.active {
         span {
-          background-color: color-mix(in srgb, var(--color-primary) 24%, var(--shell-button-bg-hover, var(--color-button-background-selected)));
+          color: #fff;
+          background:
+            linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 84%, #fff 16%), color-mix(in srgb, var(--color-primary) 68%, #2c5fc7 32%));
+          text-shadow: 0 1px 1px rgba(0, 0, 0, .28);
+          box-shadow:
+            0 10px 22px color-mix(in srgb, var(--color-primary) 24%, transparent),
+            inset 0 1px 0 rgba(255, 255, 255, .32),
+            inset 0 -1px 0 rgba(0, 0, 0, .14);
         }
       }
       button {
@@ -153,15 +167,20 @@ export default {
         outline: none;
         transition: background-color .3s ease;
         &:hover {
-          background-color: var(--shell-button-bg-hover, var(--color-button-background-hover));
+          color: #fff;
+          background:
+            linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 76%, #fff 24%), color-mix(in srgb, var(--color-primary) 58%, #2c5fc7 42%));
         }
         &:active {
-          background-color: color-mix(in srgb, var(--color-primary) 18%, var(--shell-button-bg-hover, var(--color-button-background-active)));
+          color: #fff;
+          background:
+            linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 82%, #1b2b4a 18%), color-mix(in srgb, var(--color-primary) 64%, #1f3f88 36%));
         }
       }
       &.disabled {
         span {
-          opacity: .3;
+          color: color-mix(in srgb, var(--shell-muted, var(--color-font-label)) 78%, transparent);
+          opacity: .62;
         }
       }
       &:first-child {

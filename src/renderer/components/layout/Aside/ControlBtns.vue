@@ -37,13 +37,13 @@ const handle_mouseleave = () => {
 
 onMounted(() => {
   window.app_event.on('focus', handle_focus)
-  dom_btns.value.addEventListener('mouseenter', handle_mouseenter)
-  dom_btns.value.addEventListener('mouseleave', handle_mouseleave)
+  dom_btns.value?.addEventListener('mouseenter', handle_mouseenter)
+  dom_btns.value?.addEventListener('mouseleave', handle_mouseleave)
 })
 onBeforeUnmount(() => {
   window.app_event.off('focus', handle_focus)
-  dom_btns.value.removeEventListener('mouseenter', handle_mouseenter)
-  dom_btns.value.removeEventListener('mouseleave', handle_mouseleave)
+  dom_btns.value?.removeEventListener('mouseenter', handle_mouseenter)
+  dom_btns.value?.removeEventListener('mouseleave', handle_mouseleave)
 })
 
 </script>

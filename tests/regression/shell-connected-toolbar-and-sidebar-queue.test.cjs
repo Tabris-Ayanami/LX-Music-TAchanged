@@ -66,14 +66,14 @@ test('RG-040: sidebar local navigation and queue preview stay compact', () => {
     /key: 'localTracks'[\s\S]*label: '歌曲'[\s\S]*key: 'localAlbums'[\s\S]*label: '专辑'[\s\S]*key: 'localArtists'[\s\S]*label: '歌手'/m,
     'Local navigation should expose songs, albums, and artists as direct items',
   )
-  assert.match(
+  assert.doesNotMatch(
     navBarSource,
-    /title: 'LIST'[\s\S]*key: 'list'[\s\S]*label: t\('my_list'\)/m,
-    'My List should live in its own LIST section instead of being appended to LOCAL',
+    /title: 'LIST'/m,
+    'My List should stay in the compact LOCAL section in the optimized sidebar',
   )
   assert.match(
     nowPlayingSource,
-    /<p :class="\$style\.title" :aria-hidden="isSidebarCollapsed">List<\/p>/m,
+    /<p :class="\$style\.title" :aria-hidden="isSidebarCollapsed">LIST<\/p>/m,
     'Sidebar queue preview title should read List',
   )
   assert.match(
@@ -108,8 +108,8 @@ test('RG-040: sidebar local navigation and queue preview stay compact', () => {
   )
   assert.match(
     nowPlayingSource,
-    /\.active \{[\s\S]*background: rgba\(126, 136, 152, 0\.22\);/m,
-    'The active queue row should use a neutral gray fill instead of theme-derived color',
+    /\.active \{[\s\S]*&::before \{[\s\S]*opacity: 1;[\s\S]*transform: scale\(1\);/m,
+    'The active queue row should keep the optimized pseudo-element highlight without changing layout',
   )
   assert.match(
     nowPlayingSource,

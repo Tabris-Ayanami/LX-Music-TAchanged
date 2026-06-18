@@ -58,8 +58,8 @@ export const getOtherSource = async(musicInfo: LX.Music.MusicInfo | LX.Download.
       timeout = null
       reject(new Error('find music timeout'))
     }, 15_000)
-    musicSdk.findMusic(searchMusicInfo).then((otherSource) => {
-      const source = otherSource.map(toNewMusicInfo) as LX.Music.MusicInfoOnline[]
+    musicSdk.findMusic(searchMusicInfo).then((otherSource: any[]) => {
+      const source: LX.Music.MusicInfoOnline[] = otherSource.map(info => toNewMusicInfo(info) as LX.Music.MusicInfoOnline)
       if (otherSourceCache.size >= OTHER_SOURCE_CACHE_LIMIT) otherSourceCache.delete(otherSourceCache.keys().next().value!)
       otherSourceCache.set(musicInfo, source)
       resolve(source)
@@ -315,7 +315,7 @@ export const handleGetOnlineMusicUrl = async({ musicInfo, quality, onToggleSourc
     return { musicInfo, url, quality: type, isFromCache: false }
   }).catch(async(err: any) => {
     console.log(err)
-    if (!allowToggleSource || err.message == requestMsg.tooManyRequests) throw err
+    if (musicInfo.source == 'bili' || !allowToggleSource || err.message == requestMsg.tooManyRequests) throw err
     onToggleSource()
     // eslint-disable-next-line @typescript-eslint/promise-function-async
     return getOtherSource(musicInfo).then(otherSource => {
@@ -399,7 +399,7 @@ export const handleGetOnlinePicUrl = async({ musicInfo, isRefresh, onToggleSourc
     return { musicInfo, url, isFromCache: false }
   }).catch(async(err: any) => {
     console.log(err)
-    if (!allowToggleSource) throw err
+    if (musicInfo.source == 'bili' || !allowToggleSource) throw err
     onToggleSource()
     // eslint-disable-next-line @typescript-eslint/promise-function-async
     return getOtherSource(musicInfo).then(otherSource => {
@@ -494,10 +494,16 @@ export const handleGetOnlineLyricInfo = async({ musicInfo, onToggleSource, isRef
       musicInfo,
       lyricInfo,
       isFromCache: false,
-    } : Promise.reject(new Error('failed'))
+    } : musicInfo.source == 'bili'
+      ? {
+          musicInfo,
+          lyricInfo,
+          isFromCache: false,
+        }
+      : Promise.reject(new Error('failed'))
   }).catch(async(err: any) => {
     console.log(err)
-    if (!allowToggleSource) throw err
+    if (musicInfo.source == 'bili' || !allowToggleSource) throw err
 
     onToggleSource()
     // eslint-disable-next-line @typescript-eslint/promise-function-async

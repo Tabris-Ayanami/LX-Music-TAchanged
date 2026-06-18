@@ -13,7 +13,7 @@ import {
   playedList,
   tempPlayList,
 } from './state'
-import { getListMusicsFromCache } from '@renderer/store/list/action'
+import { getListMusicsFromCache, retainMusicListCache } from '@renderer/store/list/action'
 import { downloadList } from '@renderer/store/download/state'
 import { setProgress } from './playProgress'
 import { playNext } from '@renderer/core/player'
@@ -25,6 +25,8 @@ import { arrPush, arrUnshift } from '@common/utils/common'
 type PlayerMusicInfoKeys = keyof typeof musicInfo
 
 const musicInfoKeys: PlayerMusicInfoKeys[] = Object.keys(musicInfo) as PlayerMusicInfoKeys[]
+let releasePlayingListCache = () => {}
+let retainedPlayingListId: string | null = null
 
 export const setMusicInfo = (_musicInfo: Partial<PlayerMusicInfo>) => {
   for (const key of musicInfoKeys) {
@@ -175,6 +177,17 @@ const setPlayerMusicInfo = (musicInfo: LX.Music.MusicInfo | LX.Download.ListItem
  */
 export const setPlayMusicInfo = (listId: string | null, musicInfo: LX.Download.ListItem | LX.Music.MusicInfo | null, isTempPlay: boolean = false) => {
   musicInfo = toRaw(musicInfo)
+
+  if (musicInfo == null) {
+    releasePlayingListCache()
+    releasePlayingListCache = () => {}
+    retainedPlayingListId = null
+  } else if (retainedPlayingListId != listId) {
+    const releasePrevPlayingListCache = releasePlayingListCache
+    releasePlayingListCache = retainMusicListCache(listId)
+    retainedPlayingListId = listId
+    releasePrevPlayingListCache()
+  }
 
   playMusicInfo.listId = listId
   playMusicInfo.musicInfo = musicInfo

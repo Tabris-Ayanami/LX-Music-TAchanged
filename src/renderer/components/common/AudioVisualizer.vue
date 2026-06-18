@@ -54,6 +54,7 @@ export default {
     let x = 0
     let isPlaying = false
     let animationFrameId
+    let lastDrawTime = 0
 
     let num
     let mult
@@ -68,8 +69,14 @@ export default {
     // })
 
     // https://developer.mozilla.org/zh-CN/docs/Web/API/AnalyserNode/smoothingTimeConstant
-    const renderFrame = () => {
+    const renderFrame = (timestamp = 0) => {
+      if (timestamp - lastDrawTime < 33) {
+        animationFrameId = window.requestAnimationFrame(renderFrame)
+        return
+      }
+      lastDrawTime = timestamp
       x = 0
+      frequencyAvg = 0
 
       analyser.getByteFrequencyData(dataArray)
 
@@ -110,6 +117,8 @@ export default {
     }
 
     const handlePlay = () => {
+      if (!ctx || !dom_canvas.value || !WIDTH || !HEIGHT) return
+      if (animationFrameId) return
       isPlaying = true
       // analyser.fftSize = 256
       bufferLength = analyser.frequencyBinCount
@@ -120,11 +129,14 @@ export default {
     }
     const handlePause = () => {
       if (animationFrameId) window.cancelAnimationFrame(animationFrameId)
+      animationFrameId = null
+      lastDrawTime = 0
       isPlaying = false
     }
 
     const handleResize = () => {
       const canvas = dom_canvas.value
+      if (!canvas) return
       canvas.width = canvas.clientWidth
       canvas.height = canvas.clientHeight
       WIDTH = canvas.width
@@ -134,10 +146,6 @@ export default {
       barWidth = getBarWidth(WIDTH)
     }
 
-    window.app_event.on('play', handlePlay)
-    window.app_event.on('pause', handlePause)
-    window.app_event.on('error', handlePause)
-    window.addEventListener('resize', handleResize)
     onBeforeUnmount(() => {
       handlePause()
       window.app_event.off('play', handlePlay)
@@ -148,6 +156,7 @@ export default {
 
     onMounted(() => {
       const canvas = dom_canvas.value
+      if (!canvas) return
       ctx = canvas.getContext('2d')
       canvas.width = canvas.clientWidth
       canvas.height = canvas.clientHeight
@@ -155,6 +164,10 @@ export default {
       HEIGHT = canvas.height
       MAX_HEIGHT = Math.round(HEIGHT * 0.4 / 255 * 10000) / 10000
       // console.log(MAX_HEIGHT)
+      window.app_event.on('play', handlePlay)
+      window.app_event.on('pause', handlePause)
+      window.app_event.on('error', handlePause)
+      window.addEventListener('resize', handleResize)
       if (isPlay.value) handlePlay()
     })
 

@@ -19,13 +19,13 @@ test('RG-014: selection, menu, and modal surfaces stay opaque enough to avoid ov
   )
   assert.match(
     selectionSource,
-    /linear-gradient\(\s*180deg,\s*color-mix\(in srgb, var\(--color-primary\) 16%, rgba\(255, 255, 255, 0\.995\)\),\s*color-mix\(in srgb, var\(--color-primary\) 24%, rgba\(255, 255, 255, 0\.99\)\)\s*\)/m,
-    'Selection popup should use an opaque theme-tinted surface instead of a translucent content background',
+    /background:\s*var\(--shell-card-strong, var\(--color-main-background\)\);/m,
+    'Selection popup should use the current shell surface instead of a transparent background',
   )
   assert.match(
     selectionSource,
-    /background-color:\s*color-mix\(in srgb, var\(--color-primary\) 10%, rgba\(255, 255, 255, 0\.985\)\);/m,
-    'Selection items should have their own surface so neighboring controls do not bleed through',
+    /background-color:\s*var\(--shell-card-strong, color-mix\(in srgb, var\(--color-primary\) 10%, rgba\(255, 255, 255, 0\.985\)\)\);/m,
+    'Selection items should keep their current shell-backed surface',
   )
   assert.match(
     selectionSource,

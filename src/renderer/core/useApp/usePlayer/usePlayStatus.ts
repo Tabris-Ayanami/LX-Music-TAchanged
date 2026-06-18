@@ -78,6 +78,9 @@ export default () => {
     if (!listIds.includes(loveList.id)) return
     if (await updateCollectStatus()) sendPlayerStatus({ collect })
   })
+  const throttleProgressStatus = throttle((progress: number) => {
+    sendPlayerStatus({ progress })
+  }, 500)
   // const updateSetting = () => {
   //   const setting = store.getters.setting
   //   buttons.lrc = setting.desktopLyric.enable
@@ -143,7 +146,7 @@ export default () => {
     // console.log(playProgress.nowPlayTime, newValue, oldValue)
     // if (newValue.toFixed(2) === oldValue.toFixed(2)) return
     // console.log(playProgress.nowPlayTime)
-    sendPlayerStatus({ progress: newValue })
+    throttleProgressStatus(newValue)
   })
   watch(() => playProgress.maxPlayTime, (newValue) => {
     sendPlayerStatus({ duration: newValue })

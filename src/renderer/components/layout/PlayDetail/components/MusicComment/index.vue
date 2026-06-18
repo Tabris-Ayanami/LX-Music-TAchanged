@@ -170,7 +170,7 @@ export default {
     handleShowComment() {
       this.currentMusicInfo = 'progress' in this.musicInfo ? this.musicInfo.metadata.musicInfo : this.musicInfo
 
-      if (this.currentMusicInfo.source == 'local' || !music[this.currentMusicInfo.source].comment) {
+      if (!music[this.currentMusicInfo.source]?.comment) {
         this.available = false
         return
       }

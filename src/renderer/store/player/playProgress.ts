@@ -11,14 +11,19 @@ export const playProgress = reactive({
 
 export const setNowPlayTime = (time: number) => {
   playProgress.nowPlayTime = time
-  playProgress.nowPlayTimeStr = formatPlayTime2(time)
-  playProgress.progress = playProgress.maxPlayTime ? time / playProgress.maxPlayTime : 0
+  const timeStr = formatPlayTime2(time)
+  if (playProgress.nowPlayTimeStr != timeStr) playProgress.nowPlayTimeStr = timeStr
+  const progress = playProgress.maxPlayTime ? time / playProgress.maxPlayTime : 0
+  if (playProgress.progress != progress) playProgress.progress = progress
 }
 
 export const setMaxplayTime = (time: number) => {
+  if (playProgress.maxPlayTime == time) return
   playProgress.maxPlayTime = time
-  playProgress.maxPlayTimeStr = formatPlayTime2(time)
-  playProgress.progress = time ? playProgress.nowPlayTime / time : 0
+  const timeStr = formatPlayTime2(time)
+  if (playProgress.maxPlayTimeStr != timeStr) playProgress.maxPlayTimeStr = timeStr
+  const progress = time ? playProgress.nowPlayTime / time : 0
+  if (playProgress.progress != progress) playProgress.progress = progress
 }
 
 export const setProgress = (currentTime: number, totalTime: number) => {

@@ -1,6 +1,6 @@
 {
   "name": "lx-music-desktop",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "description": "一个免费的音乐查找助手",
   "main": "./dist/main.js",
   "scripts": {
@@ -65,6 +65,7 @@
     "lint:fix": "eslint --ext .ts,.js,.vue -f node_modules/eslint-formatter-friendly --fix src",
     "typecheck": "npx tsc --noEmit -p src/common/tsconfig.json && npx tsc --noEmit -p src/main/tsconfig.json && npx tsc --noEmit -p src/renderer/tsconfig.json",
     "test:unit": "node scripts/quality/run-node-regression-tests.cjs",
+    "test:bili": "node scripts/quality/test-bili-source.cjs",
     "quality:gate": "node scripts/quality/run-quality-gate.cjs",
     "postinstall": "electron-builder install-app-deps",
     "dp": "cross-env ELECTRON_GET_USE_PROXY=true GLOBAL_AGENT_HTTPS_PROXY=http://127.0.0.1:2081 npm run pack",
@@ -179,6 +180,7 @@
     "webpack-merge": "^6.0.1"
   },
   "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@simonwep/pickr": "^1.9.1",
     "better-sqlite3": "^12.6.2",
     "bufferutil": "^4.1.0",

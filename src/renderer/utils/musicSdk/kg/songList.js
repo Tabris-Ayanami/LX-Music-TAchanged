@@ -2,6 +2,7 @@ import { httpFetch } from '../../request'
 import { decodeName, formatPlayTime, sizeFormate, dateFormat, formatPlayCount } from '../../index'
 import infSign from '@renderer/utils/musicSdk/kg/vendors/infSign.min'
 import { signatureParams } from './util'
+import { setLimitedCache } from '@renderer/utils/limitedCache'
 
 const handleSignature = (id, page, limit) => new Promise((resolve, reject) => {
   infSign({ appid: 1058, type: 0, module: 'playlist', page, pagesize: limit, specialid: id }, null, {
@@ -12,12 +13,6 @@ const handleSignature = (id, page, limit) => new Promise((resolve, reject) => {
     },
   })
 })
-
-const CACHE_LIMIT = 100
-const setLimitedCache = (map, key, value) => {
-  if (map.size >= CACHE_LIMIT) map.delete(map.keys().next().value)
-  map.set(key, value)
-}
 
 export default {
   _requestObj_tags: null,

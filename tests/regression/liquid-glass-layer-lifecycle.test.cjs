@@ -15,17 +15,17 @@ test('RG-018: liquid-glass layer stays non-interactive and releases host listene
   )
   assert.match(
     liquidGlassLayerSource,
-    /hostRef\.value = rootRef\.value\?\.parentElement as HTMLElement \| null/m,
-    'The glass layer should bind to its parent host element so the original component DOM remains the interaction owner',
+    /<VGlass[\s\S]*:disable-distortion="!useDistortion"[\s\S]*aria-hidden="true"/m,
+    'The optimized glass layer should delegate distortion to VGlass while remaining an aria-hidden visual overlay',
   )
   assert.match(
     liquidGlassLayerSource,
-    /const bindHostEvents = \(\) => \{[\s\S]*host\.addEventListener\('mousemove', handleMouseMove\)[\s\S]*host\.addEventListener\('mouseenter', handleMouseEnter\)[\s\S]*host\.addEventListener\('mouseleave', handleMouseLeave\)[\s\S]*host\.addEventListener\('mousedown', handleMouseDown\)[\s\S]*host\.addEventListener\('mouseup', handleMouseUp\)/m,
-    'The glass layer should explicitly track hover and press state on the host so interactive feedback stays synchronized',
+    /const useDistortion = computed\(\(\) => isShowAnimation\.value && mergedActive\.value\)/m,
+    'Distortion should stay gated by the animation setting and active state for performance',
   )
-  assert.match(
+  assert.doesNotMatch(
     liquidGlassLayerSource,
-    /onBeforeUnmount\(\(\) => \{[\s\S]*unbindHostEvents\(\)[\s\S]*resizeObserver\?\.disconnect\(\)[\s\S]*if \(!resizeObserver\) window\.removeEventListener\('resize', updateGlassSize\)/m,
-    'Unmounting the glass layer should always clean host listeners and any resize fallback to avoid stale reactions after view switches',
+    /addEventListener\('mousemove'|'mouseenter'|'mouseleave'|'mousedown'|'mouseup'\)/m,
+    'The optimized layer should not attach host pointer listeners from this wrapper',
   )
 })

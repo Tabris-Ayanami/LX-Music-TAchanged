@@ -1,6 +1,6 @@
 import { createDownload, type DownloaderType, type Options as DownloadOptions } from '@common/utils/download'
 // import music from '@renderer/utils/musicSdk'
-import { createDownloadInfo } from './utils'
+import { convertAudio, createDownloadInfo, shouldConvertDownload } from './utils'
 // import {
 //   filterFileName,
 // } from '@common/utils/common'
@@ -10,6 +10,7 @@ import { createDownloadInfo } from './utils'
 // } from '..'
 import { checkAndCreateDir, checkPath, getFileStats, removeFile } from '@common/utils/nodejs'
 import { DOWNLOAD_STATUS } from '@common/constants'
+import { join, basename } from 'node:path'
 // import { download as eventDownloadNames } from '@renderer/event/names'
 
 // window.downloadList = []
@@ -43,9 +44,10 @@ export const createDownloadTasks = (
   fileNameFormat: string,
   qualityList: LX.QualityList,
   listId?: string,
+  format?: LX.Download.FileExt,
 ): LX.Download.ListItem[] => {
   return list.map(musicInfo => {
-    return createDownloadInfo(musicInfo, quality, fileNameFormat, qualityList, listId)
+    return createDownloadInfo(musicInfo, quality, fileNameFormat, qualityList, listId, format)
   }).filter(task => task)
   // commit('addTasks', { list: taskList, addMusicLocationType: rootState.setting.list.addMusicLocationType })
   // let result = getStartTask(downloadList, DOWNLOAD_STATUS, rootState.setting.download.maxDownloadNum)
@@ -71,7 +73,14 @@ const createTask = async(downloadInfo: LX.Download.ListItem, savePath: string, s
   }
   if (!tasks.has(downloadInfo.id)) return
 
+  const shouldConvert = shouldConvertDownload(downloadInfo)
+  const rawFileName = shouldConvert ? `${downloadInfo.id}.source.m4a` : downloadInfo.metadata.fileName
+  const rawFilePath = join(savePath, rawFileName)
+
   if (downloadInfo.downloaded == 0) {
+    if (shouldConvert) {
+      await removeFile(rawFilePath).catch(() => {})
+    }
     if (skipExistFile) {
       const stats = await getFileStats(downloadInfo.metadata.filePath)
       if (stats && stats.size > 100) {
@@ -101,7 +110,7 @@ const createTask = async(downloadInfo: LX.Download.ListItem, savePath: string, s
   const downloadOptions: DownloadOptions = {
     url: downloadInfo.metadata.url ?? '',
     path: savePath,
-    fileName: downloadInfo.metadata.fileName,
+    fileName: rawFileName,
     method: 'get',
     proxy,
     onCompleted() {
@@ -109,10 +118,30 @@ const createTask = async(downloadInfo: LX.Download.ListItem, savePath: string, s
       //   delete.get(downloadInfo.id)?
       //   return dispatch('startTask', downloadInfo)
       // }
-      downloadInfo.isComplate = true
-      downloadInfo.status = DOWNLOAD_STATUS.COMPLETED
-      sendAction(downloadInfo.id, { action: 'complete' })
-      console.log('on complate')
+      const complete = () => {
+        downloadInfo.isComplate = true
+        downloadInfo.status = DOWNLOAD_STATUS.COMPLETED
+        sendAction(downloadInfo.id, { action: 'complete' })
+        console.log('on complate')
+      }
+      if (!shouldConvert) {
+        complete()
+        return
+      }
+      sendAction(downloadInfo.id, { action: 'statusText', data: `正在转换为 ${downloadInfo.metadata.ext.toUpperCase()}` })
+      convertAudio(rawFilePath, downloadInfo.metadata.filePath, downloadInfo.metadata.ext, downloadInfo.metadata.quality).then(() => {
+        void removeFile(rawFilePath).catch(err => {
+          console.log(`删除临时文件失败：${basename(rawFilePath)}`, err.message)
+        })
+        complete()
+      }).catch((err: Error) => {
+        sendAction(downloadInfo.id, {
+          action: 'error',
+          data: {
+            message: err.message,
+          },
+        })
+      })
     },
     onError(err: any) {
       console.error(err)
@@ -141,7 +170,7 @@ const createTask = async(downloadInfo: LX.Download.ListItem, savePath: string, s
         return
       }
       if (err.message?.startsWith('Resume failed')) {
-        removeFile(downloadInfo.metadata.filePath).catch(err => {
+        removeFile(shouldConvert ? rawFilePath : downloadInfo.metadata.filePath).catch(err => {
           console.log('删除不匹配的文件失败：', err.message)
           // commit('onError', { downloadInfo, errorMsg: '删除不匹配的文件失败：' + err.message })
         }).finally(() => {

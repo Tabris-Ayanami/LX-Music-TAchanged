@@ -23,7 +23,7 @@
       @contextmenu.prevent="handleToMusicLocation"
     >
       <div data-play-floating-cover="true" :class="$style.cover">
-        <div :class="[$style.coverArt, { [$style.coverArtSpinning]: isFloatingIslandCompact && isPlay && musicInfo.pic }]">
+        <div :class="[$style.coverArt, { [$style.coverArtSpinning]: isShowAnimation && isFloatingIslandCompact && isPlay && musicInfo.pic }]">
           <img v-if="musicInfo.pic" :src="musicInfo.pic" decoding="async" @error="imgError">
           <div v-else :class="$style.emptyPic">L<span>X</span></div>
         </div>
@@ -129,6 +129,7 @@ import { togglePlay, playNext, playPrev } from '@renderer/core/player'
 import { setMusicInfo, setShowPlayerDetail } from '@renderer/store/player/action'
 import { musicInfo, isPlay, playInfo, playMusicInfo, statusText } from '@renderer/store/player/state'
 import { isFloatingIslandCompact, toggleFloatingIslandCompact } from '@renderer/store/ui'
+import { isShowAnimation } from '@renderer/store/setting'
 import usePlayProgress from '@renderer/utils/compositions/usePlayProgress'
 import { capturePlayDetailOrigin } from '@renderer/utils/playDetailTransition'
 import PlayQueueBtn from '@renderer/components/layout/PlayDetail/components/PlayQueueBtn.vue'
@@ -201,6 +202,7 @@ export default {
     return {
       musicInfo,
       isPlay,
+      isShowAnimation,
       isFloatingIslandCompact,
       playMusicInfo,
       playerRef,

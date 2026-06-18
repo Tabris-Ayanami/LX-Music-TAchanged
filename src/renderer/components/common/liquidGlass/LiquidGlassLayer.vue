@@ -1,24 +1,26 @@
 <template>
   <VGlass
-    :class="[$style.layer, $style[`variant_${variant}`], { [$style.active]: mergedActive }]"
+    :class="[$style.layer, $style[`variant_${variant}`], { [$style.active]: mergedActive, [$style.noHighlight]: !highlight }]"
     :blur="resolvedBlur"
     :scale="resolvedScale"
     :base-frequency="resolvedBaseFrequency"
     :num-octaves="resolvedNumOctaves"
+    :disable-distortion="!useDistortion"
     :style="{ borderRadius: radiusValue }"
     aria-hidden="true"
   >
     <span :class="$style.tint" />
     <span :class="$style.edge" />
-    <span :class="$style.gloss" />
-    <span v-if="interactive" :class="$style.hoverGlow" />
-    <span v-if="interactive" :class="$style.pressGlow" />
+    <span v-if="highlight" :class="$style.gloss" />
+    <span v-if="interactive && highlight" :class="$style.hoverGlow" />
+    <span v-if="interactive && highlight" :class="$style.pressGlow" />
   </VGlass>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import VGlass from './VGlass.vue'
+import { isShowAnimation } from '@renderer/store/setting'
 
 type Variant = 'search' | 'capsule' | 'island'
 
@@ -33,6 +35,7 @@ const props = withDefaults(defineProps<{
   saturation?: number
   aberrationIntensity?: number
   mode?: 'standard' | 'polar' | 'prominent'
+  highlight?: boolean
 }>(), {
   variant: 'island',
   active: false,
@@ -44,6 +47,7 @@ const props = withDefaults(defineProps<{
   saturation: undefined,
   aberrationIntensity: undefined,
   mode: 'standard',
+  highlight: true,
 })
 
 const variantDefaults: Record<Variant, { scale: number, blur: number, frequency: number, octaves: number }> = {
@@ -62,6 +66,7 @@ const resolvedBlur = computed(() => props.blurAmount == null
 const resolvedBaseFrequency = computed(() => currentDefaults.value.frequency)
 const resolvedNumOctaves = computed(() => currentDefaults.value.octaves)
 const mergedActive = computed(() => props.active)
+const useDistortion = computed(() => isShowAnimation.value && mergedActive.value)
 </script>
 
 <style module lang="less">
@@ -144,6 +149,20 @@ const mergedActive = computed(() => props.active)
 
 .active .pressGlow {
   opacity: .16;
+}
+
+.noHighlight {
+  .tint {
+    background:
+      linear-gradient(135deg, rgba(255,255,255,.16), rgba(255,255,255,.06) 52%, rgba(0,0,0,.08));
+  }
+
+  .edge {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .28),
+      inset 0 -1px 0 rgba(0, 0, 0, .14),
+      0 14px 30px rgba(20, 29, 46, .12);
+  }
 }
 
 .variant_search {

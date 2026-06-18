@@ -33,8 +33,8 @@ test('RG-031: local album and artist pages share the artwork header while keepin
   )
   assert.match(
     localIndexSource,
-    /\.gridShell \{[\s\S]*grid-template-columns: repeat\(5, minmax\(0, 1fr\)\);/m,
-    'The local album wall should render five columns on desktop-sized layouts',
+    /\.artistShell \{[\s\S]*grid-template-columns: repeat\(5, minmax\(0, 1fr\)\);/m,
+    'The local artist wall should render five columns on desktop-sized layouts',
   )
   assert.doesNotMatch(
     localIndexSource,
@@ -46,11 +46,9 @@ test('RG-031: local album and artist pages share the artwork header while keepin
     /headerRow|播放全部|导入文件夹|导入文件/m,
     'The local library browsing page should not keep the old inline management header',
   )
-  assert.doesNotMatch(
-    localIndexSource,
-    /\.searchRow \{[\s\S]*position: absolute;/m,
-    'The local library search row should participate in layout instead of covering album cards',
-  )
+  const searchRowBlock = localIndexSource.match(/\.searchRow \{[\s\S]*?\n\}/m)
+  assert.ok(searchRowBlock, 'The local library page should keep a search row block')
+  assert.doesNotMatch(searchRowBlock[0], /position: absolute;/m, 'The local library search row should participate in layout instead of covering album cards')
   assert.match(
     localIndexSource,
     /\.page \{[\s\S]*padding: 10px;[\s\S]*box-sizing: border-box;/m,

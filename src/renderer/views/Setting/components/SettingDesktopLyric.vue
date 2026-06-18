@@ -1,8 +1,9 @@
 <template lang="pug">
 dt#desktop_lyric {{ $t('setting__desktop_lyric') }}
 dd
+  .gap-top {{ $t('setting__desktop_lyric_disabled_tip') }}
   .gap-top
-    base-checkbox(id="setting_desktop_lyric_enable" :model-value="appSetting['desktopLyric.enable']" :label="$t('setting__desktop_lyric_enable')" @update:model-value="updateSetting({ 'desktopLyric.enable': $event })")
+    base-checkbox(id="setting_desktop_lyric_enable" disabled :model-value="false" :label="$t('setting__desktop_lyric_enable')")
   .gap-top
     base-checkbox(id="setting_desktop_lyric_lock" :model-value="appSetting['desktopLyric.isLock']" :label="$t('setting__desktop_lyric_lock')" @update:model-value="updateSetting({ 'desktopLyric.isLock': $event })")
   .gap-top

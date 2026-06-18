@@ -60,12 +60,26 @@ const handleToggleTag = (id) => {
 }
 watch(() => props.source, async(source) => {
   if (!source) return
-  // const source = (await getLeaderboardSetting()).source as LX.OnlineSource
-  let tagInfo = tags[source]
-  // console.log(await getTags(source))
-  if (tagInfo == null) setTags(tagInfo = await getTags(source), source)
+  try {
+    // const source = (await getLeaderboardSetting()).source as LX.OnlineSource
+    let tagInfo = tags[source]
+    // console.log(await getTags(source))
+    if (tagInfo == null) {
+      tagInfo = await getTags(source)
+      if (source != props.source) return
+      if (!tagInfo) {
+        list.splice(0, list.length)
+        return
+      }
+      setTags(tagInfo, source)
+    }
 
-  list.splice(0, list.length, ...[{ name: window.i18n.t('songlist__tag_info_hot_tag'), list: [...tagInfo.hotTag] }, ...tagInfo.tags])
+    list.splice(0, list.length, ...[{ name: window.i18n.t('songlist__tag_info_hot_tag'), list: [...tagInfo.hotTag] }, ...tagInfo.tags])
+  } catch (err) {
+    console.log(err)
+    if (source != props.source) return
+    list.splice(0, list.length)
+  }
 }, {
   immediate: true,
 })
@@ -83,9 +97,13 @@ const popupStyle = reactive({
   maxHeight: '250px',
 })
 
+let setTagPopupWidthTimer = null
 const setTagPopupWidth = () => {
-  window.setTimeout(() => {
+  if (setTagPopupWidthTimer != null) window.clearTimeout(setTagPopupWidthTimer)
+  setTagPopupWidthTimer = window.setTimeout(() => {
+    setTagPopupWidthTimer = null
     const dom_view = document.getElementById('view')
+    if (!dom_view) return
     popupStyle.width = dom_view.clientWidth * 0.96 + 'px'
     popupStyle.maxHeight = dom_view.clientHeight * 0.65 + 'px'
   }, 50)
@@ -109,6 +127,10 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (setTagPopupWidthTimer != null) {
+    window.clearTimeout(setTagPopupWidthTimer)
+    setTagPopupWidthTimer = null
+  }
   document.removeEventListener('click', handleHide)
   window.removeEventListener('resize', setTagPopupWidth)
 })

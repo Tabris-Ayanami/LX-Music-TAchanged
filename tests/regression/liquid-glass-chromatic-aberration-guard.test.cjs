@@ -7,15 +7,15 @@ const rootDir = path.resolve(__dirname, '..', '..')
 const liquidGlassLayerPath = path.join(rootDir, 'src', 'renderer', 'components', 'common', 'liquidGlass', 'LiquidGlassLayer.vue')
 const liquidGlassLayerSource = fs.readFileSync(liquidGlassLayerPath, 'utf8')
 
-test('RG-020: liquid-glass defaults keep chromatic aberration disabled on player surfaces', () => {
+test('RG-020: liquid-glass defaults keep distortion controlled by animation settings', () => {
   assert.match(
     liquidGlassLayerSource,
-    /const variantDefaults: Record<Variant, \{ displacementScale: number, blurAmount: number, saturation: number, aberrationIntensity: number \}> = \{[\s\S]*search: \{[\s\S]*aberrationIntensity: 0[\s\S]*capsule: \{[\s\S]*aberrationIntensity: 0[\s\S]*island: \{[\s\S]*aberrationIntensity: 0/m,
-    'Search, toolbar capsule, and floating-island glass defaults should keep RGB edge splitting disabled so light surfaces do not pick up orange fringe artifacts',
+    /const variantDefaults: Record<Variant, \{ scale: number, blur: number, frequency: number, octaves: number \}> = \{[\s\S]*search: \{ scale: 18, blur: 18[\s\S]*capsule: \{ scale: 20, blur: 16[\s\S]*island: \{ scale: 24, blur: 22/m,
+    'VGlass defaults should keep per-surface scale and blur tuned for search, capsule, and island surfaces',
   )
   assert.match(
     liquidGlassLayerSource,
-    /const resolvedAberrationIntensity = computed\(\(\) => props\.aberrationIntensity \?\? variantDefaults\[currentVariant\.value\]\.aberrationIntensity\)/m,
-    'Chromatic aberration should still remain configurable per usage site instead of hard-coding the filter path',
+    /const useDistortion = computed\(\(\) => isShowAnimation\.value && mergedActive\.value\)/m,
+    'Animated distortion should be disabled whenever global animation is off or the surface is inactive',
   )
 })

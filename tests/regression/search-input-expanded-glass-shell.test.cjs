@@ -20,7 +20,7 @@ test('RG-023: search suggestions expand the toolbar shell into a blurred glass p
   )
   assert.match(
     searchInputSource,
-    /<LiquidGlassLayer[\s\S]*:active="true"[\s\S]*:blur-amount="visibleList \? 1\.9 : 1\.5"[\s\S]*:saturation="visibleList \? 220 : 206"[\s\S]*:over-light="visibleList"/m,
+    /<LiquidGlassLayer[\s\S]*:active="true"[\s\S]*:blur-amount="visibleList \? 1\.18 : 0\.9"[\s\S]*:saturation="visibleList \? 168 : 148"[\s\S]*:over-light="visibleList"/m,
     'The search shell should stay visible in its compact glass state and only deepen blur while the expanded suggestion panel is open',
   )
   assert.match(

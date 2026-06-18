@@ -10,7 +10,7 @@ const floatingIslandSource = fs.readFileSync(floatingIslandPath, 'utf8')
 test('RG-002: floating island cover rotation stays compact-only', () => {
   assert.match(
     floatingIslandSource,
-    /\[\$style\.coverArtSpinning\]: isFloatingIslandCompact && isPlay && musicInfo\.pic/,
+    /\[\$style\.coverArtSpinning\]: isShowAnimation && isFloatingIslandCompact && isPlay && musicInfo\.pic/,
     'Expanded floating-island state should not apply the compact spinning-disc treatment',
   )
 })

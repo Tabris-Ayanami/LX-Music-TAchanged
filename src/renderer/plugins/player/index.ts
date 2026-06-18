@@ -388,7 +388,9 @@ export const setResource = (src: string) => {
 }
 
 export const setPlay = () => {
-  void audio?.play()
+  void audio?.play().catch((err: unknown) => {
+    console.warn('audio play failed', err)
+  })
 }
 
 export const setPause = () => {

@@ -49,13 +49,13 @@
             <button
               type="button"
               :class="$style.row"
-              @click="playTrack(item.track)"
+              @click="playTrack(toLocalTrackItem(item).track)"
             >
               <span :class="[$style.cell, $style.numCell]">{{ Number(index) + 1 }}</span>
-              <span :class="[$style.cell, $style.nameCell]" :title="item.track.name">{{ item.track.name }}</span>
-              <span :class="[$style.cell, $style.singerCell]" :title="item.track.singer">{{ item.track.singer || '--' }}</span>
-              <span :class="[$style.cell, $style.albumCell]" :title="item.track.meta.albumName">{{ item.track.meta.albumName || '--' }}</span>
-              <span :class="[$style.cell, $style.timeCell]">{{ item.track.interval || '--/--' }}</span>
+              <span :class="[$style.cell, $style.nameCell]" :title="toLocalTrackItem(item).track.name">{{ toLocalTrackItem(item).track.name }}</span>
+              <span :class="[$style.cell, $style.singerCell]" :title="toLocalTrackItem(item).track.singer">{{ toLocalTrackItem(item).track.singer || '--' }}</span>
+              <span :class="[$style.cell, $style.albumCell]" :title="toLocalTrackItem(item).track.meta.albumName">{{ toLocalTrackItem(item).track.meta.albumName || '--' }}</span>
+              <span :class="[$style.cell, $style.timeCell]">{{ toLocalTrackItem(item).track.interval || '--/--' }}</span>
             </button>
           </base-virtualized-list>
           <div v-else :class="$style.emptyState">没有匹配到本地歌曲。</div>
@@ -182,6 +182,8 @@ interface LocalTrackItem {
   index: number
   track: LX.Music.MusicInfoLocal
 }
+
+const toLocalTrackItem = (item: LocalTrackItem) => item
 
 type LocalView = 'tracks' | 'albums' | 'artists'
 

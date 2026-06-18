@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import dns from 'dns'
 import { decodeName } from '@renderer/utils'
+import { setLimitedCache } from '@renderer/utils/limitedCache'
 
 export const toMD5 = str => crypto.createHash('md5').update(str).digest('hex')
 
@@ -10,7 +11,7 @@ export const getHostIp = hostname => {
   const result = ipMap.get(hostname)
   if (typeof result === 'object') return result
   if (result === true) return
-  ipMap.set(hostname, true)
+  setLimitedCache(ipMap, hostname, true, 100)
   // console.log(hostname)
   dns.lookup(hostname, {
     // family: 4,
@@ -18,7 +19,7 @@ export const getHostIp = hostname => {
   }, (err, address, family) => {
     if (err) return console.log(err)
     // console.log(address, family)
-    ipMap.set(hostname, { address, family })
+    setLimitedCache(ipMap, hostname, { address, family }, 100)
   })
 }
 

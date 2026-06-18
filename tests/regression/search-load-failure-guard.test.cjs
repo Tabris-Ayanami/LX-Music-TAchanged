@@ -15,7 +15,7 @@ const searchSongListActionSource = fs.readFileSync(searchSongListActionPath, 'ut
 test('RG-012: startup and search failures stay inside their own error states', () => {
   assert.match(
     useDataInitSource,
-    /void music\.init\(\)\.catch\(err => \{[\s\S]*log\.error\(err\)/m,
+    /void music\.init\(\)\.catch\(\(err: any\) => \{[\s\S]*log\.error\(err\)/m,
     'Application startup should log music SDK init failures instead of letting them escape as unhandled rejections',
   )
   assert.match(

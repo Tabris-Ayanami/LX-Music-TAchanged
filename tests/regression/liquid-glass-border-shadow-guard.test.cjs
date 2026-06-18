@@ -10,12 +10,12 @@ const liquidGlassLayerSource = fs.readFileSync(liquidGlassLayerPath, 'utf8')
 test('RG-021: liquid-glass border treatment avoids internal dark shadow on light surfaces', () => {
   assert.match(
     liquidGlassLayerSource,
-    /\.edgeScreen,\s*\.edgeOverlay \{[\s\S]*box-shadow: 0 0 0 0\.5px rgba\(255, 255, 255, 0\.46\) inset;/m,
-    'The edge layer should use a tight highlight stroke instead of a blurred inner shadow so the glass interior does not look muddy',
+    /\.edge \{[\s\S]*inset 0 1px 0 rgba\(255, 255, 255, \.74\)[\s\S]*0 18px 42px rgba\(20, 29, 46, \.14\);/m,
+    'The VGlass edge layer should keep a crisp highlight and soft exterior shadow',
   )
   assert.doesNotMatch(
     liquidGlassLayerSource,
-    /\.edgeScreen,\s*\.edgeOverlay \{[\s\S]*rgba\(0, 0, 0, 0\.22\)/m,
-    'The border-only layer should not reintroduce the previous dark interior shadow',
+    /\.edge \{[\s\S]*rgba\(0, 0, 0, 0\.22\)/m,
+    'The edge layer should not reintroduce a muddy dark interior shadow',
   )
 })

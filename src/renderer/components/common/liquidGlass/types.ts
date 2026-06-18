@@ -6,6 +6,7 @@ export interface VGlassProps {
   xChannelSelector?: 'R' | 'G' | 'B' | 'A'
   yChannelSelector?: 'R' | 'G' | 'B' | 'A'
   numOctaves?: number
+  disableDistortion?: boolean
 }
 
 export interface LiquidGlassSegmentedNavItem {

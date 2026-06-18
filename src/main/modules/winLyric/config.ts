@@ -3,6 +3,7 @@ import { closeWindow, createWindow, getBounds, isExistWindow, alwaysOnTopTools, 
 import { sendConfigChange } from './rendererEvent'
 import { buildLyricConfig, getLyricWindowBounds, initWindowSize, watchConfigKeys } from './utils'
 
+const isDesktopLyricDisabled = true
 let isLock: boolean
 let isEnable: boolean
 let isAlwaysOnTop: boolean
@@ -14,6 +15,11 @@ let isHoverHide: boolean
 
 export const setLrcConfig = (keys: Array<keyof LX.AppSetting>, setting: Partial<LX.AppSetting>) => {
   if (!watchConfigKeys.some(key => keys.includes(key))) return
+  if (isDesktopLyricDisabled) {
+    if (isExistWindow()) closeWindow()
+    isEnable = false
+    return
+  }
 
   if (isExistWindow()) {
     sendConfigChange(buildLyricConfig(setting))

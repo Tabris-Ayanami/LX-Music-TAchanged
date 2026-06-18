@@ -92,6 +92,7 @@ export {
 
 export {
   getUserLists,
+  retainMusicListCache,
   removeUserList,
   updateUserList,
   updateUserListPosition,
