@@ -1,5 +1,9 @@
 // 业务工具方法
 
+export const isBiliRuntimePicUrl = (url?: string | null) => {
+  return /^http:\/\/(?:127\.0\.0\.1|localhost):\d+\/bili\/image\?/i.test(String(url ?? ''))
+}
+
 export const toNewMusicInfo = (oldMusicInfo: any): LX.Music.MusicInfo => {
   const meta: Record<string, any> = {
     songId: oldMusicInfo.songmid, // 歌曲ID，local为文件路径

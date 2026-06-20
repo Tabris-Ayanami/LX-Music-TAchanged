@@ -27,6 +27,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from '@common/utils/vueTools'
 import { encodePath } from '@common/utils/common'
+import { isBiliRuntimePicUrl } from '@common/utils/tools'
 import { getPicPath } from '@renderer/core/music'
 import { playList } from '@renderer/core/player'
 import { getList } from '@renderer/store/player/action'
@@ -49,11 +50,9 @@ const normalizePicUrl = pic => {
   return `file:///${encodePath(pic)}`
 }
 
-const isBiliProxyPic = pic => /^http:\/\/(?:127\.0\.0\.1|localhost):\d+\/bili\/image\?/i.test(pic)
-
 const getMusicPic = musicInfo => {
   const pic = musicInfo?.pic || musicInfo?.meta?.picUrl || musicInfo?.img || ''
-  if (musicInfo?.source == 'bili' && pic && !isBiliProxyPic(pic)) return ''
+  if (musicInfo?.source == 'bili') return ''
   return normalizePicUrl(pic)
 }
 
@@ -76,7 +75,9 @@ const applyQueuePic = (item, pic, requestId) => {
   for (const queueItem of queueList.value) {
     if (queueItem.id != item.id || queueItem.index != item.index) continue
     queueItem.pic = picUrl
-    if (queueItem.musicInfo?.meta) queueItem.musicInfo.meta.picUrl = picUrl
+    if (queueItem.musicInfo?.meta && queueItem.musicInfo.source != 'bili' && !isBiliRuntimePicUrl(picUrl)) {
+      queueItem.musicInfo.meta.picUrl = picUrl
+    }
     break
   }
 }

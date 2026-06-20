@@ -141,11 +141,15 @@ export const resetPlayerMusicInfo = () => {
   })
 }
 
+const getInitialPic = (musicInfo: LX.Music.MusicInfo) => {
+  return musicInfo.source == 'bili' ? null : musicInfo.meta.picUrl
+}
+
 const setPlayerMusicInfo = (musicInfo: LX.Music.MusicInfo | LX.Download.ListItem | null) => {
   if (musicInfo) {
     setMusicInfo('progress' in musicInfo ? {
       id: musicInfo.id,
-      pic: musicInfo.metadata.musicInfo.meta.picUrl,
+      pic: getInitialPic(musicInfo.metadata.musicInfo),
       name: musicInfo.metadata.musicInfo.name,
       singer: musicInfo.metadata.musicInfo.singer,
       album: musicInfo.metadata.musicInfo.meta.albumName ?? '',
@@ -156,7 +160,7 @@ const setPlayerMusicInfo = (musicInfo: LX.Music.MusicInfo | LX.Download.ListItem
       rawlrc: null,
     } : {
       id: musicInfo.id,
-      pic: musicInfo.meta.picUrl,
+      pic: getInitialPic(musicInfo),
       name: musicInfo.name,
       singer: musicInfo.singer,
       album: musicInfo.meta.albumName ?? '',

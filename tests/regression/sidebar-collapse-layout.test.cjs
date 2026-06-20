@@ -10,8 +10,38 @@ const navBarSource = fs.readFileSync(navBarPath, 'utf8')
 test('RG-007: sidebar collapse keeps a fixed icon column and only collapses the label lane', () => {
   assert.match(
     navBarSource,
-    /\.menu \{[\s\S]*--sidebar-nav-rail: var\(--sidebar-icon-lane, 44px\);[\s\S]*--sidebar-nav-height: var\(--sidebar-item-height, 40px\);[\s\S]*--sidebar-nav-radius: var\(--sidebar-item-radius, 12px\);[\s\S]*--sidebar-nav-glyph: var\(--sidebar-icon-glyph-size, 16px\);[\s\S]*--sidebar-active-left-bleed: 0px;[\s\S]*--sidebar-active-right-trim: 6px;[\s\S]*--sidebar-motion-duration: \.46s;[\s\S]*--sidebar-motion-curve: cubic-bezier\(\.2, 0, 0, 1\);[\s\S]*margin-left: 0;[\s\S]*padding: 0;/,
+    /\.menu \{[\s\S]*--sidebar-nav-rail: var\(--sidebar-icon-lane, 44px\);[\s\S]*--sidebar-nav-height: var\(--sidebar-item-height, 40px\);[\s\S]*--sidebar-nav-radius: var\(--sidebar-item-radius, 12px\);[\s\S]*--sidebar-nav-glyph: var\(--sidebar-icon-glyph-size, 16px\);[\s\S]*--sidebar-motion-duration: \.46s;[\s\S]*--sidebar-motion-curve: cubic-bezier\(\.2, 0, 0, 1\);[\s\S]*margin-left: 0;[\s\S]*padding: 0;/,
     'Sidebar nav should define shared geometry tokens for expanded and collapsed states',
+  )
+  assert.match(
+    navBarSource,
+    /:data-nav-key="item\.key"/m,
+    'Each sidebar row should expose a stable DOM key so the active pill can measure the rendered target',
+  )
+  assert.match(
+    navBarSource,
+    /const pillRect = ref\(\{[\s\S]*x: 0,[\s\S]*y: 0,[\s\S]*width: 0,[\s\S]*height: 0,/m,
+    'The sidebar active pill should store measured geometry instead of deriving it from duplicated layout constants',
+  )
+  assert.match(
+    navBarSource,
+    /querySelectorAll\('\[data-nav-key\]'\)[\s\S]*link\.dataset\.navKey == key/m,
+    'The active pill should resolve its target from the rendered nav element key',
+  )
+  assert.match(
+    navBarSource,
+    /const menuBounds = menuEl\.getBoundingClientRect\(\)[\s\S]*const linkBounds = linkEl\.getBoundingClientRect\(\)[\s\S]*x: linkBounds\.left - menuBounds\.left \+ pillInset,[\s\S]*y: linkBounds\.top - menuBounds\.top,[\s\S]*width: Math\.max\(0, linkBounds\.width - pillInset \* 2\),[\s\S]*height: linkBounds\.height,/m,
+    'The active pill should follow actual DOM geometry so collapsed titles, gaps, and widths cannot drift from the icon column',
+  )
+  assert.doesNotMatch(
+    navBarSource,
+    /const itemHeight|const itemGap|const sectionTitleHeight|const sectionGap|const sectionTitleGap/m,
+    'Sidebar active-pill positioning should not depend on hand-maintained layout constants',
+  )
+  assert.match(
+    navBarSource,
+    /const trackPillDuringLayoutMotion = \(\) => \{[\s\S]*pillTrackUntil = performance\.now\(\) \+ sidebarMotionMs \+ 80[\s\S]*measureCurrentPill\(\)[\s\S]*requestAnimationFrame\(tick\)/m,
+    'The active pill should keep measuring during collapse animation while layout is moving',
   )
   assert.match(
     navBarSource,
@@ -63,20 +93,15 @@ test('RG-007: sidebar collapse keeps a fixed icon column and only collapses the 
     /\.menu:not\(\.collapsed\)[\s\S]*margin-left: -\d+px|padding-left: \d+px;/m,
     'Expanded active state must not shift the active tile compared with collapsed state',
   )
-  assert.match(
+  assert.doesNotMatch(
     navBarSource,
-    /\.link \{[\s\S]*&::before \{[\s\S]*inset: 2px var\(--sidebar-active-right-trim\) 2px calc\(var\(--sidebar-active-left-bleed\) \* -1\);[\s\S]*border-radius: inherit;[\s\S]*corner-shape: squircle;/m,
-    'Expanded active and hover fills should keep the same visual height as collapsed while using shared left bleed and right trim',
+    /\.link \{[\s\S]*&::before/m,
+    'Sidebar links should not keep a second pseudo-element highlight that can drift away from the measured pill',
   )
-  assert.match(
+  assert.doesNotMatch(
     navBarSource,
-    /\.link \{[\s\S]*&::before \{[\s\S]*transition: inset var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\), background-color @transition-fast;/m,
-    'Sidebar active fill should animate inset changes so the rectangle-to-square transition is continuous',
-  )
-  assert.match(
-    navBarSource,
-    /\.collapsed \s*\{[\s\S]*\.link \{[\s\S]*&::before \{[\s\S]*inset: 2px calc\(var\(--sidebar-active-left-bleed\) \* -1\) 2px calc\(var\(--sidebar-active-left-bleed\) \* -1\);/s,
-    'Collapsed active fill should keep the expanded-state height and left edge while expanding right equally so its center lines up with the icon center',
+    /transform: translateY\(-1px\);/m,
+    'Sidebar links should not move their own measured box on hover because that double-applies motion to the active pill',
   )
   assert.match(
     navBarSource,

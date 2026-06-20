@@ -1,4 +1,5 @@
 import { updateListMusics } from '@renderer/store/list/action'
+import { isBiliRuntimePicUrl } from '@common/utils/tools'
 import { appSetting } from '@renderer/store/setting'
 import {
   saveLyric,
@@ -72,10 +73,10 @@ export const getPicUrl = async({ musicInfo, listId, isRefresh, allowToggleSource
   allowToggleSource?: boolean
   onToggleSource?: (musicInfo?: LX.Music.MusicInfoOnline) => void
 }): Promise<string> => {
-  if (musicInfo.meta.picUrl && !isRefresh && (musicInfo.source != 'bili' || musicInfo.meta.picUrl.startsWith('http://127.0.0.1:'))) return musicInfo.meta.picUrl
+  if (musicInfo.meta.picUrl && !isRefresh && musicInfo.source != 'bili') return musicInfo.meta.picUrl
   return handleGetOnlinePicUrl({ musicInfo, onToggleSource, isRefresh, allowToggleSource }).then(({ url, musicInfo: targetMusicInfo, isFromCache }) => {
     // picRequest = null
-    if (listId) {
+    if (listId && musicInfo.source != 'bili' && !isBiliRuntimePicUrl(url)) {
       musicInfo.meta.picUrl = url
       void updateListMusics([{ id: listId, musicInfo }])
     }

@@ -1,6 +1,6 @@
 <template>
   <div ref="menuRef" :class="[$style.menu, { [$style.collapsed]: isSidebarCollapsed }]" @mouseleave="handleMenuLeave">
-    <span v-show="pillVisible" :class="[$style.navPill, { [$style.floating]: pillFloating }]" :style="pillStyle" aria-hidden="true">
+    <span v-show="pillVisible" :class="[$style.navPill, { [$style.floating]: pillFloating, [$style.tracking]: pillTracking }]" :style="pillStyle" aria-hidden="true">
       <LiquidGlassLayer
         variant="capsule"
         active
@@ -17,6 +17,7 @@
         <li v-for="item in section.items" :key="item.key" :class="$style.navItem" role="presentation">
           <router-link
             :class="[$style.link, { [$style.active]: isItemActive(item) }]"
+            :data-nav-key="item.key"
             role="tab"
             :aria-selected="isItemActive(item)"
             :aria-label="item.label"
@@ -137,14 +138,22 @@ const isItemActive = item => {
 const menuRef = ref(null)
 const hoverKey = ref('')
 const pillVisible = ref(false)
-const pillY = ref(0)
-let pillUpdateFrame = 0
+const pillTracking = ref(false)
+const pillRect = ref({
+  x: 0,
+  y: 0,
+  width: 0,
+  height: 0,
+})
+let pillMeasureFrame = 0
+let pillTrackFrame = 0
+let pillTrackUntil = 0
+let pillMeasurePending = false
+let pillMeasureNeedsTracking = false
+let isUnmounted = false
 
-const itemHeight = 40
-const itemGap = 2
-const sectionTitleHeight = 11
-const sectionGap = 13
-const sectionTitleGap = 4
+const sidebarMotionMs = 460
+const pillInset = 2
 
 const activeItemKey = computed(() => {
   for (const section of menus.value) {
@@ -155,91 +164,126 @@ const activeItemKey = computed(() => {
 })
 
 const pillFloating = computed(() => !!hoverKey.value && hoverKey.value != activeItemKey.value)
-const pillInset = 2
 const pillStyle = computed(() => ({
-  width: `calc(100% - ${pillInset * 2}px)`,
-  height: 'var(--sidebar-nav-height)',
-  transform: `translate3d(${pillInset}px, ${pillY.value}px, 0) ${pillFloating.value ? 'translateY(-1px)' : 'translateY(0)'}`,
+  width: `${pillRect.value.width}px`,
+  height: `${pillRect.value.height}px`,
+  transform: `translate3d(${pillRect.value.x}px, ${pillRect.value.y}px, 0)`,
 }))
 
-const getPillYByKey = key => {
-  const titleHeight = isSidebarCollapsed.value ? 0 : sectionTitleHeight
-  let y = 0
+const currentPillKey = computed(() => hoverKey.value || activeItemKey.value)
 
-  for (const section of menus.value) {
-    const itemIndex = section.items.findIndex(item => item.key == key)
-    if (itemIndex > -1) {
-      return y + titleHeight + sectionTitleGap + itemIndex * (itemHeight + itemGap)
-    }
-    y += titleHeight + sectionTitleGap + section.items.length * itemHeight + Math.max(0, section.items.length - 1) * itemGap + sectionGap
-  }
-
-  return null
+const getNavLinkByKey = key => {
+  const menuEl = menuRef.value
+  if (!menuEl || !key) return null
+  return Array.from(menuEl.querySelectorAll('[data-nav-key]')).find(link => link.dataset.navKey == key) || null
 }
 
-const updatePillToKey = key => {
-  const nextY = getPillYByKey(key)
-  if (nextY == null) {
+const measurePillToKey = key => {
+  const menuEl = menuRef.value
+  const linkEl = getNavLinkByKey(key)
+  if (!menuEl || !linkEl) {
     pillVisible.value = false
     return
   }
 
-  pillY.value = nextY
+  const menuBounds = menuEl.getBoundingClientRect()
+  const linkBounds = linkEl.getBoundingClientRect()
+  pillRect.value = {
+    x: linkBounds.left - menuBounds.left + pillInset,
+    y: linkBounds.top - menuBounds.top,
+    width: Math.max(0, linkBounds.width - pillInset * 2),
+    height: linkBounds.height,
+  }
   pillVisible.value = true
 }
 
-const updatePillToActive = () => {
-  if (!activeItemKey.value) {
+const measureCurrentPill = () => {
+  if (!currentPillKey.value) {
     pillVisible.value = false
     return
   }
-  updatePillToKey(activeItemKey.value)
+  measurePillToKey(currentPillKey.value)
 }
 
-const schedulePillUpdate = () => {
-  if (pillUpdateFrame) cancelAnimationFrame(pillUpdateFrame)
+const trackPillDuringLayoutMotion = () => {
+  pillTracking.value = true
+  pillTrackUntil = performance.now() + sidebarMotionMs + 80
+  if (pillTrackFrame) return
 
+  const tick = () => {
+    measureCurrentPill()
+    if (performance.now() < pillTrackUntil) {
+      pillTrackFrame = requestAnimationFrame(tick)
+      return
+    }
+    pillTrackFrame = 0
+    pillTracking.value = false
+    measureCurrentPill()
+  }
+  pillTrackFrame = requestAnimationFrame(tick)
+}
+
+const schedulePillUpdate = (trackLayoutMotion = false) => {
+  if (isUnmounted) return
+  pillMeasureNeedsTracking = pillMeasureNeedsTracking || trackLayoutMotion
+  if (pillMeasurePending) return
+  if (pillMeasureFrame) cancelAnimationFrame(pillMeasureFrame)
+  pillMeasurePending = true
   void nextTick(() => {
-    updatePillToActive()
-    pillUpdateFrame = requestAnimationFrame(() => {
-      pillUpdateFrame = 0
-      updatePillToActive()
+    pillMeasurePending = false
+    if (isUnmounted) return
+    const shouldTrackLayoutMotion = pillMeasureNeedsTracking
+    pillMeasureNeedsTracking = false
+    pillMeasureFrame = requestAnimationFrame(() => {
+      pillMeasureFrame = 0
+      if (isUnmounted) return
+      measureCurrentPill()
+      if (shouldTrackLayoutMotion) trackPillDuringLayoutMotion()
     })
   })
 }
 
 const handleItemEnter = key => {
   hoverKey.value = key
-  void nextTick(() => {
-    updatePillToKey(key)
-  })
+  schedulePillUpdate()
 }
 
 const handleMenuLeave = () => {
   hoverKey.value = ''
-  void nextTick(updatePillToActive)
+  schedulePillUpdate()
 }
 
-watch([activeItemKey, menus], () => {
+const handleWindowResize = () => {
+  schedulePillUpdate(true)
+}
+
+watch(activeItemKey, () => {
   hoverKey.value = ''
   schedulePillUpdate()
 }, {
   immediate: true,
 })
 
+watch(menus, () => {
+  hoverKey.value = ''
+  schedulePillUpdate(true)
+})
+
 watch(isSidebarCollapsed, () => {
   hoverKey.value = ''
-  schedulePillUpdate()
+  schedulePillUpdate(true)
 })
 
 onMounted(() => {
-  schedulePillUpdate()
-  window.addEventListener('resize', schedulePillUpdate)
+  schedulePillUpdate(true)
+  window.addEventListener('resize', handleWindowResize)
 })
 
 onBeforeUnmount(() => {
-  if (pillUpdateFrame) cancelAnimationFrame(pillUpdateFrame)
-  window.removeEventListener('resize', schedulePillUpdate)
+  isUnmounted = true
+  if (pillMeasureFrame) cancelAnimationFrame(pillMeasureFrame)
+  if (pillTrackFrame) cancelAnimationFrame(pillTrackFrame)
+  window.removeEventListener('resize', handleWindowResize)
 })
 </script>
 
@@ -251,8 +295,6 @@ onBeforeUnmount(() => {
   --sidebar-nav-height: var(--sidebar-item-height, 40px);
   --sidebar-nav-radius: var(--sidebar-item-radius, 12px);
   --sidebar-nav-glyph: var(--sidebar-icon-glyph-size, 16px);
-  --sidebar-active-left-bleed: 0px;
-  --sidebar-active-right-trim: 6px;
   --sidebar-motion-duration: .46s;
   --sidebar-motion-curve: cubic-bezier(.2, 0, 0, 1);
   flex: 0 0 auto;
@@ -302,6 +344,10 @@ onBeforeUnmount(() => {
     0 18px 36px color-mix(in srgb, var(--color-primary) 28%, rgba(13, 23, 42, .24)),
     inset 0 1px 0 rgba(255, 255, 255, .26),
     inset 0 -1px 0 rgba(0, 0, 0, .14);
+}
+
+.navPill.tracking {
+  transition: box-shadow 220ms ease;
 }
 
 .section {
@@ -362,27 +408,11 @@ onBeforeUnmount(() => {
     max-width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     padding var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     gap var(--sidebar-motion-duration) var(--sidebar-motion-curve),
-    transform .2s var(--sidebar-motion-curve),
     color @transition-fast;
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 2px var(--sidebar-active-right-trim) 2px calc(var(--sidebar-active-left-bleed) * -1);
-    z-index: -1;
-    border-radius: inherit;
-    corner-shape: squircle;
-    background: transparent;
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    pointer-events: none;
-    transition: inset var(--sidebar-motion-duration) var(--sidebar-motion-curve), background-color @transition-fast;
-  }
 
   &:hover {
     color: #fff;
     text-shadow: 0 1px 1px rgba(0, 0, 0, .28);
-    transform: translateY(-1px);
   }
 
   &:focus-visible {
@@ -455,10 +485,6 @@ onBeforeUnmount(() => {
     gap: 0;
     margin: 0;
     justify-items: start;
-
-    &::before {
-      inset: 2px calc(var(--sidebar-active-left-bleed) * -1) 2px calc(var(--sidebar-active-left-bleed) * -1);
-    }
   }
 
   .iconWrap {

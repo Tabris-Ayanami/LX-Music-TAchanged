@@ -1,4 +1,5 @@
 import { getDownloadFilePath } from '@renderer/utils/music'
+import { isBiliRuntimePicUrl } from '@common/utils/tools'
 import { pathToFileURL } from 'node:url'
 
 import {
@@ -41,7 +42,9 @@ export const getPicUrl = async({ musicInfo, isRefresh, listId, onToggleSource = 
     }
 
     const onlineMusicInfo = musicInfo.metadata.musicInfo
-    if (onlineMusicInfo.meta.picUrl) return onlineMusicInfo.meta.picUrl
+    if (onlineMusicInfo.meta.picUrl && onlineMusicInfo.source != 'bili' && !isBiliRuntimePicUrl(onlineMusicInfo.meta.picUrl)) {
+      return onlineMusicInfo.meta.picUrl
+    }
   }
 
   return getOnlinePicUrl({ musicInfo: musicInfo.metadata.musicInfo, isRefresh, onToggleSource }).then((url) => {

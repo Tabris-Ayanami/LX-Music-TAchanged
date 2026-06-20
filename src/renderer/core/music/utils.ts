@@ -8,7 +8,7 @@ import {
   getPlayerLyric as getStoreLyric,
 } from '@renderer/utils/ipc'
 import { appSetting } from '@renderer/store/setting'
-import { langS2T, toNewMusicInfo, toOldMusicInfo } from '@renderer/utils'
+import { isBiliRuntimePicUrl, langS2T, toNewMusicInfo, toOldMusicInfo } from '@renderer/utils'
 import { requestMsg } from '@renderer/utils/message'
 import { apis } from '@renderer/utils/musicSdk/api-source'
 
@@ -357,7 +357,9 @@ export const getOnlineOtherSourcePicUrl = async({ musicInfos, onToggleSource, is
   }
   if (!musicInfo) throw new Error(window.i18n.t('toggle_source_failed'))
 
-  if (musicInfo.meta.picUrl && !isRefresh) return { musicInfo, url: musicInfo.meta.picUrl, isFromCache: true }
+  if (musicInfo.meta.picUrl && !isRefresh && musicInfo.source != 'bili' && !isBiliRuntimePicUrl(musicInfo.meta.picUrl)) {
+    return { musicInfo, url: musicInfo.meta.picUrl, isFromCache: true }
+  }
 
   let reqPromise
   try {

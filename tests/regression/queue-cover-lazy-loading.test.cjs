@@ -47,8 +47,8 @@ test('RG-041: queue cover thumbnails keep lazy loading without leaving local cov
   )
   assert.match(
     sidebarQueueSource,
-    /musicInfo\?\.source == 'bili' && pic && !isBiliProxyPic\(pic\)[\s\S]*return ''/m,
-    'Sidebar queue should not directly render raw Bilibili image URLs',
+    /if \(musicInfo\?\.source == 'bili'\) return ''/m,
+    'Sidebar queue should not directly render persisted Bilibili image URLs because proxy tokens are process-local',
   )
   assert.match(
     sidebarQueueSource,
@@ -62,8 +62,8 @@ test('RG-041: queue cover thumbnails keep lazy loading without leaving local cov
   )
   assert.match(
     detailQueueSource,
-    /musicInfo\?\.source == 'bili' && pic && !isBiliProxyPic\(pic\)[\s\S]*return ''/m,
-    'Detail queue should not directly render raw Bilibili image URLs',
+    /if \(musicInfo\?\.source == 'bili'\) return ''/m,
+    'Detail queue should not directly render persisted Bilibili image URLs because proxy tokens are process-local',
   )
   assert.match(
     detailQueueSource,

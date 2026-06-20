@@ -14,6 +14,7 @@ import { appSetting } from '../setting'
 import { qualityList } from '..'
 import { proxyCallback } from '@renderer/worker/utils'
 import { arrPush, arrUnshift, joinPath } from '@renderer/utils'
+import { isBiliRuntimePicUrl } from '@common/utils/tools'
 import { DOWNLOAD_STATUS } from '@common/constants'
 import { proxy } from '../index'
 import { buildSavePath } from './utils'
@@ -149,11 +150,14 @@ const getProxy = () => {
 const saveMeta = (downloadInfo: LX.Download.ListItem) => {
   if (downloadInfo.metadata.quality === 'ape') return
   const isUseOtherSource = appSetting['download.isUseOtherSource']
+  const musicInfo = downloadInfo.metadata.musicInfo
+  const cachedPicUrl = musicInfo.meta.picUrl
+  const canUseCachedPicUrl = !!cachedPicUrl && musicInfo.source != 'bili' && !isBiliRuntimePicUrl(cachedPicUrl)
   const tasks: [Promise<string | null>, Promise<LX.Player.LyricInfo | null>] = [
     appSetting['download.isEmbedPic']
-      ? downloadInfo.metadata.musicInfo.meta.picUrl
-        ? Promise.resolve(downloadInfo.metadata.musicInfo.meta.picUrl)
-        : getPicUrl({ musicInfo: downloadInfo.metadata.musicInfo, isRefresh: false, allowToggleSource: isUseOtherSource }).catch(err => {
+      ? canUseCachedPicUrl
+        ? Promise.resolve(cachedPicUrl ?? null)
+        : getPicUrl({ musicInfo, isRefresh: false, allowToggleSource: isUseOtherSource }).catch(err => {
           console.log(err)
           return null
         })

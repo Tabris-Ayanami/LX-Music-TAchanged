@@ -29,6 +29,20 @@ const markBootstrapped = () => {
   ;(window as typeof window & { __lxRendererBootstrapped?: boolean }).__lxRendererBootstrapped = true
 }
 
+const isBootstrapped = () => {
+  return !!(window as typeof window & { __lxRendererBootstrapped?: boolean }).__lxRendererBootstrapped
+}
+
+const isWebpackDevOverlayError = (error: unknown) => {
+  if (process.env.NODE_ENV !== 'development') return false
+  const message = error instanceof Error
+    ? `${error.name}: ${error.message}\n${error.stack ?? ''}`
+    : String(error)
+  return message.includes('webpack-dev-server/client/overlay.js') &&
+    message.includes('removeChild') &&
+    message.includes('The node to be removed is not a child of this node')
+}
+
 const showStartupError = (title: string, error: unknown) => {
   markBootstrapped()
   appendStartupLog(title, error)
@@ -49,12 +63,24 @@ const showStartupError = (title: string, error: unknown) => {
   `
 }
 
+const handleRendererError = (title: string, error: unknown) => {
+  if (isWebpackDevOverlayError(error)) {
+    appendStartupLog(title, error)
+    return
+  }
+  if (!isBootstrapped()) {
+    showStartupError(title, error)
+    return
+  }
+  appendStartupLog(title, error)
+}
+
 window.addEventListener('error', event => {
-  showStartupError('window.error', event.error ?? event.message)
+  handleRendererError('window.error', event.error ?? event.message)
 })
 
 window.addEventListener('unhandledrejection', event => {
-  showStartupError('window.unhandledrejection', event.reason)
+  handleRendererError('window.unhandledrejection', event.reason)
 })
 
 void (async() => {
@@ -118,8 +144,7 @@ void (async() => {
     if (root) root.style.display = 'block'
     const app = createApp(App)
     app.config.errorHandler = (error, instance, info) => {
-      appendStartupLog(`vue.error:${info}`, error)
-      showStartupError(`vue.error:${info}`, error)
+      handleRendererError(`vue.error:${info}`, error)
     }
     app
       .use(router)
