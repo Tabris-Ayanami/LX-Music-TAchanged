@@ -28,7 +28,7 @@
         </label>
       </div>
 
-      <div v-show="normalizedView == 'tracks'" :class="$style.listShell">
+      <div v-if="normalizedView == 'tracks'" :class="$style.listShell">
         <template v-if="hasKeyword">
           <div v-if="filteredTrackItems.length" :class="$style.tableHead">
             <span :class="[$style.cell, $style.numCell]">#</span>
@@ -39,7 +39,7 @@
           </div>
           <base-virtualized-list
             v-if="filteredTrackItems.length"
-            v-slot="{ item, index }: { item: LocalTrackItem, index: number }"
+            v-slot="{ item, index }: { item: unknown, index: number }"
             :list="filteredTrackItems"
             key-name="id"
             :item-height="52"
@@ -67,7 +67,7 @@
       </div>
 
       <div
-        v-show="normalizedView == 'albums'"
+        v-else-if="normalizedView == 'albums'"
         ref="albumGridRef"
         :class="[$style.gridShell, { [$style.detailMode]: selectedAlbum }]"
         @wheel.prevent="handleAlbumWheel"
@@ -131,7 +131,7 @@
         </div>
       </div>
 
-      <div v-show="normalizedView == 'artists'" ref="artistGridRef" :class="$style.artistShell" @scroll.passive="handleArtistScroll">
+      <div v-else ref="artistGridRef" :class="$style.artistShell" @scroll.passive="handleArtistScroll">
         <button
           v-for="artist in visibleArtists"
           :key="artist.key"
@@ -183,7 +183,11 @@ interface LocalTrackItem {
   track: LX.Music.MusicInfoLocal
 }
 
-const toLocalTrackItem = (item: LocalTrackItem) => item
+interface LocalTrackSearchItem extends LocalTrackItem {
+  searchText: string
+}
+
+const toLocalTrackItem = (item: unknown) => item as LocalTrackItem
 
 type LocalView = 'tracks' | 'albums' | 'artists'
 
@@ -224,21 +228,24 @@ const resolveLocalView = (view: unknown): LocalView => {
 const normalizedKeyword = computed(() => keyword.value.trim().toLowerCase())
 const hasKeyword = computed(() => !!normalizedKeyword.value)
 
-const matchTrack = (track: LX.Music.MusicInfoLocal) => {
-  if (!normalizedKeyword.value) return true
-  const fields = [
-    track.name,
-    track.singer,
-    track.meta.albumName,
-    track.meta.filePath,
-  ].filter((field): field is string => Boolean(field))
-  return fields.some(field => field.toLowerCase().includes(normalizedKeyword.value))
-}
+const trackSearchItems = computed<LocalTrackSearchItem[]>(() => {
+  return tracks.value.map((track, index) => ({
+    id: `${track.id}_${index}`,
+    track,
+    index,
+    searchText: [
+      track.name,
+      track.singer,
+      track.meta.albumName,
+      track.meta.filePath,
+    ].filter(Boolean).join('\n').toLowerCase(),
+  }))
+})
 
 const filteredTrackItems = computed<LocalTrackItem[]>(() => {
-  return tracks.value
-    .map((track, index) => ({ id: `${track.id}_${index}`, track, index }))
-    .filter(item => matchTrack(item.track))
+  const keyword = normalizedKeyword.value
+  if (!keyword) return trackSearchItems.value
+  return trackSearchItems.value.filter(item => item.searchText.includes(keyword))
 })
 
 const filteredTracks = computed(() => filteredTrackItems.value.map(item => item.track))

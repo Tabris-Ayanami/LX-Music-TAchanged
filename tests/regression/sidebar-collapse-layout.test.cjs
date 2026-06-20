@@ -25,6 +25,11 @@ test('RG-007: sidebar collapse keeps a fixed icon column and only collapses the 
   )
   assert.match(
     navBarSource,
+    /\.navPill \{[\s\S]*transition:[\s\S]*transform var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\),[\s\S]*width var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\),[\s\S]*height var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\),/m,
+    'Sidebar active pill should use the same motion curve as the collapsing rows so it does not arrive early and self-correct later',
+  )
+  assert.match(
+    navBarSource,
     /\.iconWrap \{[\s\S]*width: var\(--sidebar-nav-rail\);[\s\S]*height: var\(--sidebar-nav-rail\);[\s\S]*justify-self: center;[\s\S]*overflow: visible;[\s\S]*svg \{[\s\S]*width: var\(--sidebar-nav-glyph\);[\s\S]*height: var\(--sidebar-nav-glyph\);/m,
     'Sidebar icon boxes should fill the fixed nav rail so icons remain centered in square active tiles',
   )

@@ -56,20 +56,31 @@ const loadBuffer = async(name: string) => new Promise<AudioBuffer>((resolve, rej
   request.send()
 })
 
+const applyBiquadGain = (hz: (typeof freqs)[number], gain: number) => {
+  const filter = getBiquadFilter().get(`hz${hz}`)
+  if (!filter) {
+    console.warn(`biquad filter hz${hz} not found`)
+    return
+  }
+  filter.gain.value = gain
+}
+
 export default () => {
   // console.log(appSetting['player.soundEffect.panner.enable'])
   if (appSetting['player.soundEffect.panner.enable']) startPanner()
   setPannerSoundR(appSetting['player.soundEffect.panner.soundR'] / 10)
   setPannerSpeed(2 * (appSetting['player.soundEffect.panner.speed'] / 10))
   if (freqs.some(v => appSetting[`player.soundEffect.biquadFilter.hz${v}`] != 0)) {
-    const bfs = getBiquadFilter()
     for (const item of freqs) {
-      bfs.get(`hz${item}`)!.gain.value = appSetting[`player.soundEffect.biquadFilter.hz${item}`]
+      applyBiquadGain(item, appSetting[`player.soundEffect.biquadFilter.hz${item}`])
     }
   }
   if (appSetting['player.soundEffect.convolution.fileName']) {
     void loadBuffer(appSetting['player.soundEffect.convolution.fileName']).then((buffer) => {
       setConvolver(buffer, appSetting['player.soundEffect.convolution.mainGain'] / 10, appSetting['player.soundEffect.convolution.sendGain'] / 10)
+    }).catch(error => {
+      console.warn('load convolver buffer failed', error)
+      setConvolver(null, 0, 0)
     })
   }
   if (appSetting['player.soundEffect.pitchShifter.playbackRate'] != 1) {
@@ -95,6 +106,9 @@ export default () => {
       if (fileName) {
         void loadBuffer(fileName).then((buffer) => {
           setConvolver(buffer, appSetting['player.soundEffect.convolution.mainGain'] / 10, appSetting['player.soundEffect.convolution.sendGain'] / 10)
+        }).catch(error => {
+          console.warn('load convolver buffer failed', error)
+          setConvolver(null, 0, 0)
         })
       } else {
         setConvolver(null, 0, 0)
@@ -110,44 +124,34 @@ export default () => {
     setConvolverSendGain(sendGain / 10)
   })
   watch(() => appSetting['player.soundEffect.biquadFilter.hz31'], (hz31) => {
-    const bfs = getBiquadFilter()
-    bfs.get('hz31')!.gain.value = hz31
+    applyBiquadGain(31, hz31)
   })
   watch(() => appSetting['player.soundEffect.biquadFilter.hz62'], (hz62) => {
-    const bfs = getBiquadFilter()
-    bfs.get('hz62')!.gain.value = hz62
+    applyBiquadGain(62, hz62)
   })
   watch(() => appSetting['player.soundEffect.biquadFilter.hz125'], (hz125) => {
-    const bfs = getBiquadFilter()
-    bfs.get('hz125')!.gain.value = hz125
+    applyBiquadGain(125, hz125)
   })
   watch(() => appSetting['player.soundEffect.biquadFilter.hz250'], (hz250) => {
-    const bfs = getBiquadFilter()
-    bfs.get('hz250')!.gain.value = hz250
+    applyBiquadGain(250, hz250)
   })
   watch(() => appSetting['player.soundEffect.biquadFilter.hz500'], (hz500) => {
-    const bfs = getBiquadFilter()
-    bfs.get('hz500')!.gain.value = hz500
+    applyBiquadGain(500, hz500)
   })
   watch(() => appSetting['player.soundEffect.biquadFilter.hz1000'], (hz1000) => {
-    const bfs = getBiquadFilter()
-    bfs.get('hz1000')!.gain.value = hz1000
+    applyBiquadGain(1000, hz1000)
   })
   watch(() => appSetting['player.soundEffect.biquadFilter.hz2000'], (hz2000) => {
-    const bfs = getBiquadFilter()
-    bfs.get('hz2000')!.gain.value = hz2000
+    applyBiquadGain(2000, hz2000)
   })
   watch(() => appSetting['player.soundEffect.biquadFilter.hz4000'], (hz4000) => {
-    const bfs = getBiquadFilter()
-    bfs.get('hz4000')!.gain.value = hz4000
+    applyBiquadGain(4000, hz4000)
   })
   watch(() => appSetting['player.soundEffect.biquadFilter.hz8000'], (hz8000) => {
-    const bfs = getBiquadFilter()
-    bfs.get('hz8000')!.gain.value = hz8000
+    applyBiquadGain(8000, hz8000)
   })
   watch(() => appSetting['player.soundEffect.biquadFilter.hz16000'], (hz16000) => {
-    const bfs = getBiquadFilter()
-    bfs.get('hz16000')!.gain.value = hz16000
+    applyBiquadGain(16000, hz16000)
   })
 
   watch(() => appSetting['player.soundEffect.pitchShifter.playbackRate'], (playbackRate) => {

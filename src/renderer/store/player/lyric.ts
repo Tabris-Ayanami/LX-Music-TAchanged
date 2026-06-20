@@ -25,8 +25,17 @@ export const setLines = (lines: Line[]) => {
   if (!lines.length && !lyric.lines.length) return
   lyric.lines = lines
 }
-export const setText = (text: string, line: number) => {
-  lyric.text = text
+const normalizeLyricText = (text: unknown) => {
+  if (typeof text == 'string') return text
+  if (text == null) return ''
+  if (typeof text == 'object' && 'text' in text) {
+    const lineText = (text as { text?: unknown }).text
+    return typeof lineText == 'string' ? lineText : lineText == null ? '' : String(lineText)
+  }
+  return String(text)
+}
+export const setText = (text: string | Line, line: number) => {
+  lyric.text = normalizeLyricText(text)
   lyric.line = line
 }
 export const setOffset = (offset: number) => {

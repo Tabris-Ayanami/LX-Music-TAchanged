@@ -16,7 +16,6 @@
       <ul :class="$style.list" role="toolbar">
         <li v-for="item in section.items" :key="item.key" :class="$style.navItem" role="presentation">
           <router-link
-            :ref="el => setItemRef(item.key, el)"
             :class="[$style.link, { [$style.active]: isItemActive(item) }]"
             role="tab"
             :aria-selected="isItemActive(item)"
@@ -40,7 +39,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, ref, watch } from '@common/utils/vueTools'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from '@common/utils/vueTools'
 import { useRoute } from '@common/utils/vueRouter'
 import { appSetting } from '@renderer/store/setting'
 import { isSidebarCollapsed } from '@renderer/store/ui'
@@ -136,10 +135,16 @@ const isItemActive = item => {
 }
 
 const menuRef = ref(null)
-const itemRefs = new Map()
 const hoverKey = ref('')
 const pillVisible = ref(false)
-const pillRect = ref({ x: 0, y: 0, width: 0, height: 0 })
+const pillY = ref(0)
+let pillUpdateFrame = 0
+
+const itemHeight = 40
+const itemGap = 2
+const sectionTitleHeight = 11
+const sectionGap = 13
+const sectionTitleGap = 4
 
 const activeItemKey = computed(() => {
   for (const section of menus.value) {
@@ -152,33 +157,34 @@ const activeItemKey = computed(() => {
 const pillFloating = computed(() => !!hoverKey.value && hoverKey.value != activeItemKey.value)
 const pillInset = 2
 const pillStyle = computed(() => ({
-  width: `${Math.max(0, pillRect.value.width - pillInset * 2)}px`,
-  height: `${pillRect.value.height}px`,
-  transform: `translate3d(${pillRect.value.x + pillInset}px, ${pillRect.value.y}px, 0) ${pillFloating.value ? 'translateY(-1px)' : 'translateY(0)'}`,
+  width: `calc(100% - ${pillInset * 2}px)`,
+  height: 'var(--sidebar-nav-height)',
+  transform: `translate3d(${pillInset}px, ${pillY.value}px, 0) ${pillFloating.value ? 'translateY(-1px)' : 'translateY(0)'}`,
 }))
 
-const setItemRef = (key, el) => {
-  const target = el?.$el || el
-  if (target) itemRefs.set(key, target)
-  else itemRefs.delete(key)
+const getPillYByKey = key => {
+  const titleHeight = isSidebarCollapsed.value ? 0 : sectionTitleHeight
+  let y = 0
+
+  for (const section of menus.value) {
+    const itemIndex = section.items.findIndex(item => item.key == key)
+    if (itemIndex > -1) {
+      return y + titleHeight + sectionTitleGap + itemIndex * (itemHeight + itemGap)
+    }
+    y += titleHeight + sectionTitleGap + section.items.length * itemHeight + Math.max(0, section.items.length - 1) * itemGap + sectionGap
+  }
+
+  return null
 }
 
 const updatePillToKey = key => {
-  const menuEl = menuRef.value
-  const itemEl = itemRefs.get(key)
-  if (!menuEl || !itemEl) {
+  const nextY = getPillYByKey(key)
+  if (nextY == null) {
     pillVisible.value = false
     return
   }
 
-  const menuRect = menuEl.getBoundingClientRect()
-  const itemRect = itemEl.getBoundingClientRect()
-  pillRect.value = {
-    x: itemRect.left - menuRect.left,
-    y: itemRect.top - menuRect.top,
-    width: itemRect.width,
-    height: itemRect.height,
-  }
+  pillY.value = nextY
   pillVisible.value = true
 }
 
@@ -188,6 +194,18 @@ const updatePillToActive = () => {
     return
   }
   updatePillToKey(activeItemKey.value)
+}
+
+const schedulePillUpdate = () => {
+  if (pillUpdateFrame) cancelAnimationFrame(pillUpdateFrame)
+
+  void nextTick(() => {
+    updatePillToActive()
+    pillUpdateFrame = requestAnimationFrame(() => {
+      pillUpdateFrame = 0
+      updatePillToActive()
+    })
+  })
 }
 
 const handleItemEnter = key => {
@@ -204,18 +222,24 @@ const handleMenuLeave = () => {
 
 watch([activeItemKey, menus], () => {
   hoverKey.value = ''
-  void nextTick(updatePillToActive)
+  schedulePillUpdate()
 }, {
   immediate: true,
 })
 
 watch(isSidebarCollapsed, () => {
   hoverKey.value = ''
-  void nextTick(updatePillToActive)
+  schedulePillUpdate()
 })
 
 onMounted(() => {
-  void nextTick(updatePillToActive)
+  schedulePillUpdate()
+  window.addEventListener('resize', schedulePillUpdate)
+})
+
+onBeforeUnmount(() => {
+  if (pillUpdateFrame) cancelAnimationFrame(pillUpdateFrame)
+  window.removeEventListener('resize', schedulePillUpdate)
 })
 </script>
 
@@ -267,9 +291,9 @@ onMounted(() => {
     inset 0 1px 0 rgba(255, 255, 255, .24),
     inset 0 -1px 0 rgba(0, 0, 0, .14);
   transition:
-    transform 260ms cubic-bezier(.2, .9, .22, 1.12),
-    width 230ms cubic-bezier(.2, .85, .24, 1),
-    height 230ms cubic-bezier(.2, .85, .24, 1),
+    transform var(--sidebar-motion-duration) var(--sidebar-motion-curve),
+    width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
+    height var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     box-shadow 220ms ease;
 }
 

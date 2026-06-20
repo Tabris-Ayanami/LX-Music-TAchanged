@@ -30,7 +30,7 @@ test('RG-039: shell uses a connected glass toolbar and compact search field', ()
   )
   assert.match(
     toolbarSource,
-    /\.searchSlot \{[\s\S]*flex: 0 1 360px;[\s\S]*max-width: 380px;/m,
+    /\.searchSlot \{[\s\S]*width: 100%;[\s\S]*max-width: 300px;/m,
     'Search should stay left aligned instead of spanning the whole toolbar',
   )
   assert.match(

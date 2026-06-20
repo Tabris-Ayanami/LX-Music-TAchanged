@@ -3,6 +3,9 @@
     <div :class="$style.searchSlot">
       <SearchInput />
     </div>
+    <div :class="$style.lyricSlot" :title="currentLyric">
+      <span v-if="currentLyric">{{ currentLyric }}</span>
+    </div>
     <div :class="$style.actions">
       <SunMoonToggle />
       <router-link to="/setting" :class="$style.settingBtn" :aria-label="t('setting')">
@@ -16,24 +19,29 @@
 </template>
 
 <script setup>
+import { computed } from '@common/utils/vueTools'
 import { isFullscreen } from '@renderer/store'
+import { lyric } from '@renderer/store/player/lyric'
 import { useI18n } from '@renderer/plugins/i18n'
 import ControlBtns from './ControlBtns.vue'
 import SearchInput from './SearchInput.vue'
 import SunMoonToggle from './SunMoonToggle.vue'
 
 const t = useI18n()
+const currentLyric = computed(() => {
+  return lyric.text.trim()
+})
 </script>
 
 <style lang="less" module>
 @import '@renderer/assets/styles/layout.less';
 
 .toolbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr) auto;
   min-height: 48px;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px;
+  gap: 12px;
   padding: 8px 16px 7px 18px;
   -webkit-app-region: drag;
   z-index: 2;
@@ -52,22 +60,53 @@ const t = useI18n()
 }
 
 .searchSlot {
-  flex: 0 1 360px;
-  max-width: 380px;
+  width: 100%;
+  max-width: 300px;
   min-width: 0;
   display: flex;
   align-items: center;
   -webkit-app-region: no-drag;
 }
 
+.lyricSlot {
+  min-width: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  color: color-mix(in srgb, var(--shell-text, var(--color-font)) 52%, transparent);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.22);
+  pointer-events: none;
+  overflow: hidden;
+
+  span {
+    display: block;
+    max-width: min(100%, 560px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 .actions {
-  flex: none;
   display: flex;
   align-items: center;
   gap: 6px;
   min-height: 38px;
   padding: 0;
   -webkit-app-region: no-drag;
+}
+
+:global(.themeShellDark) {
+  .lyricSlot {
+    color: color-mix(in srgb, var(--shell-text, var(--color-font)) 45%, transparent);
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+  }
 }
 
 .settingBtn {

@@ -223,12 +223,14 @@ export const setConvolver = (buffer: AudioBuffer | null, mainGain: number, sendG
 }
 
 export const setConvolverMainGain = (gain: number) => {
+  initAdvancedAudioFeatures()
   if (convolverSourceGainNode.gain.value == gain) return
   // console.log(gain)
   convolverSourceGainNode.gain.value = gain
 }
 
 export const setConvolverSendGain = (gain: number) => {
+  initAdvancedAudioFeatures()
   if (convolverOutputGainNode.gain.value == gain) return
   // console.log(gain)
   convolverOutputGainNode.gain.value = gain
