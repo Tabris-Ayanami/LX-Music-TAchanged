@@ -78,6 +78,21 @@ test('RG-040: sidebar local navigation and queue preview stay compact', () => {
   )
   assert.match(
     nowPlayingSource,
+    /\.title \{[\s\S]*margin: 0;[\s\S]*height: 14px;[\s\S]*min-height: 14px;[\s\S]*transition: opacity \.28s ease;/m,
+    'The LIST title should fade out while keeping its reserved height so the queue below does not jump',
+  )
+  assert.doesNotMatch(
+    nowPlayingSource,
+    /\.collapsed\s*\{[\s\S]*?\.title\s*\{[^}]*height:/m,
+    'Collapsed LIST title should not change height when it disappears',
+  )
+  assert.doesNotMatch(
+    nowPlayingSource,
+    /\.collapsed\s*\{[\s\S]*?\.title\s*\{[^}]*margin:/m,
+    'Collapsed LIST title should not change margin when it disappears',
+  )
+  assert.match(
+    nowPlayingSource,
     /v-for="item in queueList"/m,
     'Sidebar queue preview should render the full queue so earlier songs remain scrollable',
   )
@@ -103,8 +118,8 @@ test('RG-040: sidebar local navigation and queue preview stay compact', () => {
   )
   assert.match(
     nowPlayingSource,
-    /\.list \{[\s\S]*display: flex;[\s\S]*flex-direction: column;[\s\S]*gap: 5px;[\s\S]*flex: 1 1 auto;[\s\S]*min-height: 0;[\s\S]*overflow-y: auto;/m,
-    'Sidebar queue list should fill the stretched preview while staying independently scrollable with visible row spacing',
+    /\.list \{[\s\S]*display: flex;[\s\S]*flex-direction: column;[\s\S]*gap: 7px;[\s\S]*flex: 1 1 auto;[\s\S]*min-height: 0;[\s\S]*margin: 6px -4px 0;[\s\S]*padding: 0 4px;[\s\S]*overflow-y: auto;/m,
+    'Sidebar queue list should reserve side paint space while staying independently scrollable with visible row spacing',
   )
   assert.match(
     nowPlayingSource,
@@ -113,8 +128,53 @@ test('RG-040: sidebar local navigation and queue preview stay compact', () => {
   )
   assert.match(
     nowPlayingSource,
-    /\.collapsed \{[\s\S]*\.list \{[\s\S]*gap: 7px;[\s\S]*\.row \{[\s\S]*width: var\(--sidebar-queue-rail\);[\s\S]*grid-template-columns: var\(--sidebar-queue-rail\) minmax\(0, 0\);[\s\S]*\.coverWrap \{[\s\S]*width: var\(--sidebar-queue-cover\);[\s\S]*height: var\(--sidebar-queue-cover\);/m,
+    /--sidebar-queue-row-height: 48px;[\s\S]*\.row \{[\s\S]*height: var\(--sidebar-queue-row-height\);[\s\S]*min-height: var\(--sidebar-queue-row-height\);[\s\S]*flex: 0 0 var\(--sidebar-queue-row-height\);[\s\S]*\.collapsed \{[\s\S]*\.row \{[\s\S]*width: var\(--sidebar-queue-rail\);[\s\S]*height: var\(--sidebar-queue-row-height\);[\s\S]*min-height: var\(--sidebar-queue-row-height\);[\s\S]*flex-basis: var\(--sidebar-queue-row-height\);[\s\S]*grid-template-columns: var\(--sidebar-queue-rail\) minmax\(0, 0\);[\s\S]*\.coverWrap \{[\s\S]*width: var\(--sidebar-queue-cover\);[\s\S]*height: var\(--sidebar-queue-cover\);/m,
     'Collapsed queue rows should keep an icon-only lane that matches the sidebar navigation rail',
+  )
+  assert.doesNotMatch(
+    nowPlayingSource,
+    /\.row \{[^}]*gap var\(--sidebar-motion-duration\)/m,
+    'Queue row gap should stay fixed instead of animating during sidebar expansion',
+  )
+  assert.doesNotMatch(
+    nowPlayingSource,
+    /\.coverWrap \{[^}]*height var\(--sidebar-motion-duration\)/m,
+    'Queue cover height should stay fixed instead of stretching during sidebar expansion',
+  )
+  assert.doesNotMatch(
+    nowPlayingSource,
+    /\.coverWrap \{[^}]*width var\(--sidebar-motion-duration\)/m,
+    'Queue cover width should stay fixed instead of resizing during sidebar expansion',
+  )
+  assert.match(
+    nowPlayingSource,
+    /const queuePillInset = 2[\s\S]*const blockInset = queuePillInset[\s\S]*const measuredHeight = Math\.max\(0, rowEl\.offsetHeight - blockInset \* 2\)[\s\S]*const targetWidth = Math\.max\(0, getSidebarContentTargetWidth\(listEl\) - inlineInset \* 2\)[\s\S]*const width = isSidebarCollapsed\.value \? Math\.min\(targetWidth, measuredHeight\) : targetWidth[\s\S]*const height = measuredHeight[\s\S]*x: rowEl\.offsetLeft \+ inlineInset,[\s\S]*y: rowEl\.offsetTop \+ blockInset,/m,
+    'Collapsed queue active pill should keep a 44px square target with side paint room and only extend rightward',
+  )
+  assert.match(
+    nowPlayingSource,
+    /getCssPxNumber\(el, '--sidebar-width', isSidebarCollapsed\.value \? 80 : 196\)[\s\S]*getCssPxNumber\(el, '--sidebar-panel-x', 16\) \* 2/m,
+    'Queue active pill should read the CSS target width instead of measuring the animated intermediate row width',
+  )
+  assert.match(
+    nowPlayingSource,
+    /\.queuePill\.tracking \{[\s\S]*transform var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\),[\s\S]*width var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\),[\s\S]*box-shadow 220ms ease;/m,
+    'Tracking state should keep queue pill width animation during collapse as well as expansion',
+  )
+  assert.match(
+    nowPlayingSource,
+    /const trackQueuePillDuringLayoutMotion = \(\) => \{[\s\S]*queuePillTracking\.value = true[\s\S]*if \(queuePillTrackTimer\) clearTimeout\(queuePillTrackTimer\)[\s\S]*queuePillTrackTimer = setTimeout\(\(\) => \{[\s\S]*queuePillTracking\.value = false[\s\S]*measureCurrentQueuePill\(\)[\s\S]*\}, sidebarMotionMs \+ 80\)/m,
+    'Queue pill should animate to one target and only re-measure after the sidebar motion ends',
+  )
+  assert.match(
+    nowPlayingSource,
+    /--sidebar-queue-rail: 48px;[\s\S]*--sidebar-queue-cover: 36px;[\s\S]*inset 0 0 0 2px color-mix/m,
+    'Collapsed queue selection should be visibly larger and thicker than the cover thumbnail',
+  )
+  assert.doesNotMatch(
+    nowPlayingSource,
+    /\.queuePill(?:\.floating)? \{[\s\S]*\n\s+0 \d+px \d+px color-mix/m,
+    'Queue selected pill should not render a bottom outer shadow',
   )
   assert.doesNotMatch(
     nowPlayingSource,

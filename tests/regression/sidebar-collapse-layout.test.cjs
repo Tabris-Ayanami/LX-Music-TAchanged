@@ -30,8 +30,18 @@ test('RG-007: sidebar collapse keeps a fixed icon column and only collapses the 
   )
   assert.match(
     navBarSource,
-    /const menuBounds = menuEl\.getBoundingClientRect\(\)[\s\S]*const linkBounds = linkEl\.getBoundingClientRect\(\)[\s\S]*x: linkBounds\.left - menuBounds\.left \+ pillInset,[\s\S]*y: linkBounds\.top - menuBounds\.top,[\s\S]*width: Math\.max\(0, linkBounds\.width - pillInset \* 2\),[\s\S]*height: linkBounds\.height,/m,
-    'The active pill should follow actual DOM geometry so collapsed titles, gaps, and widths cannot drift from the icon column',
+    /const menuBounds = menuEl\.getBoundingClientRect\(\)[\s\S]*const linkBounds = linkEl\.getBoundingClientRect\(\)[\s\S]*const blockInset = 0[\s\S]*const measuredHeight = Math\.max\(0, linkBounds\.height - blockInset \* 2\)[\s\S]*const targetWidth = Math\.max\(0, getSidebarContentTargetWidth\(menuEl\) - inlineInset \* 2\)[\s\S]*const width = isSidebarCollapsed\.value \? Math\.min\(targetWidth, measuredHeight\) : targetWidth[\s\S]*const height = measuredHeight[\s\S]*x: linkBounds\.left - menuBounds\.left \+ inlineInset,[\s\S]*y: linkBounds\.top - menuBounds\.top \+ blockInset,/m,
+    'The active pill should use the target sidebar width while keeping its left/top/bottom edges fixed',
+  )
+  assert.match(
+    navBarSource,
+    /getCssPxNumber\(el, '--sidebar-width', isSidebarCollapsed\.value \? 80 : 196\)[\s\S]*getCssPxNumber\(el, '--sidebar-panel-x', 16\) \* 2/m,
+    'Sidebar active pill should read the CSS target width instead of measuring the animated intermediate width',
+  )
+  assert.match(
+    navBarSource,
+    /const width = isSidebarCollapsed\.value \? Math\.min\(targetWidth, measuredHeight\) : targetWidth[\s\S]*const height = measuredHeight/m,
+    'Collapsed sidebar active pill should become square from the target width by shrinking only its right edge',
   )
   assert.doesNotMatch(
     navBarSource,
@@ -40,8 +50,13 @@ test('RG-007: sidebar collapse keeps a fixed icon column and only collapses the 
   )
   assert.match(
     navBarSource,
-    /const trackPillDuringLayoutMotion = \(\) => \{[\s\S]*pillTrackUntil = performance\.now\(\) \+ sidebarMotionMs \+ 80[\s\S]*measureCurrentPill\(\)[\s\S]*requestAnimationFrame\(tick\)/m,
-    'The active pill should keep measuring during collapse animation while layout is moving',
+    /const trackPillDuringLayoutMotion = \(\) => \{[\s\S]*pillTracking\.value = true[\s\S]*if \(pillTrackTimer\) clearTimeout\(pillTrackTimer\)[\s\S]*pillTrackTimer = setTimeout\(\(\) => \{[\s\S]*pillTracking\.value = false[\s\S]*measureCurrentPill\(\)[\s\S]*\}, sidebarMotionMs \+ 80\)/m,
+    'The active pill should animate to a single target and only re-measure once after layout motion completes',
+  )
+  assert.doesNotMatch(
+    navBarSource,
+    /requestAnimationFrame\(tick\)/m,
+    'Sidebar active pill tracking should not restart transitions every frame during collapse',
   )
   assert.match(
     navBarSource,
@@ -55,8 +70,23 @@ test('RG-007: sidebar collapse keeps a fixed icon column and only collapses the 
   )
   assert.match(
     navBarSource,
-    /\.navPill \{[\s\S]*transition:[\s\S]*transform var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\),[\s\S]*width var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\),[\s\S]*height var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\),/m,
-    'Sidebar active pill should use the same motion curve as the collapsing rows so it does not arrive early and self-correct later',
+    /\.navPill \{[\s\S]*will-change: transform, width;[\s\S]*transition:[\s\S]*transform var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\),[\s\S]*width var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\),[\s\S]*box-shadow 220ms ease;/m,
+    'Sidebar active pill should animate only transform and width so its vertical bounds do not pulse during collapse',
+  )
+  assert.match(
+    navBarSource,
+    /\.navPill\.tracking \{[\s\S]*transform var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\),[\s\S]*width var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\),[\s\S]*box-shadow 220ms ease;/m,
+    'Tracking state should keep the width transition so both expand and collapse remain animated',
+  )
+  assert.doesNotMatch(
+    navBarSource,
+    /\.navPill \{[^}]*height var\(--sidebar-motion-duration\)/m,
+    'Sidebar active pill should not animate height when collapse is meant to extend only from the right edge',
+  )
+  assert.match(
+    navBarSource,
+    /\.sectionTitle \{[\s\S]*margin: 0;[\s\S]*height: 11px;[\s\S]*transition: opacity \.28s var\(--sidebar-motion-curve\), color @transition-fast;/m,
+    'Collapsed section titles should fade without changing reserved layout height',
   )
   assert.match(
     navBarSource,

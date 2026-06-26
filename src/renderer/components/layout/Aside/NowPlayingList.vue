@@ -64,7 +64,7 @@ let loadPicFrame = 0
 
 const LOCAL_PIC_BATCH_SIZE = 12
 const LOCAL_PIC_OVERSCAN = 8
-const LOCAL_PIC_ROW_HEIGHT = 53
+const LOCAL_PIC_ROW_HEIGHT = 55
 
 const normalizePicUrl = pic => {
   if (!pic || /^(?:https?:|data:|blob:|file:)/i.test(pic)) return pic || ''
@@ -189,14 +189,24 @@ const queuePillRect = ref({
   height: 0,
 })
 let queuePillMeasureFrame = 0
-let queuePillTrackFrame = 0
-let queuePillTrackUntil = 0
+let queuePillTrackTimer = 0
 let queuePillMeasurePending = false
 let queuePillMeasureNeedsTracking = false
 let isUnmounted = false
 
 const sidebarMotionMs = 460
 const queuePillInset = 2
+
+const getCssPxNumber = (el, property, fallback) => {
+  const value = Number.parseFloat(getComputedStyle(el).getPropertyValue(property))
+  return Number.isFinite(value) ? value : fallback
+}
+
+const getSidebarContentTargetWidth = el => Math.max(
+  0,
+  getCssPxNumber(el, '--sidebar-width', isSidebarCollapsed.value ? 80 : 196) - getCssPxNumber(el, '--sidebar-panel-x', 16) * 2,
+)
+
 const currentQueuePillIndex = computed(() => queueHoverIndex.value > -1 ? queueHoverIndex.value : currentQueueIndex.value)
 const queuePillFloating = computed(() => queueHoverIndex.value > -1 && queueHoverIndex.value != currentQueueIndex.value)
 const queuePillStyle = computed(() => ({
@@ -218,11 +228,17 @@ const measureQueuePillToIndex = index => {
     return
   }
 
+  const inlineInset = queuePillInset
+  const blockInset = queuePillInset
+  const measuredHeight = Math.max(0, rowEl.offsetHeight - blockInset * 2)
+  const targetWidth = Math.max(0, getSidebarContentTargetWidth(listEl) - inlineInset * 2)
+  const width = isSidebarCollapsed.value ? Math.min(targetWidth, measuredHeight) : targetWidth
+  const height = measuredHeight
   queuePillRect.value = {
-    x: rowEl.offsetLeft + queuePillInset,
-    y: rowEl.offsetTop + queuePillInset,
-    width: Math.max(0, rowEl.offsetWidth - queuePillInset * 2),
-    height: Math.max(0, rowEl.offsetHeight - queuePillInset * 2),
+    x: rowEl.offsetLeft + inlineInset,
+    y: rowEl.offsetTop + blockInset,
+    width,
+    height,
   }
   queuePillVisible.value = true
 }
@@ -233,20 +249,12 @@ const measureCurrentQueuePill = () => {
 
 const trackQueuePillDuringLayoutMotion = () => {
   queuePillTracking.value = true
-  queuePillTrackUntil = performance.now() + sidebarMotionMs + 80
-  if (queuePillTrackFrame) return
-
-  const tick = () => {
-    measureCurrentQueuePill()
-    if (performance.now() < queuePillTrackUntil) {
-      queuePillTrackFrame = requestAnimationFrame(tick)
-      return
-    }
-    queuePillTrackFrame = 0
+  if (queuePillTrackTimer) clearTimeout(queuePillTrackTimer)
+  queuePillTrackTimer = setTimeout(() => {
+    queuePillTrackTimer = 0
     queuePillTracking.value = false
     measureCurrentQueuePill()
-  }
-  queuePillTrackFrame = requestAnimationFrame(tick)
+  }, sidebarMotionMs + 80)
 }
 
 const scheduleQueuePillUpdate = (trackLayoutMotion = false) => {
@@ -361,7 +369,7 @@ onBeforeUnmount(() => {
   picRequestId++
   if (loadPicFrame) cancelAnimationFrame(loadPicFrame)
   if (queuePillMeasureFrame) cancelAnimationFrame(queuePillMeasureFrame)
-  if (queuePillTrackFrame) cancelAnimationFrame(queuePillTrackFrame)
+  if (queuePillTrackTimer) clearTimeout(queuePillTrackTimer)
   loadingPicIds.clear()
   failedPicIds.clear()
   window.app_event.off('myListUpdate', handleQueueListUpdate)
@@ -373,7 +381,8 @@ onBeforeUnmount(() => {
 
 .queue {
   -webkit-app-region: no-drag;
-  --sidebar-queue-rail: var(--sidebar-icon-lane, 48px);
+  --sidebar-queue-rail: 48px;
+  --sidebar-queue-row-height: 48px;
   --sidebar-queue-cover: 36px;
   --sidebar-queue-radius: 10px;
   --sidebar-motion-duration: .46s;
@@ -390,6 +399,7 @@ onBeforeUnmount(() => {
 }
 
 .title {
+  margin: 0;
   padding: 0 5px;
   height: 14px;
   min-height: 14px;
@@ -399,7 +409,7 @@ onBeforeUnmount(() => {
   text-transform: uppercase;
   color: rgba(86, 100, 120, 0.56);
   overflow: hidden;
-  transition: height var(--sidebar-motion-duration) var(--sidebar-motion-curve), margin var(--sidebar-motion-duration) var(--sidebar-motion-curve), opacity .28s ease;
+  transition: opacity .28s ease;
 }
 
 .list {
@@ -407,11 +417,11 @@ onBeforeUnmount(() => {
   isolation: isolate;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 7px;
   flex: 1 1 auto;
   min-height: 0;
-  margin-top: 6px;
-  padding-right: 2px;
+  margin: 6px -4px 0;
+  padding: 0 4px;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: none;
@@ -431,14 +441,14 @@ onBeforeUnmount(() => {
   border-radius: var(--sidebar-queue-radius);
   corner-shape: squircle;
   pointer-events: none;
-  will-change: transform, width, height;
+  will-change: transform, width;
   overflow: hidden;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 78%, #fff 22%), color-mix(in srgb, var(--color-primary) 58%, #2c5fc7 42%));
+    linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 82%, #fff 18%), color-mix(in srgb, var(--color-primary) 60%, #2c5fc7 40%));
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 46%, rgba(255, 255, 255, .28)),
-    inset 0 1px 0 rgba(255, 255, 255, .18),
-    inset 0 -1px 0 rgba(0, 0, 0, .1);
+    inset 0 0 0 2px color-mix(in srgb, var(--color-primary) 56%, rgba(255, 255, 255, .34)),
+    inset 0 1px 0 rgba(255, 255, 255, .24),
+    inset 0 -1px 0 rgba(0, 0, 0, .12);
   transition:
     transform var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
@@ -447,13 +457,16 @@ onBeforeUnmount(() => {
 
 .queuePill.floating {
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 52%, rgba(255, 255, 255, .32)),
-    inset 0 1px 0 rgba(255, 255, 255, .2),
-    inset 0 -1px 0 rgba(0, 0, 0, .1);
+    inset 0 0 0 2px color-mix(in srgb, var(--color-primary) 62%, rgba(255, 255, 255, .38)),
+    inset 0 1px 0 rgba(255, 255, 255, .26),
+    inset 0 -1px 0 rgba(0, 0, 0, .12);
 }
 
 .queuePill.tracking {
-  transition: box-shadow 220ms ease;
+  transition:
+    transform var(--sidebar-motion-duration) var(--sidebar-motion-curve),
+    width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
+    box-shadow 220ms ease;
 }
 
 .row {
@@ -463,8 +476,9 @@ onBeforeUnmount(() => {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  height: 48px;
-  min-height: 48px;
+  height: var(--sidebar-queue-row-height);
+  min-height: var(--sidebar-queue-row-height);
+  flex: 0 0 var(--sidebar-queue-row-height);
   padding: 0 6px 0 0;
   box-sizing: border-box;
   border: none;
@@ -480,9 +494,7 @@ onBeforeUnmount(() => {
   transition:
     width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     max-width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
-    height var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     padding var(--sidebar-motion-duration) var(--sidebar-motion-curve),
-    gap var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     background-color @transition-fast,
     color @transition-fast,
     text-shadow @transition-fast,
@@ -537,8 +549,6 @@ onBeforeUnmount(() => {
   justify-content: center;
   box-shadow: 0 8px 18px rgba(35, 52, 78, 0.12);
   transition:
-    width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
-    height var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     border-radius var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     box-shadow @transition-fast;
 }
@@ -602,16 +612,12 @@ onBeforeUnmount(() => {
     opacity: 0;
   }
 
-  .list {
-    gap: 7px;
-    padding-right: 0;
-  }
-
   .row {
     width: var(--sidebar-queue-rail);
     max-width: var(--sidebar-queue-rail);
-    height: 48px;
-    min-height: 48px;
+    height: var(--sidebar-queue-row-height);
+    min-height: var(--sidebar-queue-row-height);
+    flex-basis: var(--sidebar-queue-row-height);
     padding: 0;
     grid-template-columns: var(--sidebar-queue-rail) minmax(0, 0);
     gap: 0;
