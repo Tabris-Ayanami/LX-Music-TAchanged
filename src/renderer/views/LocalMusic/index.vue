@@ -581,18 +581,10 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
   height: 100%;
   display: flex;
   flex-flow: column nowrap;
-  padding: 10px;
+  padding: 14px 20px 18px;
   box-sizing: border-box;
   color: var(--shell-text, var(--color-font));
   overflow: auto;
-}
-
-.contentCard {
-  border-radius: 14px;
-  border: 1px solid var(--shell-stroke, rgba(255, 255, 255, 0.18));
-  background: var(--shell-surface, rgba(255, 255, 255, 0.62));
-  backdrop-filter: blur(18px);
-  box-shadow: 0 12px 28px rgba(32, 50, 80, 0.06);
 }
 
 .contentCard {
@@ -602,7 +594,13 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
   display: flex;
   flex-flow: column nowrap;
   gap: 14px;
-  padding: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   overflow: hidden;
 }
 
@@ -1322,8 +1320,7 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
 
 :global(.themeShellDark) {
   .contentCard {
-    background: rgba(10, 11, 13, .82);
-    border-color: rgba(255, 255, 255, .08);
+    background: transparent;
   }
 
   .gridShell {
