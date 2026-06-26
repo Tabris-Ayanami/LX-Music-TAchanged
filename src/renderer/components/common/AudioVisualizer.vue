@@ -54,12 +54,14 @@ export default {
     let x = 0
     let isPlaying = false
     let animationFrameId
+    let drawTimer
     let lastDrawTime = 0
 
     let num
     let mult
     const maxNum = 255
     let frequencyAvg = 0
+    const drawInterval = 33
 
     // const theme = useRefGetter('theme')
     // const setting = useRefGetter('setting')
@@ -70,11 +72,13 @@ export default {
 
     // https://developer.mozilla.org/zh-CN/docs/Web/API/AnalyserNode/smoothingTimeConstant
     const renderFrame = (timestamp = 0) => {
-      if (timestamp - lastDrawTime < 33) {
-        animationFrameId = window.requestAnimationFrame(renderFrame)
+      animationFrameId = null
+      const now = timestamp || window.performance.now()
+      if (lastDrawTime && now - lastDrawTime < drawInterval) {
+        scheduleNextFrame(drawInterval - (now - lastDrawTime))
         return
       }
-      lastDrawTime = timestamp
+      lastDrawTime = now
       x = 0
       frequencyAvg = 0
 
@@ -112,24 +116,37 @@ export default {
         x += barWidth
       }
 
-      animationFrameId = null
-      if (isPlaying) animationFrameId = window.requestAnimationFrame(renderFrame)
+      scheduleNextFrame(drawInterval)
+    }
+
+    const scheduleNextFrame = (delay = 0) => {
+      if (!isPlaying || animationFrameId || drawTimer) return
+      if (delay > 0) {
+        drawTimer = window.setTimeout(() => {
+          drawTimer = null
+          if (isPlaying && !animationFrameId) animationFrameId = window.requestAnimationFrame(renderFrame)
+        }, delay)
+        return
+      }
+      animationFrameId = window.requestAnimationFrame(renderFrame)
     }
 
     const handlePlay = () => {
       if (!ctx || !dom_canvas.value || !WIDTH || !HEIGHT) return
-      if (animationFrameId) return
+      if (isPlaying) return
       isPlaying = true
       // analyser.fftSize = 256
       bufferLength = analyser.frequencyBinCount
       // console.log(bufferLength)
       barWidth = getBarWidth(WIDTH)
-      dataArray = new Uint8Array(bufferLength)
-      renderFrame()
+      if (!dataArray || dataArray.length != bufferLength) dataArray = new Uint8Array(bufferLength)
+      scheduleNextFrame()
     }
     const handlePause = () => {
       if (animationFrameId) window.cancelAnimationFrame(animationFrameId)
+      if (drawTimer) window.clearTimeout(drawTimer)
       animationFrameId = null
+      drawTimer = null
       lastDrawTime = 0
       isPlaying = false
     }

@@ -190,9 +190,9 @@ const measurePillToKey = key => {
   const linkBounds = linkEl.getBoundingClientRect()
   pillRect.value = {
     x: linkBounds.left - menuBounds.left + pillInset,
-    y: linkBounds.top - menuBounds.top + pillInset,
+    y: linkBounds.top - menuBounds.top,
     width: Math.max(0, linkBounds.width - pillInset * 2),
-    height: Math.max(0, linkBounds.height - pillInset * 2),
+    height: linkBounds.height,
   }
   pillVisible.value = true
 }
@@ -335,6 +335,7 @@ onBeforeUnmount(() => {
   transition:
     transform var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
+    height var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     box-shadow 220ms ease;
 }
 
@@ -430,7 +431,7 @@ onBeforeUnmount(() => {
   flex: none;
   position: relative;
   width: var(--sidebar-nav-rail);
-  height: var(--sidebar-nav-height);
+  height: var(--sidebar-nav-rail);
   border-radius: var(--sidebar-nav-radius);
   corner-shape: squircle;
   display: inline-flex;

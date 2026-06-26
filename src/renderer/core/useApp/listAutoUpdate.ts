@@ -1,12 +1,18 @@
 import { getListUpdateInfo } from '@renderer/utils/data'
 import { userLists } from '@renderer/store/list/state'
-import syncSourceList from '@renderer/store/list/syncSourceList'
+
+let syncSourceListPromise: Promise<any> | null = null
+const getSyncSourceList = async() => {
+  syncSourceListPromise ||= import('@renderer/store/list/syncSourceList').then(({ default: syncSourceList }) => syncSourceList)
+  return syncSourceListPromise
+}
 
 const handleSyncSourceList = async(waitUpdateLists: LX.List.UserListInfo[]) => {
   if (!waitUpdateLists.length) return
   const targetListInfo = waitUpdateLists.shift()!
   // console.log(targetListInfo)
   try {
+    const syncSourceList = await getSyncSourceList()
     await syncSourceList(targetListInfo)
   } catch {}
   void handleSyncSourceList(waitUpdateLists)

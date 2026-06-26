@@ -1,5 +1,4 @@
 import { getPlayInfo } from '@renderer/utils/ipc'
-import music from '@renderer/utils/musicSdk'
 import { log } from '@common/utils'
 import { getListMusics, getUserLists, registerAction } from '@renderer/store/list/action'
 
@@ -10,6 +9,23 @@ import { onBeforeUnmount } from '@common/utils/vueTools'
 import { appSetting } from '@renderer/store/setting'
 import { playMusicInfo } from '@renderer/store/player/state'
 import { initDislikeInfo, registerRemoteDislikeAction } from '@renderer/core/dislikeList'
+
+let musicSdkPromise: Promise<any> | null = null
+const getMusicSdk = async() => {
+  musicSdkPromise ||= import('@renderer/utils/musicSdk').then(({ default: music }) => music)
+  return musicSdkPromise
+}
+const music = {
+  async init() {
+    return (await getMusicSdk()).init()
+  },
+}
+
+const initMusicSdk = () => {
+  void music.init().catch((err: any) => {
+    log.error(err)
+  })
+}
 
 const initPrevPlayInfo = async() => {
   const info = await getPlayInfo()
@@ -46,9 +62,7 @@ export default () => {
     ]).catch((err: any) => {
       log.error(err)
     })
-    void music.init().catch((err: any) => {
-      log.error(err)
-    }) // 初始化音乐sdk
+    if (appSetting['common.apiSource'] != 'temp') initMusicSdk() // 初始化非默认音乐 API
     unregister = registerAction((ids) => {
       window.app_event.myListUpdate(ids)
     })

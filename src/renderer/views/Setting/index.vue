@@ -29,7 +29,6 @@
         <!-- <SettingBasic />
         <SettingPlay />
         <SettingPlayDetail />
-        <SettingDesktopLyric />
         <SettingSearch />
         <SettingList />
         <SettingDownload />
@@ -55,7 +54,6 @@ import { useRoute } from '@common/utils/vueRouter'
 import SettingBasic from './components/SettingBasic.vue'
 import SettingPlay from './components/SettingPlay.vue'
 import SettingPlayDetail from './components/SettingPlayDetail.vue'
-import SettingDesktopLyric from './components/SettingDesktopLyric.vue'
 import SettingSearch from './components/SettingSearch.vue'
 import SettingList from './components/SettingList.vue'
 import SettingAccount from './components/SettingAccount.vue'
@@ -77,7 +75,6 @@ export default {
     SettingBasic,
     SettingPlay,
     SettingPlayDetail,
-    SettingDesktopLyric,
     SettingSearch,
     SettingList,
     SettingAccount,
@@ -104,7 +101,6 @@ export default {
         { id: 'SettingBasic', title: t('setting__basic') },
         { id: 'SettingPlay', title: t('setting__play') },
         { id: 'SettingPlayDetail', title: t('setting__play_detail') },
-        { id: 'SettingDesktopLyric', title: t('setting__desktop_lyric') },
         { id: 'SettingSearch', title: t('setting__search') },
         { id: 'SettingList', title: t('setting__list') },
         { id: 'SettingAccount', title: t('setting__account') },

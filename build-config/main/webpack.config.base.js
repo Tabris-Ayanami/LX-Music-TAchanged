@@ -24,7 +24,6 @@ module.exports = {
     alias: {
       '@main': path.join(__dirname, '../../src/main'),
       '@renderer': path.join(__dirname, '../../src/renderer'),
-      '@lyric': path.join(__dirname, '../../src/renderer-lyric'),
       '@common': path.join(__dirname, '../../src/common'),
     },
     extensions: ['.tsx', '.ts', '.js', '.mjs', '.json', '.node'],

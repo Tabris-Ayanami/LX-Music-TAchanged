@@ -139,8 +139,6 @@ const modules = {
     sync_get_server_devices: 'sync_get_server_devices',
     sync_remove_server_device: 'sync_remove_server_device',
 
-    process_new_desktop_lyric_client: 'process_new_desktop_lyric_client',
-
     player_action_set_buttons: 'player_action_set_buttons',
     // player_action_set_thumbnail_clip: 'player_action_set_thumbnail_clip',
     player_action_on_button_click: 'player_action_on_button_click',
@@ -154,18 +152,6 @@ const modules = {
     download_list_update: 'download_list_update',
     download_list_remove: 'download_list_remove',
     download_list_clear: 'download_list_clear',
-  },
-  winLyric: {
-    close: 'close',
-    set_config: 'set_config',
-    get_config: 'get_config',
-    on_config_change: 'on_config_change',
-    main_window_inited: 'main_window_inited',
-    set_win_bounds: 'set_win_bounds',
-    set_win_resizeable: 'set_win_resizeable',
-    key_down: 'key_down',
-    request_main_window_channel: 'request_main_window_channel',
-    provide_main_window_channel: 'provide_main_window_channel',
   },
   hotKey: {
     enable: 'enable',
@@ -206,6 +192,5 @@ export const CMMON_EVENT_NAME = modules.common
 export const PLAYER_EVENT_NAME = modules.player
 export const DISLIKE_EVENT_NAME = modules.dislike
 export const WIN_MAIN_RENDERER_EVENT_NAME = modules.winMain
-export const WIN_LYRIC_RENDERER_EVENT_NAME = modules.winLyric
 export const HOTKEY_RENDERER_EVENT_NAME = modules.hotKey
 export const BILI_RENDERER_EVENT_NAME = modules.bili

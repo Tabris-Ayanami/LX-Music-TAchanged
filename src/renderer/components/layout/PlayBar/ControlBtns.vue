@@ -6,14 +6,6 @@
         <use xlink:href="#icon-add-2" />
       </svg>
     </button>
-    <button :class="$style.titleBtn" :aria-label="toggleDesktopLyricBtnTitle" @click="toggleDesktopLyric" @contextmenu="toggleLockDesktopLyric">
-      <svg v-show="appSetting['desktopLyric.enable']" version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" height="100%" viewBox="0 0 512 512" space="preserve">
-        <use xlink:href="#icon-desktop-lyric-on" />
-      </svg>
-      <svg v-show="!appSetting['desktopLyric.enable']" version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" height="100%" viewBox="0 0 512 512" space="preserve">
-        <use xlink:href="#icon-desktop-lyric-off" />
-      </svg>
-    </button>
     <common-volume-btn />
     <common-toggle-play-mode-btn />
     <common-list-add-modal v-model:show="isShowAddMusicTo" :music-info="playMusicInfo.musicInfo" />
@@ -22,28 +14,17 @@
 
 <script>
 import { ref } from '@common/utils/vueTools'
-import useToggleDesktopLyric from '@renderer/utils/compositions/useToggleDesktopLyric'
 import { musicInfo, playMusicInfo } from '@renderer/store/player/state'
-import { appSetting } from '@renderer/store/setting'
 
 export default {
   setup() {
     const isShowAddMusicTo = ref(false)
-    const {
-      toggleDesktopLyricBtnTitle,
-      toggleDesktopLyric,
-      toggleLockDesktopLyric,
-    } = useToggleDesktopLyric()
     const addMusicTo = () => {
       if (!musicInfo.id) return
       isShowAddMusicTo.value = true
     }
     return {
-      appSetting,
       isShowAddMusicTo,
-      toggleDesktopLyricBtnTitle,
-      toggleDesktopLyric,
-      toggleLockDesktopLyric,
       addMusicTo,
       playMusicInfo,
     }

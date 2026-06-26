@@ -2,11 +2,6 @@
 div(:class="[$style.footerLeftControlBtns, { [$style.compact]: mode === 'main' || mode === 'detail-left' || mode === 'detail-right' }]")
   common-volume-btn(v-if="mode === 'extra'")
   PlayQueueBtn(v-if="mode === 'extra' || mode === 'detail' || mode === 'detail-left'")
-  button(v-if="mode !== 'main' && mode !== 'detail-right'" :class="[$style.footerLeftControlBtn, $style.lrcBtn]" :aria-label="toggleDesktopLyricBtnTitle" @click="toggleDesktopLyric" @contextmenu="toggleLockDesktopLyric")
-    svg(v-show="appSetting['desktopLyric.enable']" version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" height="125%" viewBox="0 0 512 512" space="preserve")
-      use(xlink:href="#icon-desktop-lyric-on")
-    svg(v-show="!appSetting['desktopLyric.enable']" version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" height="125%" viewBox="0 0 512 512" space="preserve")
-      use(xlink:href="#icon-desktop-lyric-off")
   common-playback-rate-btn(v-if="mode === 'detail-left'")
   button(v-else-if="mode !== 'main' && mode !== 'detail-right'" :class="[$style.footerLeftControlBtn, { [$style.active]: appSetting['player.audioVisualization'] }]" :aria-label="$t('audio_visualization')" @click="toggleAudioVisualization")
     svg(version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" width="95%" viewBox="0 0 24 24" space="preserve")
@@ -38,7 +33,6 @@ import {
   setShowPlayLrcSelectContentLrc,
   setShowPlayComment,
 } from '@renderer/store/player/action'
-import useToggleDesktopLyric from '@renderer/utils/compositions/useToggleDesktopLyric'
 import { dialog } from '@renderer/plugins/Dialog'
 import { setMediaDeviceId } from '@renderer/plugins/player'
 import { appSetting, saveMediaDeviceId, setEnableAudioVisualization } from '@renderer/store/setting'
@@ -62,11 +56,6 @@ export default {
     const toggleVisibleComment = () => {
       setShowPlayComment(!isShowPlayComment.value)
     }
-    const {
-      toggleDesktopLyricBtnTitle,
-      toggleDesktopLyric,
-      toggleLockDesktopLyric,
-    } = useToggleDesktopLyric()
 
     const isShowAddMusicTo = ref(false)
 
@@ -91,9 +80,6 @@ export default {
       toggleVisibleLrc,
       isShowPlayComment,
       toggleVisibleComment,
-      toggleDesktopLyricBtnTitle,
-      toggleDesktopLyric,
-      toggleLockDesktopLyric,
       toggleAudioVisualization,
       isShowAddMusicTo,
       playMusicInfo,
@@ -144,10 +130,6 @@ export default {
       color: var(--color-primary-light-100, var(--color-primary));
       opacity: 1;
     }
-  }
-
-  .lrcBtn {
-    width: 20px;
   }
 }
 

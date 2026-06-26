@@ -1,7 +1,8 @@
 import { reactive, markRaw } from '@common/utils/vueTools'
-import music from '@renderer/utils/musicSdk'
 
 // import { deduplicationList } from '@common/utils/renderer'
+
+const SEARCH_MUSIC_SOURCES: LX.OnlineSource[] = ['kw', 'kg', 'tx', 'wy', 'mg', 'bili']
 
 export declare interface ListInfo {
   list: LX.Music.MusicInfo[]
@@ -31,10 +32,9 @@ export const listInfos: ListInfos = markRaw({
   }),
 })
 export const maxPages: Partial<Record<LX.OnlineSource, number>> = {}
-for (const source of music.sources) {
-  if (!music[source.id as LX.OnlineSource]?.musicSearch) continue
-  sources.push(source.id as LX.OnlineSource)
-  listInfos[source.id as LX.OnlineSource] = reactive<ListInfo>({
+for (const source of SEARCH_MUSIC_SOURCES) {
+  sources.push(source)
+  listInfos[source] = reactive<ListInfo>({
     page: 1,
     maxPage: 0,
     limit: 30,
@@ -43,6 +43,6 @@ for (const source of music.sources) {
     key: '',
     noItemLabel: '',
   })
-  maxPages[source.id as LX.OnlineSource] = 0
+  maxPages[source] = 0
 }
 sources.push('all')

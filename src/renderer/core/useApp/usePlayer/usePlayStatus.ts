@@ -12,8 +12,6 @@ import { appSetting } from '@renderer/store/setting'
 import { lyric } from '@renderer/store/player/lyric'
 
 export default () => {
-  // const setVisibleDesktopLyric = useCommit('setVisibleDesktopLyric')
-  // const setLockDesktopLyric = useCommit('setLockDesktopLyric')
   let collect = false
 
   const updateCollectStatus = async() => {
@@ -81,12 +79,6 @@ export default () => {
   const throttleProgressStatus = throttle((progress: number) => {
     sendPlayerStatus({ progress })
   }, 500)
-  // const updateSetting = () => {
-  //   const setting = store.getters.setting
-  //   buttons.lrc = setting.desktopLyric.enable
-  //   buttons.lockLrc = setting.desktopLyric.isLock
-  //   setButtons()
-  // }
   const rTaskbarThumbarClick = onPlayerAction(async({ params: { action, data } }) => {
     switch (action) {
       case 'play':
@@ -124,22 +116,6 @@ export default () => {
       case 'volume':
         window.app_event.setVolume(data as number)
         break
-      // case 'lrc':
-      //   setVisibleDesktopLyric(true)
-      //   updateSetting()
-      //   break
-      // case 'unLrc':
-      //   setVisibleDesktopLyric(false)
-      //   updateSetting()
-      //   break
-      // case 'lockLrc':
-      //   setLockDesktopLyric(true)
-      //   updateSetting()
-      //   break
-      // case 'unlockLrc':
-      //   setLockDesktopLyric(false)
-      //   updateSetting()
-      //   break
     }
   })
   watch(() => playProgress.nowPlayTime, (newValue, oldValue) => {
@@ -181,9 +157,6 @@ export default () => {
   })
 
   return async() => {
-    // const setting = store.getters.setting
-    // buttons.lrc = setting.desktopLyric.enable
-    // buttons.lockLrc = setting.desktopLyric.isLock
     await updateCollectStatus()
     if (playMusicInfo.musicInfo == null) return
     sendPlayerStatus({

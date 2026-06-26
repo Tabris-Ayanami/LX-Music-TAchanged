@@ -3,8 +3,9 @@ import { windowSizeList as configWindowSizeList } from '@common/config'
 import { appSetting } from './setting'
 import pkg from '../../../package.json'
 import { type ProgressInfo } from 'electron-updater'
-import music from '@renderer/utils/musicSdk'
 process.versions.app = pkg.version
+
+const ONLINE_SOURCE_IDS = ['kw', 'kg', 'tx', 'wy', 'mg', 'xm', 'bili'] as const
 
 export const apiSource = ref<string | null>(null)
 export const proxy: {
@@ -98,7 +99,7 @@ export const sourceNames = computed(() => {
     bili: 'bili',
     all: window.i18n.t(prefix + 'all' as any),
   }
-  for (const { id } of music.sources) {
+  for (const id of ONLINE_SOURCE_IDS) {
     sourceNames[id as LX.OnlineSource] = window.i18n.t(prefix + id as any)
   }
 

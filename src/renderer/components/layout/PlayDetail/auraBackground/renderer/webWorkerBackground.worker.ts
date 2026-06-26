@@ -654,9 +654,21 @@ const render = (now: number) => {
   drawQuad(mainProg)
 }
 
-const loop = (now: number) => {
-  render(now)
+const requestLoop = () => {
+  if (rafId !== null || paused) return
   rafId = self.requestAnimationFrame(loop)
+}
+
+const cancelLoop = () => {
+  if (rafId === null) return
+  self.cancelAnimationFrame(rafId)
+  rafId = null
+}
+
+const loop = (now: number) => {
+  rafId = null
+  render(now)
+  requestLoop()
 }
 
 // ---------------------------------------------------------------------------
@@ -700,8 +712,8 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
     timeAccumulator = 0
     playing = true
     paused = false
-    if (rafId !== null) self.cancelAnimationFrame(rafId)
-    rafId = self.requestAnimationFrame(loop)
+    cancelLoop()
+    requestLoop()
     return
   }
 
@@ -728,9 +740,16 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
   }
   if (data.type === 'pause' && typeof data.paused === 'boolean') {
     paused = data.paused
+    if (paused) {
+      cancelLoop()
+    } else {
+      lastFrameTime = performance.now()
+      requestLoop()
+    }
     return
   }
   if (data.type === 'coverImage' && data.imageData) {
     onNewCover(data.imageData)
+    data.imageData.close?.()
   }
 }

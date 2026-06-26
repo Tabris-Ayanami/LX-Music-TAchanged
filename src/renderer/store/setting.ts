@@ -2,8 +2,6 @@ import { reactive, computed } from '@common/utils/vueTools'
 import defaultSetting from '@common/defaultSetting'
 import { updateSetting as saveSetting } from '@renderer/utils/ipc'
 
-export const isDesktopLyricDisabled = true
-
 export const appSetting = window.lxData.appSetting = reactive<LX.AppSetting>({ ...defaultSetting })
 
 export const isShowAnimation = computed(() => {
@@ -16,7 +14,6 @@ export const initSetting = (newSetting: LX.AppSetting) => {
 }
 
 export const mergeSetting = (newSetting: Partial<LX.AppSetting>) => {
-  if (isDesktopLyricDisabled && newSetting['desktopLyric.enable']) newSetting = { ...newSetting, 'desktopLyric.enable': false }
   for (const [key, value] of Object.entries(newSetting)) {
     // @ts-expect-error
     appSetting[key] = value
@@ -25,7 +22,6 @@ export const mergeSetting = (newSetting: Partial<LX.AppSetting>) => {
 
 export const updateSetting = window.lxData.updateSetting = (setting: Partial<LX.AppSetting>) => {
   // console.warn(setting)
-  if (isDesktopLyricDisabled && setting['desktopLyric.enable']) setting = { ...setting, 'desktopLyric.enable': false }
   void saveSetting(setting)
 }
 
@@ -69,22 +65,6 @@ export const savePlaybackRate = (rate: number) => {
   updateSetting({ 'player.playbackRate': rate })
 }
 
-
-/**
- * 设置是否开启桌面歌词
- * @param enabled
- */
-export const setVisibleDesktopLyric = (enabled: boolean) => {
-  updateSetting({ 'desktopLyric.enable': isDesktopLyricDisabled ? false : enabled })
-}
-
-/**
- * 设置是否锁定桌面歌词
- * @param isLock
- */
-export const setLockDesktopLyric = (isLock: boolean) => {
-  updateSetting({ 'desktopLyric.isLock': isLock })
-}
 
 /**
  * 设置切歌模式

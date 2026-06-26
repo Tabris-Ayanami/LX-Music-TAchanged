@@ -2,17 +2,35 @@ import { onBeforeUnmount } from '@common/utils/vueTools'
 import { clearEnvParamsDeeplink, focusWindow, onDeeplink } from '@renderer/utils/ipc'
 
 import { useDialog } from './utils'
-import useMusicAction from './useMusicAction'
-import useSonglistAction from './useSonglistAction'
 import usePlayerAction from './usePlayerAction'
+
+type DeeplinkActionHandler = (action: string, info: any) => Promise<void>
+
+let musicActionPromise: Promise<DeeplinkActionHandler> | null = null
+const loadMusicAction = async(): Promise<DeeplinkActionHandler> => {
+  const { default: useMusicAction } = await import('./useMusicAction')
+  return useMusicAction()
+}
+const getMusicAction = async() => {
+  musicActionPromise ||= loadMusicAction()
+  return musicActionPromise
+}
+
+let songlistActionPromise: Promise<DeeplinkActionHandler> | null = null
+const loadSonglistAction = async(): Promise<DeeplinkActionHandler> => {
+  const { default: useSonglistAction } = await import('./useSonglistAction')
+  return useSonglistAction()
+}
+const getSonglistAction = async() => {
+  songlistActionPromise ||= loadSonglistAction()
+  return songlistActionPromise
+}
 
 export default () => {
   let isInited = false
 
   const showErrorDialog = useDialog()
 
-  const handleMusicAction = useMusicAction()
-  const handleSonglistAction = useSonglistAction()
   const handlePlayerAction = usePlayerAction()
 
 
@@ -38,10 +56,10 @@ export default () => {
     console.log(params)
     switch (type) {
       case 'music':
-        await handleMusicAction(action, params)
+        await (await getMusicAction())(action, params)
         break
       case 'songlist':
-        await handleSonglistAction(action, params)
+        await (await getSonglistAction())(action, params)
         break
       case 'player':
         await handlePlayerAction(action as any)

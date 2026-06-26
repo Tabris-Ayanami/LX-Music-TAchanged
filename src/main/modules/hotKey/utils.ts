@@ -1,5 +1,6 @@
 import { globalShortcut } from 'electron'
 import { log } from '@common/utils'
+import { APP_EVENT_NAMES } from '@common/constants'
 
 export const handleKeyDown = (key: string) => {
   if (!global.lx.hotKey.enable) return
@@ -14,6 +15,10 @@ export const transformedKey = (key: string): string => {
 }
 
 export const registerHotkey = ({ key, info }: LX.RegisterKeyInfo): boolean => {
+  if (info.type == APP_EVENT_NAMES.winLyricName) {
+    unRegisterHotkey(key)
+    return true
+  }
   let targetKey = global.lx.hotKey.state.get(key)
   if (targetKey?.status) return true
   const transKey = transformedKey(key)

@@ -45,7 +45,9 @@ export default {
     let renderer = null
     let resizeObserver = null
     let coverTaskId = 0
+    let coverAbortController = null
     let initTimer = null
+    let resizeFrame = null
     let disposed = false
 
     const fallbackStyle = computed(() => ({
@@ -55,6 +57,7 @@ export default {
     }))
 
     const resize = () => {
+      resizeFrame = null
       const canvas = canvasRef.value
       if (!canvas || !renderer) return
       const rect = canvas.getBoundingClientRect()
@@ -65,24 +68,40 @@ export default {
       )
     }
 
+    const scheduleResize = () => {
+      if (resizeFrame != null) return
+      resizeFrame = window.requestAnimationFrame(resize)
+    }
+
     const syncCover = cover => {
       const taskId = ++coverTaskId
+      coverAbortController?.abort()
+      coverAbortController = null
       if (!renderer) return
       if (!cover) return
-      void renderer.setCoverImage(cover).then(() => {
+      coverAbortController = new AbortController()
+      void renderer.setCoverImage(cover, coverAbortController.signal).then(() => {
         if (taskId !== coverTaskId) return
         renderer?.setColors(toAuraColors(props.colors))
+      }).finally(() => {
+        if (taskId === coverTaskId) coverAbortController = null
       })
     }
 
     const cleanup = () => {
+      coverAbortController?.abort()
+      coverAbortController = null
       if (initTimer != null) {
         window.clearTimeout(initTimer)
         initTimer = null
       }
+      if (resizeFrame != null) {
+        window.cancelAnimationFrame(resizeFrame)
+        resizeFrame = null
+      }
       resizeObserver?.disconnect()
       resizeObserver = null
-      window.removeEventListener('resize', resize)
+      window.removeEventListener('resize', scheduleResize)
       renderer?.stop()
       renderer = null
     }
@@ -104,13 +123,13 @@ export default {
       renderer.setPlaying(props.active)
       renderer.setPaused(!props.active)
       syncCover(props.cover)
-      resize()
+      scheduleResize()
 
       if (window.ResizeObserver) {
-        resizeObserver = new window.ResizeObserver(resize)
+        resizeObserver = new window.ResizeObserver(scheduleResize)
         resizeObserver.observe(canvas)
       } else {
-        window.addEventListener('resize', resize)
+        window.addEventListener('resize', scheduleResize)
       }
     }
 

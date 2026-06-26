@@ -11,6 +11,7 @@ type WorkerCommand =
 export class WebWorkerBackgroundRender extends BaseBackgroundRender {
   private readonly canvas: HTMLCanvasElement
   private worker: Worker | null = null
+  private readonly coverTextureSize = 512
 
   constructor(canvas: HTMLCanvasElement, targetFps: number = 60) {
     super(targetFps)
@@ -75,15 +76,27 @@ export class WebWorkerBackgroundRender extends BaseBackgroundRender {
     this.worker.postMessage({ type: 'colors', colors })
   }
 
-  async setCoverImage(url: string) {
+  async setCoverImage(url: string, signal?: AbortSignal) {
     if (!this.worker) return
     try {
-      const response = await fetch(url)
+      const response = await fetch(url, { signal })
       const blob = await response.blob()
-      const bitmap = await createImageBitmap(blob)
+      if (signal?.aborted) return
+      const sourceBitmap = await createImageBitmap(blob)
+      if (signal?.aborted) {
+        sourceBitmap.close?.()
+        return
+      }
+      const bitmap = await this.createCoverBitmap(sourceBitmap)
+      sourceBitmap.close?.()
+      if (signal?.aborted) {
+        bitmap.close?.()
+        return
+      }
       const command: WorkerCommand = { type: 'coverImage', imageData: bitmap }
       this.worker.postMessage(command, [bitmap])
     } catch (error) {
+      if (signal?.aborted) return
       console.warn('Failed to load cover image for aura background renderer', error)
     }
   }
@@ -92,6 +105,19 @@ export class WebWorkerBackgroundRender extends BaseBackgroundRender {
     if (!this.worker) return
     const command: WorkerCommand = { type: 'coverImage', imageData: bitmap }
     this.worker.postMessage(command, [bitmap])
+  }
+
+  private async createCoverBitmap(bitmap: ImageBitmap) {
+    const size = this.coverTextureSize
+    const canvas = new OffscreenCanvas(size, size)
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return createImageBitmap(bitmap)
+
+    const scale = Math.max(size / bitmap.width, size / bitmap.height)
+    const width = bitmap.width * scale
+    const height = bitmap.height * scale
+    ctx.drawImage(bitmap, (size - width) * 0.5, (size - height) * 0.5, width, height)
+    return createImageBitmap(canvas)
   }
 
   static isSupported(canvas: HTMLCanvasElement) {

@@ -41,7 +41,7 @@ import NowPlayingList from './NowPlayingList.vue'
 }
 
 .panel {
-  --sidebar-icon-lane: 48px;
+  --sidebar-icon-lane: 44px;
   --sidebar-logo-size: 34px;
   --sidebar-icon-glyph-size: 16px;
   --sidebar-item-height: 40px;

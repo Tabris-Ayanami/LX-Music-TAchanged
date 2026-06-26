@@ -488,6 +488,19 @@ onBeforeUnmount(() => {
     text-shadow @transition-fast,
     transform @transition-fast;
 
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: rgba(255, 255, 255, .12);
+    opacity: 0;
+    transform: scale(.96);
+    transition: opacity @transition-fast, transform @transition-fast;
+    pointer-events: none;
+  }
+
   &:hover {
     color: #fff;
     text-shadow: 0 1px 1px rgba(0, 0, 0, .28);
@@ -501,6 +514,11 @@ onBeforeUnmount(() => {
 .active {
   color: #fff;
   text-shadow: 0 1px 1px rgba(0, 0, 0, .28);
+
+  &::before {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .coverWrap {
@@ -585,6 +603,7 @@ onBeforeUnmount(() => {
   }
 
   .list {
+    gap: 7px;
     padding-right: 0;
   }
 

@@ -3,7 +3,6 @@ import registerWinMain from './winMain'
 import registerHotKey from './hotKey'
 import registerTray from './tray'
 import registerAppMenu from './appMenu'
-import registerWinLyric from './winLyric'
 import registerCommonRenderers from './commonRenderers'
 import registerBili from './bili'
 
@@ -16,7 +15,6 @@ export default () => {
   registerHotKey()
   registerTray()
   registerAppMenu()
-  registerWinLyric()
   registerBili()
   isRegistered = true
 }

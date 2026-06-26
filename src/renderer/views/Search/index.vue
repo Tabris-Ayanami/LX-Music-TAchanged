@@ -18,14 +18,16 @@
 import { useRoute, useRouter } from '@common/utils/vueRouter'
 import { searchText } from '@renderer/store/search/state'
 import { getSearchSetting, setSearchSetting } from '@renderer/utils/data'
-import { sources as _sources } from '@renderer/store/search/music'
+import { sources as _sources } from '@renderer/store/search/music/state'
 
-import MusicList from './MusicList/index.vue'
-import SongListList from './SongListList/index.vue'
 import BlankView from './components/BlankView.vue'
 import LiquidGlassSegmentedNav from '@renderer/components/common/liquidGlass/LiquidGlassSegmentedNav.vue'
 import { computed, ref } from '@common/utils/vueTools'
+import { defineAsyncComponent } from 'vue'
 import { sourceNames } from '@renderer/store'
+
+const MusicList = defineAsyncComponent(async() => import('./MusicList/index.vue'))
+const SongListList = defineAsyncComponent(async() => import('./SongListList/index.vue'))
 
 const source = ref('kw')
 const searchType = ref(null)

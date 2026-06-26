@@ -15,13 +15,12 @@
     </transition>
     <transition enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
       <div v-if="isShowLyricProgressSetting" v-show="isStopScroll && !isShowLrcSelectContent" :class="$style.skip">
-        <div ref="dom_skip_line" :class="$style.line" />
-        <span :class="$style.label">{{ timeStr }}</span>
-        <base-btn :class="$style.skipBtn" @mouseenter="handleSkipMouseEnter" @mouseleave="handleSkipMouseLeave" @click="handleSkipPlay">
-          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" height="50%" viewBox="0 0 1024 1024" space="preserve">
-            <use xlink:href="#icon-play" />
-          </svg>
-        </base-btn>
+        <div :class="$style.skipControl">
+          <div ref="dom_skip_line" :class="$style.line" />
+          <base-btn :class="$style.skipBtn" @mouseenter="handleSkipMouseEnter" @mouseleave="handleSkipMouseLeave" @click="handleSkipPlay">
+            {{ timeStr }}
+          </base-btn>
+        </div>
       </div>
     </transition>
     <transition enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
@@ -303,46 +302,62 @@ export default {
 }
 
 .skip {
+  --skip-guide-line-width: 72px;
   position: absolute;
   top: calc(38% + var(--playDetail-lrc-font-size, 16px) + 4px);
   left: 0;
-  // height: 6px;
   width: 100%;
   pointer-events: none;
-  // opacity: .5;
-  .line {
-    border-top: 2px dotted var(--color-primary-dark-100);
-    opacity: .15;
-    margin-right: 30px;
-    -webkit-mask-image: linear-gradient(90deg, transparent 0%, transparent 15%, #fff 100%);
-  }
-  .label {
+
+  .skipControl {
     position: absolute;
-    right: 30px;
-    top: -14px;
-    line-height: 1.2;
-    font-size: 12px;
-    color: var(--color-primary-dark-100);
-    opacity: .7;
-  }
-  .skipBtn {
-    position: absolute;
-    right: 0;
     top: 0;
-    transform: translateY(-50%);
-    width: 30px;
-    height: 30px;
-    padding: 0;
+    right: 30px;
     display: flex;
     align-items: center;
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+
+  .line {
+    width: var(--skip-guide-line-width);
+    height: 1px;
+    flex: 0 0 var(--skip-guide-line-width);
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .84));
+    box-shadow: 0 0 8px rgba(255, 255, 255, .16);
+  }
+
+  .skipBtn {
+    min-width: 0;
+    width: auto;
+    height: 18px;
+    padding: 0 7px;
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
-    background: none !important;
+    border: none !important;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .96) !important;
+    color: rgba(22, 24, 32, .84) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .18);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
     pointer-events: initial;
-    transition: @transition-normal;
-    transition-property: opacity;
-    opacity: .8;
+    transition: @transition-fast;
+    transition-property: background-color, color, opacity, box-shadow;
+
     &:hover {
-      opacity: .6;
+      background: #fff !important;
+      color: rgba(13, 16, 24, .94) !important;
+      box-shadow: 0 3px 14px rgba(0, 0, 0, .22);
+    }
+
+    &:active {
+      opacity: .86;
     }
   }
 }

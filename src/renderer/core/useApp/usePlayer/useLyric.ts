@@ -1,6 +1,5 @@
 import { onBeforeUnmount, watch } from '@common/utils/vueTools'
 import { debounce } from '@common/utils/common'
-// import { setDesktopLyricInfo, onGetDesktopLyricInfo } from '@renderer/utils/ipc'
 // import { musicInfo } from '@renderer/store/player/state'
 import {
   pause,
@@ -8,7 +7,6 @@ import {
   setLyric,
   stop,
   init,
-  sendInfo,
   setPlaybackRate,
 } from '@renderer/core/lyric'
 import { appSetting } from '@renderer/store/setting'
@@ -20,7 +18,6 @@ export default () => {
 
   const setPlayInfo = () => {
     stop()
-    sendInfo()
   }
 
   watch(() => appSetting['player.isShowLyricTranslation'], setLyric)

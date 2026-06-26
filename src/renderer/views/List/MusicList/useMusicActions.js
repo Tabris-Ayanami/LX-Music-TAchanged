@@ -1,5 +1,4 @@
 import { useRouter } from '@common/utils/vueRouter'
-import musicSdk from '@renderer/utils/musicSdk'
 import { openUrl, clipboardWriteText } from '@common/utils/electron'
 import { dialog } from '@renderer/plugins/Dialog'
 import { useI18n } from '@renderer/plugins/i18n'
@@ -25,8 +24,9 @@ export default ({ props, list, selectedList, removeAllSelect }) => {
     })
   }
 
-  const handleOpenMusicDetail = index => {
+  const handleOpenMusicDetail = async index => {
     const minfo = list.value[index]
+    const { default: musicSdk } = await import('@renderer/utils/musicSdk')
     const url = musicSdk[minfo.source]?.getMusicDetailPageUrl(toOldMusicInfo(minfo))
     if (!url) return
     openUrl(url)

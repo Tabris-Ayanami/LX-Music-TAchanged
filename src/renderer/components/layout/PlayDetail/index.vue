@@ -18,7 +18,7 @@ transition(@before-enter="handleBeforeEnter" @enter="handleEnter" @after-enter="
 
       transition(enter-active-class="animated fadeIn" leave-active-class="animated fadeOut")
         LyricPlayer(v-if="visibled")
-      music-comment(v-if="visibled" :class="$style.comment" :show="isShowPlayComment" :music-info="playMusicInfo.musicInfo" @close="hideComment")
+      music-comment(v-if="visibled && commentLoaded && playMusicInfo.musicInfo" :class="$style.comment" :show="isShowPlayComment" :music-info="playMusicInfo.musicInfo" @close="hideComment")
     div(v-if="visibled" :class="$style.bottomLeftDock")
       PlayQueueBtn(:class="$style.queueDock" placement="left" variant="detail")
     div(v-if="visibled" :class="$style.bottomRightDock")
@@ -32,6 +32,7 @@ transition(@before-enter="handleBeforeEnter" @enter="handleEnter" @after-enter="
 
 <script>
 import { computed, ref, watch } from '@common/utils/vueTools'
+import { defineAsyncComponent } from 'vue'
 import { isFullscreen } from '@renderer/store'
 import {
   isShowPlayerDetail,
@@ -47,7 +48,6 @@ import {
 import LyricPlayer from './LyricPlayer.vue'
 import PlayBar from './PlayBar.vue'
 import FluidBackground from './FluidBackground.vue'
-import MusicComment from './components/MusicComment/index.vue'
 import PlayQueueBtn from './components/PlayQueueBtn.vue'
 import ControlBtnsRightHeader from './ControlBtnsRightHeader.vue'
 import { registerAutoHideMounse, unregisterAutoHideMounse } from './autoHideMounse'
@@ -67,6 +67,16 @@ const DEFAULT_DETAIL_COLORS = {
   warm: '229, 197, 156',
   deep: '90, 63, 38',
   light: '247, 236, 220',
+}
+const DETAIL_COLOR_CACHE_LIMIT = 64
+const detailColorCache = new Map()
+const MusicComment = defineAsyncComponent(async() => import('./components/MusicComment/index.vue'))
+
+const rememberDetailColors = (pic, colors) => {
+  if (!pic) return colors
+  if (detailColorCache.size >= DETAIL_COLOR_CACHE_LIMIT) detailColorCache.delete(detailColorCache.keys().next().value)
+  detailColorCache.set(pic, colors)
+  return colors
 }
 
 const setStyles = (el, styles) => {
@@ -187,7 +197,9 @@ const getColorScore = (red, green, blue) => {
 
 const extractDetailColors = async pic => {
   if (!pic) return DEFAULT_DETAIL_COLORS
-  return new Promise(resolve => {
+  const cachedColors = detailColorCache.get(pic)
+  if (cachedColors) return cachedColors
+  const colors = await new Promise(resolve => {
     const img = new Image()
     img.decoding = 'async'
     img.onload = () => {
@@ -256,6 +268,7 @@ const extractDetailColors = async pic => {
     }
     img.src = pic
   })
+  return rememberDetailColors(pic, colors)
 }
 
 const createMotionLayer = () => {
@@ -545,7 +558,14 @@ export default {
   },
   setup() {
     const visibled = ref(false)
+    const commentLoaded = ref(false)
     const detailColors = ref(DEFAULT_DETAIL_COLORS)
+    const currentMusicKey = computed(() => {
+      const info = playMusicInfo.musicInfo
+      if (!info) return ''
+      const musicInfo = 'progress' in info ? info.metadata?.musicInfo : info
+      return `${musicInfo?.source ?? ''}__${musicInfo?.id ?? musicInfo?.songmid ?? musicInfo?.hash ?? ''}`
+    })
 
     let clickTime = 0
     let colorTaskId = 0
@@ -566,6 +586,7 @@ export default {
       setShowPlayComment(false)
     }
     const toggleComment = () => {
+      if (!isShowPlayComment.value) commentLoaded.value = true
       setShowPlayComment(!isShowPlayComment.value)
     }
 
@@ -604,6 +625,16 @@ export default {
       (isFullscreen ? registerAutoHideMounse : unregisterAutoHideMounse)()
     })
 
+    watch(isShowPlayComment, show => {
+      if (show) commentLoaded.value = true
+    }, { immediate: true })
+
+    watch(currentMusicKey, (key, oldKey) => {
+      if (key == oldKey) return
+      commentLoaded.value = false
+      setShowPlayComment(false)
+    })
+
     watch(() => musicInfo.pic, async pic => {
       const taskId = ++colorTaskId
       const colors = await extractDetailColors(pic)
@@ -637,6 +668,7 @@ export default {
       handleLeave,
       handleAfterLeave,
       visibled,
+      commentLoaded,
       isFullscreen,
       fullscreenExit() {
         void setFullScreen(false).then((fullscreen) => {

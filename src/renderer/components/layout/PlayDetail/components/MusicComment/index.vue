@@ -3,7 +3,7 @@ div.comment(ref="dom_container" :class="$style.comment")
   div(:class="$style.commentHeader")
     h3 {{ $t('comment__title', { name: currentMusicInfo.name }) }}
     div(:class="$style.commentHeaderBtns")
-      div(:class="$style.commentHeaderBtn" :aria-label="$t('comment__refresh')" @click="handleShowComment")
+      div(:class="$style.commentHeaderBtn" :aria-label="$t('comment__refresh')" @click="handleShowComment(true)")
         svg(version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" style="transform: rotate(45deg);" viewBox="0 0 24 24" space="preserve")
           use(xlink:href="#icon-refresh")
       div(:class="$style.commentHeaderBtn" @click="$emit('close')")
@@ -41,6 +41,44 @@ import { toOldMusicInfo } from '@renderer/utils'
 import music from '@renderer/utils/musicSdk'
 import CommentFloor from './CommentFloor.vue'
 
+const CANCELLED_REQUEST_MESSAGE = '鍙栨秷璇锋眰'
+let activeCommentKey = ''
+let activeCommentCache = null
+
+const createCommentState = (limit = 20, isLoading = false, isLoadError = false) => ({
+  isLoading,
+  isLoadError,
+  page: 1,
+  total: 0,
+  maxPage: 1,
+  nextPage: 1,
+  limit,
+  list: [],
+})
+
+const getCurrentMusicInfo = musicInfo => {
+  if (!musicInfo) return null
+  return 'progress' in musicInfo ? musicInfo.metadata?.musicInfo : musicInfo
+}
+
+const getCommentKey = musicInfo => {
+  if (!musicInfo) return ''
+  return [
+    musicInfo.source,
+    musicInfo.id,
+    musicInfo.songmid,
+    musicInfo.hash,
+    musicInfo.name,
+    musicInfo.singer,
+    musicInfo.interval,
+  ].filter(Boolean).join('__')
+}
+
+const cloneCommentState = state => ({
+  ...state,
+  list: [...state.list],
+})
+
 export default {
   name: 'MusicComment',
   components: {
@@ -62,36 +100,23 @@ export default {
         singer: '',
       },
       tabActiveId: 'hot',
-      newComment: {
-        isLoading: false,
-        isLoadError: false,
-        page: 1,
-        total: 0,
-        maxPage: 1,
-        nextPage: 1,
-        limit: 20,
-        list: [],
-      },
-      hotComment: {
-        isLoading: true,
-        isLoadError: true,
-        page: 1,
-        total: 0,
-        maxPage: 1,
-        nextPage: 1,
-        limit: 20,
-        list: [],
-      },
+      commentKey: '',
+      newComment: createCommentState(),
+      hotComment: createCommentState(),
     }
   },
   watch: {
     show(n) {
       if (n) this.handleShowComment()
     },
+    musicInfo() {
+      if (this.show) this.handleShowComment()
+    },
   },
   mounted() {
     this.setWidth()
     window.addEventListener('resize', this.setWidth)
+    if (this.show) this.handleShowComment()
   },
   beforeUnmount() {
     window.removeEventListener('resize', this.setWidth)
@@ -114,7 +139,7 @@ export default {
       try {
         resp = await music[musicInfo.source].comment.getComment(musicInfo, page, limit)
       } catch (error) {
-        if (error.message == '鍙栨秷璇锋眰' || ++retryNum > 2) throw error
+        if (error.message == CANCELLED_REQUEST_MESSAGE || ++retryNum > 2) throw error
         resp = await this.getComment(musicInfo, page, limit, retryNum)
       }
       return resp
@@ -124,7 +149,7 @@ export default {
       try {
         resp = await music[musicInfo.source].comment.getHotComment(musicInfo, page, limit)
       } catch (error) {
-        if (error.message == '鍙栨秷璇锋眰' || ++retryNum > 2) throw error
+        if (error.message == CANCELLED_REQUEST_MESSAGE || ++retryNum > 2) throw error
         resp = await this.getHotComment(musicInfo, page, limit, retryNum)
       }
       return resp
@@ -132,59 +157,108 @@ export default {
     handleGetNewComment(musicInfo, page, limit) {
       this.newComment.isLoadError = false
       this.newComment.isLoading = true
+      this.saveActiveCache()
       this.getComment(toOldMusicInfo(musicInfo), page, limit).then(comment => {
+        if (this.commentKey != activeCommentKey) return
         this.newComment.isLoading = false
         this.newComment.total = comment.total
         this.newComment.maxPage = comment.maxPage
         this.newComment.page = page
         this.newComment.list = comment.comments
+        this.saveActiveCache()
         this.$nextTick(() => {
-          this.$refs.dom_commentNew.scrollTo(0, 0)
+          this.$refs.dom_commentNew?.scrollTo(0, 0)
         })
       }).catch(err => {
         console.log(err)
-        if (err.message == '鍙栨秷璇锋眰') return
+        if (err.message == CANCELLED_REQUEST_MESSAGE) return
+        if (this.commentKey != activeCommentKey) return
         this.newComment.isLoadError = true
         this.newComment.isLoading = false
+        this.saveActiveCache()
       })
     },
     handleGetHotComment(musicInfo, page, limit) {
       this.hotComment.isLoadError = false
       this.hotComment.isLoading = true
+      this.saveActiveCache()
       this.getHotComment(toOldMusicInfo(musicInfo), page, limit).then(hotComment => {
+        if (this.commentKey != activeCommentKey) return
         this.hotComment.isLoading = false
         this.hotComment.total = hotComment.total
         this.hotComment.maxPage = hotComment.maxPage
         this.hotComment.page = page
         this.hotComment.list = hotComment.comments
+        this.saveActiveCache()
         this.$nextTick(() => {
-          this.$refs.dom_commentHot.scrollTo(0, 0)
+          this.$refs.dom_commentHot?.scrollTo(0, 0)
         })
       }).catch(err => {
         console.log(err)
-        if (err.message == '鍙栨秷璇锋眰') return
+        if (err.message == CANCELLED_REQUEST_MESSAGE) return
+        if (this.commentKey != activeCommentKey) return
         this.hotComment.isLoadError = true
         this.hotComment.isLoading = false
+        this.saveActiveCache()
       })
     },
-    handleShowComment() {
-      this.currentMusicInfo = 'progress' in this.musicInfo ? this.musicInfo.metadata.musicInfo : this.musicInfo
-
-      if (!music[this.currentMusicInfo.source]?.comment) {
+    saveActiveCache() {
+      if (!this.commentKey || this.commentKey != activeCommentKey) return
+      activeCommentCache = {
+        available: this.available,
+        currentMusicInfo: this.currentMusicInfo,
+        tabActiveId: this.tabActiveId,
+        hotComment: cloneCommentState(this.hotComment),
+        newComment: cloneCommentState(this.newComment),
+      }
+    },
+    applyActiveCache() {
+      if (!activeCommentCache || this.commentKey != activeCommentKey) return false
+      this.available = activeCommentCache.available
+      this.currentMusicInfo = activeCommentCache.currentMusicInfo
+      this.tabActiveId = activeCommentCache.tabActiveId
+      this.hotComment = cloneCommentState(activeCommentCache.hotComment)
+      this.newComment = cloneCommentState(activeCommentCache.newComment)
+      this.$nextTick(() => {
+        this.handleToggleTab(this.tabActiveId, true)
+      })
+      return true
+    },
+    resetComments() {
+      this.hotComment = createCommentState(this.hotComment.limit)
+      this.newComment = createCommentState(this.newComment.limit)
+    },
+    handleShowComment(force = false) {
+      const currentMusicInfo = getCurrentMusicInfo(this.musicInfo)
+      if (!currentMusicInfo) {
         this.available = false
         return
       }
-      this.available = true
-      this.hotComment.page = 1
-      this.hotComment.total = 0
-      this.hotComment.maxPage = 1
-      this.hotComment.nextPage = 1
 
-      this.newComment.page = 1
-      this.newComment.total = 0
-      this.newComment.maxPage = 1
-      this.newComment.nextPage = 1
-      this.isShowComment = true
+      const commentKey = getCommentKey(currentMusicInfo)
+      if (!commentKey) {
+        this.available = false
+        return
+      }
+
+      if (commentKey != activeCommentKey) {
+        activeCommentKey = commentKey
+        activeCommentCache = null
+      }
+
+      this.commentKey = commentKey
+      this.currentMusicInfo = currentMusicInfo
+
+      if (!force && this.applyActiveCache()) return
+
+      if (!music[this.currentMusicInfo.source]?.comment) {
+        this.available = false
+        this.saveActiveCache()
+        return
+      }
+      this.available = true
+      this.resetComments()
+      this.saveActiveCache()
 
       this.handleGetHotComment(this.currentMusicInfo, this.hotComment.page, this.hotComment.limit)
       this.handleGetNewComment(this.currentMusicInfo, this.newComment.page, this.newComment.limit)

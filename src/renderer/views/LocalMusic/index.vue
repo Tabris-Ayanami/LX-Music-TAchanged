@@ -160,6 +160,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from '@common/utils/vueTools'
 import { useRoute, useRouter } from '@common/utils/vueRouter'
+import { onActivated, onDeactivated } from 'vue'
 import { getPicPath } from '@renderer/core/music'
 import LiquidGlassLayer from '@renderer/components/common/liquidGlass/LiquidGlassLayer.vue'
 import { getListMusics } from '@renderer/store/list/action'
@@ -193,6 +194,8 @@ type LocalView = 'tracks' | 'albums' | 'artists'
 
 const GRID_BATCH_SIZE = 20
 const GRID_LOAD_OFFSET = 120
+let savedArtistScrollTop = 0
+let savedArtistVisibleCount = GRID_BATCH_SIZE
 
 const route = useRoute()
 const router = useRouter()
@@ -361,8 +364,11 @@ const handleGridScroll = (type: 'albums' | 'artists') => {
     void ensureVisibleGroups(type)
     return
   }
+  savedArtistScrollTop = container.scrollTop
+  savedArtistVisibleCount = visibleArtistCount.value
   if (container.scrollTop + container.clientHeight < container.scrollHeight - GRID_LOAD_OFFSET) return
   if (!increaseVisibleGroups(type)) return
+  savedArtistVisibleCount = visibleArtistCount.value
   void ensureVisibleGroups(type)
 }
 
@@ -419,6 +425,31 @@ const handleAlbumBackdropClick = () => {
 
 const handleArtistScroll = () => {
   handleGridScroll('artists')
+}
+
+const saveArtistScrollState = () => {
+  if (normalizedView.value != 'artists') return
+  const container = artistGridRef.value
+  if (!container) return
+  savedArtistScrollTop = container.scrollTop
+  savedArtistVisibleCount = visibleArtistCount.value
+}
+
+const restoreArtistScrollState = async() => {
+  if (normalizedView.value != 'artists' || !savedArtistScrollTop) return
+  visibleArtistCount.value = Math.max(
+    visibleArtistCount.value,
+    Math.min(artists.value.length, savedArtistVisibleCount),
+  )
+  await nextTick()
+  const container = artistGridRef.value
+  if (!container) return
+  container.scrollTop = savedArtistScrollTop
+  if (container.scrollTop < savedArtistScrollTop && increaseVisibleGroups('artists')) {
+    await ensureVisibleGroups('artists')
+    await nextTick()
+    artistGridRef.value && (artistGridRef.value.scrollTop = savedArtistScrollTop)
+  }
 }
 
 const waitForCoverBatch = async() => new Promise<void>(resolve => {
@@ -511,7 +542,16 @@ onMounted(() => {
   void init()
 })
 
+onActivated(() => {
+  void restoreArtistScrollState()
+})
+
+onDeactivated(() => {
+  saveArtistScrollState()
+})
+
 onBeforeUnmount(() => {
+  saveArtistScrollState()
   if (albumResolveTimer) clearTimeout(albumResolveTimer)
   if (artistResolveTimer) clearTimeout(artistResolveTimer)
   if (groupWarmupTimer) clearTimeout(groupWarmupTimer)
@@ -535,6 +575,7 @@ watch(normalizedView, view => {
     defaultArtistGroups.value = buildLocalArtistGroups(tracks.value)
   }
   if (view == 'albums' || view == 'artists') void ensureVisibleGroups(view)
+  if (view == 'artists') void restoreArtistScrollState()
 })
 
 watch(albums, groups => {
@@ -545,8 +586,11 @@ watch(albums, groups => {
 }, { immediate: true })
 
 watch(artists, groups => {
-  visibleArtistCount.value = Math.min(GRID_BATCH_SIZE, groups.length)
-  if (normalizedView.value == 'artists') void ensureVisibleGroups('artists')
+  visibleArtistCount.value = Math.min(Math.max(GRID_BATCH_SIZE, savedArtistVisibleCount), groups.length)
+  if (normalizedView.value == 'artists') {
+    void ensureVisibleGroups('artists')
+    void restoreArtistScrollState()
+  }
 }, { immediate: true })
 
 watch([normalizedView, carouselAlbums], ([view, groups]) => {
@@ -581,7 +625,7 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
   height: 100%;
   display: flex;
   flex-flow: column nowrap;
-  padding: 14px 20px 18px;
+  padding: 10px;
   box-sizing: border-box;
   color: var(--shell-text, var(--color-font));
   overflow: auto;

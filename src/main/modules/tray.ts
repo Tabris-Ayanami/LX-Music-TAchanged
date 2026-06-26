@@ -26,9 +26,6 @@ const playerState = {
 }
 
 const watchConfigKeys = [
-  'desktopLyric.enable',
-  'desktopLyric.isLock',
-  'desktopLyric.isAlwaysOnTop',
   'tray.themeId',
   'tray.enable',
   'player.isShowStatusBarLyric',
@@ -63,12 +60,6 @@ const messages = {
     prev: 'Prev Song',
     hide_win_main: 'Hide Main Window',
     show_win_main: 'Show Main Window',
-    hide_win_lyric: 'Hide Lyric Window',
-    show_win_lyric: 'Show Lyric Window',
-    lock_win_lyric: 'Lock Lyric Window',
-    unlock_win_lyric: 'Unlock Lyric Window',
-    top_win_lyric: 'On-top Lyric Window',
-    untop_win_lyric: 'Un-top Lyric Window',
     show_statusbar_lyric: 'Show Lyrics on Statusbar',
     hide_statusbar_lyric: 'Hide Lyrics on Statusbar',
     exit: 'Exit',
@@ -84,12 +75,6 @@ const messages = {
     prev: '上一曲',
     hide_win_main: '隐藏主界面',
     show_win_main: '显示主界面',
-    hide_win_lyric: '关闭桌面歌词',
-    show_win_lyric: '开启桌面歌词',
-    lock_win_lyric: '锁定桌面歌词',
-    unlock_win_lyric: '解锁桌面歌词',
-    top_win_lyric: '置顶歌词',
-    untop_win_lyric: '取消置顶',
     show_statusbar_lyric: '显示状态栏歌词',
     hide_statusbar_lyric: '隐藏状态栏歌词',
     exit: '退出',
@@ -105,12 +90,6 @@ const messages = {
     prev: '上一曲',
     hide_win_main: '隱藏軟體視窗',
     show_win_main: '顯示軟體視窗',
-    hide_win_lyric: '關閉歌詞視窗',
-    show_win_lyric: '開啟歌詞視窗',
-    lock_win_lyric: '鎖定歌詞視窗',
-    unlock_win_lyric: '解鎖歌詞視窗',
-    top_win_lyric: '置頂歌詞視窗',
-    untop_win_lyric: '取消置頂歌詞視窗',
     show_statusbar_lyric: '顯示狀態列歌詞',
     hide_statusbar_lyric: '隱藏狀態列歌詞',
     exit: '退出',
@@ -222,47 +201,7 @@ export const createMenu = () => {
   let menu: Electron.MenuItemConstructorOptions[] = createPlayerMenu()
   if (playerState.empty) for (const m of menu) m.enabled = false
   menu.push({ type: 'separator' })
-  menu.push(global.lx.appSetting['desktopLyric.enable']
-    ? {
-        label: i18n.getMessage('hide_win_lyric'),
-        click() {
-          handleUpdateConfig({ 'desktopLyric.enable': false })
-        },
-      }
-    : {
-        label: i18n.getMessage('show_win_lyric'),
-        click() {
-          handleUpdateConfig({ 'desktopLyric.enable': true })
-        },
-      })
-  menu.push(global.lx.appSetting['desktopLyric.isLock']
-    ? {
-        label: i18n.getMessage('unlock_win_lyric'),
-        click() {
-          handleUpdateConfig({ 'desktopLyric.isLock': false })
-        },
-      }
-    : {
-        label: i18n.getMessage('lock_win_lyric'),
-        click() {
-          handleUpdateConfig({ 'desktopLyric.isLock': true })
-        },
-      })
-  menu.push(global.lx.appSetting['desktopLyric.isAlwaysOnTop']
-    ? {
-        label: i18n.getMessage('untop_win_lyric'),
-        click() {
-          handleUpdateConfig({ 'desktopLyric.isAlwaysOnTop': false })
-        },
-      }
-    : {
-        label: i18n.getMessage('top_win_lyric'),
-        click() {
-          handleUpdateConfig({ 'desktopLyric.isAlwaysOnTop': true })
-        },
-      })
   if (isMac) {
-    menu.push({ type: 'separator' })
     menu.push(isShowStatusBarLyric
       ? {
           label: i18n.getMessage('hide_statusbar_lyric'),
