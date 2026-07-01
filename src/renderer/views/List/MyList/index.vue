@@ -81,6 +81,7 @@
 <script>
 import { openUrl } from '@common/utils/electron'
 
+import musicSdk from '@renderer/utils/musicSdk'
 import DuplicateMusicModal from './components/DuplicateMusicModal.vue'
 import ListSortModal from './components/ListSortModal.vue'
 import ListUpdateModal from './components/ListUpdateModal.vue'
@@ -107,13 +108,6 @@ import useDarg from './useDarg'
 import useEditList from './useEditList'
 import useListScroll from './useListScroll'
 import useDuplicate from './useDuplicate'
-
-let musicSdkPromise = null
-
-const getMusicSdk = async() => {
-  musicSdkPromise ||= import('@renderer/utils/musicSdk').then(({ default: musicSdk }) => musicSdk)
-  return musicSdkPromise
-}
 
 export default {
   name: 'MyLists',
@@ -147,7 +141,6 @@ export default {
       const { source, sourceListId } = listInfo
       if (!sourceListId) return
       let url
-      const musicSdk = await getMusicSdk()
       if (/board__/.test(sourceListId)) {
         const id = sourceListId.replace(/board__/, '')
         url = musicSdk[source].leaderboard.getDetailPageUrl(id)

@@ -1,9 +1,14 @@
 import { reactive, markRaw, shallowReactive } from '@common/utils/vueTools'
-import { leaderboardSources } from '@renderer/utils/musicSdk/staticMeta'
+import music from '@renderer/utils/musicSdk'
 
 export type Source = LX.OnlineSource
 
-export const sources: LX.OnlineSource[] = markRaw([...leaderboardSources])
+export const sources: LX.OnlineSource[] = markRaw([])
+
+for (const source of music.sources) {
+  if (!music[source.id as LX.OnlineSource]?.leaderboard?.getBoards) continue
+  sources.push(source.id as LX.OnlineSource)
+}
 
 export interface BoardItem {
   id: string
@@ -39,3 +44,4 @@ export const listDetailInfo = reactive<ListDetailInfo>({
   id: '',
   noItemLabel: '',
 })
+

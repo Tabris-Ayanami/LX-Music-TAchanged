@@ -80,7 +80,6 @@ export const createWindow = async(userApi: LX.UserApi.UserApiInfo) => {
     roundedCorners: false,
     hasShadow: false,
     show: false,
-    paintWhenInitiallyHidden: false,
     webPreferences: {
       contextIsolation: true,
       // worldSafeExecuteJavaScript: true,
@@ -119,14 +118,14 @@ export const createWindow = async(userApi: LX.UserApi.UserApiInfo) => {
 
   winEvent()
 
-  browserWindow.webContents.once('did-finish-load', async() => {
-    global.lx.event_app.on('updated_config', handleUpdateProxy)
-    sendEvent(USER_API_RENDERER_EVENT_NAME.initEnv, { ...userApi, script: await getScript(userApi.id), proxy: getProxy() })
-  })
-
   // console.log(html.replace('</body>', `<script>${userApi.script}</script></body>`))
   // const randomNum = Math.random().toString().substring(2, 10)
   await browserWindow.loadURL('data:text/html;charset=UTF-8,' + encodeURIComponent(html))
+
+  browserWindow.on('ready-to-show', async() => {
+    global.lx.event_app.on('updated_config', handleUpdateProxy)
+    sendEvent(USER_API_RENDERER_EVENT_NAME.initEnv, { ...userApi, script: await getScript(userApi.id), proxy: getProxy() })
+  })
 
   // global.modules.userApiWindow.loadFile(join(dir, 'renderer/user-api.html'))
   // global.modules.userApiWindow.webContents.openDevTools()

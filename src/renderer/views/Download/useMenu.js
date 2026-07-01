@@ -1,7 +1,7 @@
 import { computed, ref, shallowReactive, reactive, nextTick } from '@common/utils/vueTools'
+import musicSdk from '@renderer/utils/musicSdk'
 import { useI18n } from '@renderer/plugins/i18n'
 import { DOWNLOAD_STATUS } from '@common/constants'
-import { hasMusicDetailPage } from '@renderer/utils/musicSdk/staticMeta'
 
 export default ({
   handleStartTask,
@@ -80,7 +80,7 @@ export default ({
   })
 
   const showMenu = (event, taskInfo) => {
-    itemMenuControl.sourceDetail = hasMusicDetailPage(taskInfo.metadata.musicInfo.source)
+    itemMenuControl.sourceDetail = !!musicSdk[taskInfo.metadata.musicInfo.source]?.getMusicDetailPageUrl
 
     if (taskInfo.isComplate) {
       itemMenuControl.play =

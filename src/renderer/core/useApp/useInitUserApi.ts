@@ -1,15 +1,11 @@
 import { onBeforeUnmount, watch } from '@common/utils/vueTools'
 import { useI18n } from '@renderer/plugins/i18n'
 import { onUserApiStatus, getUserApiList, sendUserApiRequest as sendUserApiRequestRemote, userApiRequestCancel, onShowUserApiUpdateAlert } from '@renderer/utils/ipc'
+import { openUrl } from '@common/utils/electron'
 import { qualityList, userApi } from '@renderer/store'
 import { appSetting } from '@renderer/store/setting'
 import { dialog } from '@renderer/plugins/Dialog'
 import { setUserApi } from '@renderer/core/apiSource'
-
-const openExternalUrl = async(url: string) => {
-  const { openUrl } = await import('@common/utils/electron')
-  await openUrl(url)
-}
 
 const sendUserApiRequest: typeof sendUserApiRequestRemote = async(data) => {
   let stop: () => void
@@ -157,7 +153,7 @@ export default () => {
       }).then(confirm => {
         if (!confirm) return
         window.setTimeout(() => {
-          void openExternalUrl(updateUrl)
+          void openUrl(updateUrl)
         }, 300)
       })
     } else {

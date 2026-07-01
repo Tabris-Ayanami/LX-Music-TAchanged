@@ -1,6 +1,6 @@
 import { onBeforeUnmount, watch } from '@common/utils/vueTools'
 import { useI18n } from '@renderer/plugins/i18n'
-import { setTitle } from '@renderer/utils/document'
+import { setTitle } from '@renderer/utils'
 
 import {
   getCurrentTime,

@@ -1,4 +1,6 @@
 import { defineAsyncComponent } from 'vue'
+import upperFirst from 'lodash/upperFirst'
+import camelCase from 'lodash/camelCase'
 
 import BaseBtn from './base/Btn.vue'
 import BaseInput from './base/Input.vue'
@@ -18,7 +20,6 @@ import LayoutView from './layout/View.vue'
 const lazyComponent = require.context('./', true, /\.vue$/, 'lazy')
 
 const vueFileRxp = /\.vue$/
-const pathPartRxp = /[\\/_.-]+/
 const eagerComponents = {
   BaseBtn,
   BaseInput,
@@ -44,12 +45,7 @@ const getComponentName = fileName => {
     return vueFileRxp.test(path) || char.toUpperCase() !== char || arr[index + 1] == 'index.vue'
   })) return null
 
-  let componentName = filePath
-    .replace(/\.\w+$/, '')
-    .split(pathPartRxp)
-    .filter(Boolean)
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-    .join('')
+  let componentName = upperFirst(camelCase(filePath.replace(/\.\w+$/, '')))
 
   if (componentName.endsWith('Index')) componentName = componentName.replace(/Index$/, '')
 

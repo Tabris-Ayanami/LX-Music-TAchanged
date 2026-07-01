@@ -1,4 +1,5 @@
 import { useRouter } from '@common/utils/vueRouter'
+import musicSdk from '@renderer/utils/musicSdk'
 import { openUrl } from '@common/utils/electron'
 import { toOldMusicInfo } from '@renderer/utils'
 import { addDislikeInfo, hasDislike } from '@renderer/core/dislikeList'
@@ -7,12 +8,6 @@ import { playMusicInfo } from '@renderer/store/player/state'
 import { dialog } from '@renderer/plugins/Dialog'
 import { useI18n } from '@renderer/plugins/i18n'
 
-let musicSdkPromise = null
-
-const getMusicSdk = async() => {
-  musicSdkPromise ||= import('@renderer/utils/musicSdk').then(({ default: musicSdk }) => musicSdk)
-  return musicSdkPromise
-}
 
 export default ({ props }) => {
   const router = useRouter()
@@ -28,9 +23,8 @@ export default ({ props }) => {
     })
   }
 
-  const handleOpenMusicDetail = async(index) => {
+  const handleOpenMusicDetail = index => {
     const minfo = props.list[index]
-    const musicSdk = await getMusicSdk()
     const url = musicSdk[minfo.source]?.getMusicDetailPageUrl?.(toOldMusicInfo(minfo))
     if (!url) return
     openUrl(url)

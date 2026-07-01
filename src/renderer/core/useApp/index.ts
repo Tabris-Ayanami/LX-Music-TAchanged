@@ -43,18 +43,6 @@ const ensureStatusbarLyric = async() => {
   await statusbarLyricInitPromise
 }
 
-const runAfterStartupIdle = (callback: () => void) => {
-  window.setTimeout(() => {
-    if ('requestIdleCallback' in window) {
-      (window as Window & {
-        requestIdleCallback: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number
-      }).requestIdleCallback(callback, { timeout: 3000 })
-      return
-    }
-    callback()
-  }, 0)
-}
-
 
 export default () => {
   // apiSource.value = appSetting['common.apiSource']
@@ -121,10 +109,8 @@ export default () => {
       if (appSetting['player.isShowStatusBarLyric']) void ensureStatusbarLyric()
       sendInited()
 
-      runAfterStartupIdle(() => {
-        handleListAutoUpdate()
-        if (window.lx.isProd && appSetting['common.isAgreePact']) checkUpdate()
-      })
+      handleListAutoUpdate()
+      if (window.lx.isProd && appSetting['common.isAgreePact']) checkUpdate()
     })
   })
 }

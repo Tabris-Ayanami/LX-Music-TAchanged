@@ -1,5 +1,6 @@
 import { qualityList } from '@renderer/store'
 import { assertApiSupport } from '@renderer/store/utils'
+import musicSdk from '@renderer/utils/musicSdk'
 import {
   // getOtherSource as getOtherSourceFromStore,
   // saveOtherSource as saveOtherSourceFromStore,
@@ -7,16 +8,10 @@ import {
   getPlayerLyric as getStoreLyric,
 } from '@renderer/utils/ipc'
 import { appSetting } from '@renderer/store/setting'
-import { langS2T } from '@renderer/utils/langS2T'
-import { isBiliRuntimePicUrl, toNewMusicInfo, toOldMusicInfo } from '@common/utils/tools'
+import { isBiliRuntimePicUrl, langS2T, toNewMusicInfo, toOldMusicInfo } from '@renderer/utils'
 import { requestMsg } from '@renderer/utils/message'
 import { apis } from '@renderer/utils/musicSdk/api-source'
 
-let musicSdkPromise: Promise<any> | null = null
-const getMusicSdk = async() => {
-  musicSdkPromise ||= import('@renderer/utils/musicSdk').then(({ default: musicSdk }) => musicSdk)
-  return musicSdkPromise
-}
 
 const getOtherSourcePromises = new Map()
 const otherSourceCache = new Map<LX.Music.MusicInfo | LX.Download.ListItem, LX.Music.MusicInfoOnline[]>()
@@ -63,7 +58,7 @@ export const getOtherSource = async(musicInfo: LX.Music.MusicInfo | LX.Download.
       timeout = null
       reject(new Error('find music timeout'))
     }, 15_000)
-    getMusicSdk().then(musicSdk => musicSdk.findMusic(searchMusicInfo)).then((otherSource: any[]) => {
+    musicSdk.findMusic(searchMusicInfo).then((otherSource: any[]) => {
       const source: LX.Music.MusicInfoOnline[] = otherSource.map(info => toNewMusicInfo(info) as LX.Music.MusicInfoOnline)
       if (otherSourceCache.size >= OTHER_SOURCE_CACHE_LIMIT) otherSourceCache.delete(otherSourceCache.keys().next().value!)
       otherSourceCache.set(musicInfo, source)
@@ -275,7 +270,6 @@ export const getOnlineOtherSourceMusicUrl = async({ musicInfos, quality, onToggl
 
   let reqPromise
   try {
-    const musicSdk = await getMusicSdk()
     reqPromise = musicSdk[musicInfo.source].getMusicUrl(toOldMusicInfo(musicInfo), itemQuality).promise
   } catch (err: any) {
     reqPromise = Promise.reject(err)
@@ -313,7 +307,6 @@ export const handleGetOnlineMusicUrl = async({ musicInfo, quality, onToggleSourc
 
   let reqPromise
   try {
-    const musicSdk = await getMusicSdk()
     reqPromise = musicSdk[musicInfo.source].getMusicUrl(toOldMusicInfo(musicInfo), targetQuality).promise
   } catch (err: any) {
     reqPromise = Promise.reject(err)
@@ -370,7 +363,6 @@ export const getOnlineOtherSourcePicUrl = async({ musicInfos, onToggleSource, is
 
   let reqPromise
   try {
-    const musicSdk = await getMusicSdk()
     reqPromise = musicSdk[musicInfo.source].getPic(toOldMusicInfo(musicInfo))
   } catch (err: any) {
     reqPromise = Promise.reject(err)
@@ -401,7 +393,6 @@ export const handleGetOnlinePicUrl = async({ musicInfo, isRefresh, onToggleSourc
   // console.log(musicInfo.source)
   let reqPromise
   try {
-    const musicSdk = await getMusicSdk()
     reqPromise = musicSdk[musicInfo.source].getPic(toOldMusicInfo(musicInfo))
   } catch (err) {
     reqPromise = Promise.reject(err)
@@ -459,7 +450,6 @@ export const getOnlineOtherSourceLyricInfo = async({ musicInfos, onToggleSource,
   let reqPromise
   try {
     // TODO: remove any type
-    const musicSdk = await getMusicSdk()
     reqPromise = (musicSdk[musicInfo.source].getLyric(toOldMusicInfo(musicInfo)) as any).promise
   } catch (err: any) {
     reqPromise = Promise.reject(err)
@@ -496,7 +486,6 @@ export const handleGetOnlineLyricInfo = async({ musicInfo, onToggleSource, isRef
   let reqPromise
   try {
     // TODO: remove any type
-    const musicSdk = await getMusicSdk()
     reqPromise = (musicSdk[musicInfo.source].getLyric(toOldMusicInfo(musicInfo)) as any).promise
   } catch (err) {
     reqPromise = Promise.reject(err)

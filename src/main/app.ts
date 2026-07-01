@@ -308,19 +308,15 @@ const backupDB = (backupPath: string) => {
 
 let isInitialized = false
 export const initAppSetting = async() => {
-  const hotKeyTask = global.lx.inited ? null : initHotKey()
-  const settingTask = !isInitialized ? initSetting() : null
-  const dbInitTask = !isInitialized ? global.lx.worker.dbService.init(global.lxDataPath) : null
-
   if (!global.lx.inited) {
-    const config = await hotKeyTask!
+    const config = await initHotKey()
     global.lx.hotKey.config.local = config.local
     global.lx.hotKey.config.global = config.global
     global.lx.inited = true
   }
 
   if (!isInitialized) {
-    let dbFileExists = await dbInitTask!
+    let dbFileExists = await global.lx.worker.dbService.init(global.lxDataPath)
     if (dbFileExists === null) {
       const backupPath = path.join(global.lxDataPath, `lx.data.db.${Date.now()}.bak`)
       dialog.showMessageBoxSync({
@@ -331,7 +327,7 @@ export const initAppSetting = async() => {
       backupDB(backupPath)
       dbFileExists = await global.lx.worker.dbService.init(global.lxDataPath)
     }
-    global.lx.appSetting = (await settingTask!).setting
+    global.lx.appSetting = (await initSetting()).setting
     if (!dbFileExists) await migrateDBData().catch(err => { log.error(err) })
     initTheme()
     if (envParams.cmdParams.dt == null) envParams.cmdParams.dt = !global.lx.appSetting['common.transparentWindow']

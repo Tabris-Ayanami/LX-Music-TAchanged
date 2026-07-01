@@ -1,16 +1,11 @@
 // import { getLeaderboardSetting } from '@renderer/utils/data'
 import { deduplicationList, toNewMusicInfo } from '@renderer/utils'
+import musicSdk from '@renderer/utils/musicSdk'
 import { markRaw, markRawList } from '@common/utils/vueTools'
 import { boards, type Board, listDetailInfo, type ListDetailInfo } from './state'
 import { createLimitedCache } from '@renderer/utils/limitedCache'
 
 const cache = createLimitedCache(40, 30 * 60 * 1000)
-let musicSdkPromise: Promise<typeof import('@renderer/utils/musicSdk')> | null = null
-
-const getMusicSdk = async() => {
-  musicSdkPromise ??= import('@renderer/utils/musicSdk')
-  return (await musicSdkPromise).default
-}
 
 export const setBoard = (board: Board, source: LX.OnlineSource) => {
   boards[source] = markRaw(board)
@@ -41,7 +36,6 @@ export const clearListDetail = () => {
 
 export const getBoardsList = async(source: LX.OnlineSource) => {
   // const source = (await getLeaderboardSetting()).source as LX.OnlineSource
-  const musicSdk = await getMusicSdk()
   return musicSdk[source]?.leaderboard.getBoards() as Promise<Board>
 }
 
@@ -60,7 +54,6 @@ export const getListDetail = async(id: string, page: number, isRefresh = false):
 
   const [source, bangId] = id.split('__') as [LX.OnlineSource, string]
 
-  const musicSdk = await getMusicSdk()
   return musicSdk[source]?.leaderboard?.getList(bangId, page).then((result: ListDetailInfo) => {
     result.list = markRawList(deduplicationList(result.list.map(m => toNewMusicInfo(m)) as LX.Music.MusicInfoOnline[]))
     cache.set(key, result)
@@ -83,7 +76,6 @@ export const getListDetailAll = async(id: string, isRefresh = false): Promise<LX
     let key = `${source}__${id}__${page}`
     if (!isRefresh && cache.has(key)) return cache.get(key)
 
-    const musicSdk = await getMusicSdk()
     return musicSdk[source]?.leaderboard.getList(id, page).then((result: ListDetailInfo) => {
       result.list = markRawList(deduplicationList(result.list.map(m => toNewMusicInfo(m)) as LX.Music.MusicInfoOnline[]))
       cache.set(key, result)

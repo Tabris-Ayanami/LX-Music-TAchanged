@@ -12,7 +12,6 @@ import {
   sendEvent,
   clearCache,
   getCacheSize,
-  getMemoryMetrics,
   toggleDevTools,
   setWindowBounds,
   setIgnoreMouseEvents,
@@ -94,10 +93,6 @@ export default () => {
 
   mainHandle<number>(WIN_MAIN_RENDERER_EVENT_NAME.get_cache_size, async() => {
     return getCacheSize()
-  })
-
-  mainHandle(WIN_MAIN_RENDERER_EVENT_NAME.get_memory_metrics, async() => {
-    return getMemoryMetrics()
   })
 
   mainOn(WIN_MAIN_RENDERER_EVENT_NAME.open_dev_tools, () => {

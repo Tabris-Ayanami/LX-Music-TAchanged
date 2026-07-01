@@ -6,8 +6,6 @@ let prevTips
 let prevX = 0
 let prevY = 0
 let isDraging = false
-let tipRequestId = 0
-const passiveListenerOptions = { passive: true }
 
 const getTipText = el => {
   return el.getAttribute('aria-label') && el.getAttribute('ignore-tip') == null ? el.getAttribute('aria-label') : null
@@ -22,13 +20,12 @@ const getTips = el =>
         : getTips(el.parentNode)
     : null
 
-const showTips = debounce(async event => {
+const showTips = debounce(event => {
   if (isDraging) return
   let msg = getTips(event.target)?.trim()
   if (!msg) return
   prevTips = msg
-  const requestId = ++tipRequestId
-  const nextInstance = await tips({
+  instance = tips({
     message: msg,
     autoCloseTime: 10000,
     position: {
@@ -42,15 +39,9 @@ const showTips = debounce(async event => {
       instance = null
     },
   })
-  if (requestId != tipRequestId || isDraging) {
-    nextInstance?.cancel()
-    return
-  }
-  instance = nextInstance
 }, 400)
 
 const hideTips = () => {
-  tipRequestId++
   if (!instance) return
   instance.cancel()
 }
@@ -78,11 +69,11 @@ setTimeout(() => {
     prevY = event.y
     hideTips()
     showTips(event)
-  }, passiveListenerOptions)
+  })
 
-  document.body.addEventListener('click', updateTips, passiveListenerOptions)
+  document.body.addEventListener('click', updateTips)
 
-  document.body.addEventListener('contextmenu', updateTips, passiveListenerOptions)
+  document.body.addEventListener('contextmenu', updateTips)
 
   window.app_event.on('focus', () => {
     hideTips()

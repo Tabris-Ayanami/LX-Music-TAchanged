@@ -7,13 +7,13 @@ import { getNextPlayMusicInfo, resetRandomNextMusicInfo } from '@renderer/core/p
 import { getMusicUrl } from '@renderer/core/music'
 import { appSetting } from '@renderer/store/setting'
 
-let audio: HTMLAudioElement | null = null
+let audio: HTMLAudioElement
 let preloadTaskId = 0
 const handlePreloadPlaying = () => {
-  audio?.pause()
+  audio.pause()
 }
 const initAudio = () => {
-  if (audio) return audio
+  if (audio) return
   audio = new Audio()
   audio.controls = false
   audio.preload = 'metadata'
@@ -22,34 +22,30 @@ const initAudio = () => {
   audio.volume = 0
   audio.autoplay = false
   audio.addEventListener('playing', handlePreloadPlaying)
-  return audio
 }
-const releasePreloadAudio = (destroy = false) => {
+const releasePreloadAudio = () => {
   if (!audio) return
   audio.pause()
   audio.removeAttribute('src')
   audio.load()
-  if (!destroy) return
-  audio.removeEventListener('playing', handlePreloadPlaying)
-  audio = null
 }
 const checkMusicUrl = async(url: string, taskId: number): Promise<boolean> => {
-  const preloadAudio = initAudio()
+  initAudio()
   return new Promise((resolve) => {
     const timeout = window.setTimeout(() => {
       clear()
-      if (taskId == preloadTaskId) releasePreloadAudio(true)
+      if (taskId == preloadTaskId) releasePreloadAudio()
       resolve(false)
     }, 8000)
     const clear = () => {
       window.clearTimeout(timeout)
-      preloadAudio.removeEventListener('error', handleErr)
-      preloadAudio.removeEventListener('loadedmetadata', handleLoaded)
+      audio.removeEventListener('error', handleErr)
+      audio.removeEventListener('loadedmetadata', handleLoaded)
     }
     const handleErr = () => {
       clear()
-      if (preloadAudio.error?.code !== 1) {
-        releasePreloadAudio(true)
+      if (audio?.error?.code !== 1) {
+        releasePreloadAudio()
         resolve(false)
       } else {
         resolve(true)
@@ -59,10 +55,10 @@ const checkMusicUrl = async(url: string, taskId: number): Promise<boolean> => {
       clear()
       resolve(true)
     }
-    preloadAudio.addEventListener('error', handleErr)
-    preloadAudio.addEventListener('loadedmetadata', handleLoaded)
-    preloadAudio.src = url
-    preloadAudio.load()
+    audio.addEventListener('error', handleErr)
+    audio.addEventListener('loadedmetadata', handleLoaded)
+    audio.src = url
+    audio.load()
   })
 }
 
@@ -76,7 +72,7 @@ const resetPreloadInfo = () => {
   preloadMusicInfo.preProgress = 0
   preloadMusicInfo.info = null
   preloadMusicInfo.isLoading = false
-  releasePreloadAudio(true)
+  releasePreloadAudio()
 }
 const preloadNextMusicUrl = async(curTime: number) => {
   if (preloadMusicInfo.isLoading || curTime - preloadMusicInfo.preProgress < 3) return
@@ -136,6 +132,7 @@ export default () => {
     rOnTimeupdate()
     window.app_event.off('setProgress', setProgress)
     window.app_event.off('musicToggled', handleSetPlayInfo)
-    releasePreloadAudio(true)
+    if (audio) audio.removeEventListener('playing', handlePreloadPlaying)
+    releasePreloadAudio()
   })
 }

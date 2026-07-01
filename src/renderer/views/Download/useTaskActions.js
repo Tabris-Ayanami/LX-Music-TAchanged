@@ -1,4 +1,5 @@
 import { useRouter } from '@common/utils/vueRouter'
+import musicSdk from '@renderer/utils/musicSdk'
 import { openUrl } from '@common/utils/electron'
 import { checkPath } from '@common/utils/nodejs'
 // import { dialog } from '@renderer/plugins/Dialog'
@@ -7,13 +8,6 @@ import { checkPath } from '@common/utils/nodejs'
 import { toOldMusicInfo } from '@renderer/utils/index'
 import { startDownloadTasks, pauseDownloadTasks, removeDownloadTasks } from '@renderer/store/download/action'
 import { openDirInExplorer } from '@renderer/utils/ipc'
-
-let musicSdkPromise = null
-
-const getMusicSdk = async() => {
-  musicSdkPromise ||= import('@renderer/utils/musicSdk').then(({ default: musicSdk }) => musicSdk)
-  return musicSdkPromise
-}
 
 export default ({ list, selectedList, removeAllSelect }) => {
   const router = useRouter()
@@ -29,10 +23,9 @@ export default ({ list, selectedList, removeAllSelect }) => {
     })
   }
 
-  const handleOpenMusicDetail = async(index) => {
+  const handleOpenMusicDetail = index => {
     const task = list.value[index]
     const mInfo = toOldMusicInfo(task.metadata.musicInfo)
-    const musicSdk = await getMusicSdk()
     const url = musicSdk[mInfo.source]?.getMusicDetailPageUrl?.(mInfo)
     if (!url) return
     openUrl(url)

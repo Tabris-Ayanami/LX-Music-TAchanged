@@ -1,10 +1,5 @@
+import Tips from './Tips.vue'
 import { createApp } from 'vue'
-
-let tipsComponentPromise
-const getTipsComponent = () => {
-  tipsComponentPromise ||= import('./Tips.vue').then(({ default: Tips }) => Tips)
-  return tipsComponentPromise
-}
 
 const addAutoCloseTimer = (instance, time) => {
   if (!time) return
@@ -19,9 +14,8 @@ const clearAutoCloseTimer = instance => {
   instance.autoCloseTimer = null
 }
 
-export default async({ position, message, autoCloseTime } = {}, props) => {
+export default ({ position, message, autoCloseTime } = {}, props) => {
   if (!position) return
-  const Tips = await getTipsComponent()
   let app = createApp(Tips, {
     afterLeave() {
       app.unmount()
@@ -57,3 +51,4 @@ export default async({ position, message, autoCloseTime } = {}, props) => {
 
   return instance
 }
+

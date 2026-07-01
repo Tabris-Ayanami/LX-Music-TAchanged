@@ -1,16 +1,19 @@
 import { reactive, markRaw, ref, shallowReactive } from '@common/utils/vueTools'
-import { songListSorts, songListSources } from '@renderer/utils/musicSdk/staticMeta'
+import music from '@renderer/utils/musicSdk'
 
 export interface SortInfo {
   name: string
-  id: string | number
+  id: string
 }
 
-export const sources: LX.OnlineSource[] = markRaw([...songListSources])
+export const sources: LX.OnlineSource[] = markRaw([])
 export const sortList = markRaw<Partial<Record<LX.OnlineSource, SortInfo[]>>>({})
 
-for (const source of songListSources) {
-  sortList[source] = songListSorts[source] as unknown as SortInfo[]
+for (const source of music.sources) {
+  const songList = music[source.id as LX.OnlineSource]?.songList
+  if (!songList) continue
+  sources.push(source.id as LX.OnlineSource)
+  sortList[source.id as LX.OnlineSource] = songList.sortList as SortInfo[]
 }
 
 export interface TagInfoItem<T extends LX.OnlineSource = LX.OnlineSource> {

@@ -225,15 +225,6 @@ export default ({ isPlay, lyric, playProgress, isShowLyricProgressSetting, offse
   })
 
   onBeforeUnmount(() => {
-    clearLyricScrollTimeout()
-    if (delayScrollTimeout) {
-      clearTimeout(delayScrollTimeout)
-      delayScrollTimeout = null
-    }
-    if (cancelScrollFn) {
-      cancelScrollFn()
-      cancelScrollFn = null
-    }
     document.removeEventListener('mousemove', handleMouseMsMove)
     document.removeEventListener('mouseup', handleMouseMsUp)
     document.removeEventListener('touchmove', handleTouchMove)

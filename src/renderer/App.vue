@@ -20,32 +20,24 @@
     </div>
     <layout-play-bar id="player" />
     <layout-icons />
-    <layout-change-log-modal v-if="isShowChangeLog" />
-    <layout-update-modal v-if="versionInfo.showModal" />
-    <layout-pact-modal v-if="!appSetting['common.isAgreePact'] || isShowPact" />
-    <layout-sync-mode-modal v-if="sync.isShowSyncMode" />
-    <layout-sync-auth-code-modal v-if="sync.isShowAuthCodeModal" />
-    <layout-play-detail v-if="isPlayDetailMounted" />
+    <layout-change-log-modal />
+    <layout-update-modal />
+    <layout-pact-modal />
+    <layout-sync-mode-modal />
+    <layout-sync-auth-code-modal />
+    <layout-play-detail />
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref, watch } from '@common/utils/vueTools'
+import { onMounted } from '@common/utils/vueTools'
 // import BubbleCursor from '@common/utils/effects/cursor-effects/bubbleCursor'
 // import '@common/utils/effects/snow.min'
 import useApp from '@renderer/core/useApp'
-import { isShowChangeLog, isShowPact, shellIsDark, sync, versionInfo } from '@renderer/store'
-import { appSetting } from '@renderer/store/setting'
-import { isShowPlayerDetail } from '@renderer/store/player/state'
+import { shellIsDark } from '@renderer/store'
 import { isSidebarCollapsed } from '@renderer/store/ui'
 
 useApp()
-
-const isPlayDetailMounted = ref(isShowPlayerDetail.value)
-
-watch(isShowPlayerDetail, show => {
-  if (show) isPlayDetailMounted.value = true
-})
 
 onMounted(() => {
   document.getElementById('root').style.display = 'block'
