@@ -2,7 +2,6 @@ import path from 'node:path'
 import os from 'node:os'
 
 const isMac = process.platform == 'darwin'
-const isWin = process.platform == 'win32'
 
 const defaultSetting: LX.AppSetting = {
   version: '2.1.0',
@@ -76,38 +75,6 @@ const defaultSetting: LX.AppSetting = {
   'playDetail.style.align': 'center',
   'playDetail.isDelayScroll': true,
 
-  'desktopLyric.enable': false,
-  'desktopLyric.isLock': false,
-  'desktopLyric.isAlwaysOnTop': false,
-  'desktopLyric.isAlwaysOnTopLoop': false,
-  'desktopLyric.isShowTaskbar': false,
-  'desktopLyric.audioVisualization': false,
-  'desktopLyric.fullscreenHide': true,
-  'desktopLyric.pauseHide': true,
-  'desktopLyric.width': 450,
-  'desktopLyric.height': 300,
-  'desktopLyric.x': null,
-  'desktopLyric.y': null,
-  'desktopLyric.isLockScreen': isWin,
-  'desktopLyric.isDelayScroll': true,
-  'desktopLyric.scrollAlign': 'center',
-  'desktopLyric.isHoverHide': false,
-  'desktopLyric.direction': 'horizontal',
-  'desktopLyric.style.align': 'center',
-  'desktopLyric.style.font': '',
-  'desktopLyric.style.fontSize': 20,
-  'desktopLyric.style.lineGap': 15,
-  'desktopLyric.style.lyricUnplayColor': 'rgba(255, 255, 255, 1)',
-  'desktopLyric.style.lyricPlayedColor': 'rgba(7, 197, 86, 1)',
-  'desktopLyric.style.lyricShadowColor': 'rgba(0, 0, 0, 0.18)',
-  // 'desktopLyric.style.fontWeight': false,
-  'desktopLyric.style.opacity': 95,
-  'desktopLyric.style.ellipsis': false,
-  'desktopLyric.style.isZoomActiveLrc': false,
-  'desktopLyric.style.isFontWeightFont': true,
-  'desktopLyric.style.isFontWeightLine': true,
-  'desktopLyric.style.isFontWeightExtended': true,
-
   'list.isClickPlayList': false,
   'list.isShowSource': true,
   'list.isSaveScrollLocation': true,
@@ -168,7 +135,6 @@ const defaultSetting: LX.AppSetting = {
 // 使用新年皮肤
 if (new Date().getMonth() < 2) {
   defaultSetting['theme.id'] = 'happy_new_year'
-  defaultSetting['desktopLyric.style.lyricPlayedColor'] = 'rgba(255, 57, 71, 1)'
 }
 
 

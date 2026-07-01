@@ -4,7 +4,6 @@ import { APP_EVENT_NAMES } from './constants'
 const keyName = {
   common: APP_EVENT_NAMES.winMainName,
   player: APP_EVENT_NAMES.winMainName,
-  desktop_lyric: APP_EVENT_NAMES.winLyricName,
 }
 
 const hotKey = {
@@ -92,23 +91,6 @@ const hotKey = {
       type: '',
     },
   },
-  desktop_lyric: {
-    toggle_visible: {
-      name: 'toggle_visible',
-      action: 'toggle_visible',
-      type: '',
-    },
-    toggle_lock: {
-      name: 'toggle_lock',
-      action: 'toggle_lock',
-      type: '',
-    },
-    toggle_always_top: {
-      name: 'toggle_always_top',
-      action: 'toggle_always_top',
-      type: '',
-    },
-  },
 }
 
 for (const type of Object.keys(hotKey) as Array<keyof typeof hotKey>) {
@@ -123,4 +105,3 @@ for (const type of Object.keys(hotKey) as Array<keyof typeof hotKey>) {
 
 export const HOTKEY_COMMON = hotKey.common
 export const HOTKEY_PLAYER = hotKey.player
-export const HOTKEY_DESKTOP_LYRIC = hotKey.desktop_lyric

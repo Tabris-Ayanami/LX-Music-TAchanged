@@ -1,9 +1,23 @@
 import { reactive, markRaw } from '@common/utils/vueTools'
-import music from '@renderer/utils/musicSdk'
 
 // import { deduplicationList } from '@common/utils/renderer'
 
 export type Source = LX.OnlineSource | 'all'
+const HOT_SEARCH_SOURCES: LX.OnlineSource[] = ['kw', 'kg', 'tx', 'wy', 'mg']
+const hotSearchLoaders: Partial<Record<LX.OnlineSource, () => Promise<any>>> = {
+  kw: async() => import('@renderer/utils/musicSdk/kw/hotSearch').then(({ default: hotSearch }) => hotSearch),
+  kg: async() => import('@renderer/utils/musicSdk/kg/hotSearch').then(({ default: hotSearch }) => hotSearch),
+  tx: async() => import('@renderer/utils/musicSdk/tx/hotSearch').then(({ default: hotSearch }) => hotSearch),
+  wy: async() => import('@renderer/utils/musicSdk/wy/hotSearch').then(({ default: hotSearch }) => hotSearch),
+  mg: async() => import('@renderer/utils/musicSdk/mg/hotSearch').then(({ default: hotSearch }) => hotSearch),
+}
+const hotSearchApis: Partial<Record<LX.OnlineSource, Promise<any>>> = {}
+const getHotSearchApi = async(source: LX.OnlineSource) => {
+  const loader = hotSearchLoaders[source]
+  if (!loader) return null
+  hotSearchApis[source] ||= loader()
+  return hotSearchApis[source]
+}
 
 interface SourceLists extends Partial<Record<LX.OnlineSource, string[]>> {
   'all': string[]
@@ -16,10 +30,9 @@ export const sourceList: SourceLists = markRaw({
 })
 
 
-for (const source of music.sources) {
-  if (!music[source.id as LX.OnlineSource]?.hotSearch) continue
-  sources.push(source.id as LX.OnlineSource)
-  sourceList[source.id as LX.OnlineSource] = reactive<string[]>([])
+for (const source of HOT_SEARCH_SOURCES) {
+  sources.push(source)
+  sourceList[source] = reactive<string[]>([])
 }
 sources.push('all')
 
@@ -52,7 +65,10 @@ export const getList = async(source: Source): Promise<string[]> => {
       task.push(
         sourceList[source]?.length
           ? Promise.resolve({ source, list: sourceList[source] })
-          : (music[source]?.hotSearch.getList() ?? Promise.reject(new Error('source not found: ' + source))).catch((err: any) => {
+          : getHotSearchApi(source)
+            .then(api => api?.getList() ?? Promise.reject(new Error('source not found: ' + source)))
+            .then((data: { list: string[] }) => ({ source, list: data.list }))
+            .catch((err: any) => {
               console.log(err)
               return { source, list: [] }
             }),
@@ -63,11 +79,12 @@ export const getList = async(source: Source): Promise<string[]> => {
     })
   } else {
     if (sourceList[source]?.length) return Promise.resolve(sourceList[source])
-    if (!music[source]?.hotSearch) {
+    const api = await getHotSearchApi(source)
+    if (!api) {
       setList(source, [])
       return Promise.resolve([])
     }
-    return music[source]?.hotSearch.getList().then((data: { list: string[] }) => setList(source, data.list))
+    return api.getList().then((data: { list: string[] }) => setList(source, data.list))
   }
 }
 

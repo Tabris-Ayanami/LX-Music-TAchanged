@@ -76,8 +76,16 @@ module.exports = merge(baseConfig, {
       new CssMinimizerPlugin(),
     ],
     splitChunks: {
-      chunks: 'initial',
+      chunks: 'all',
       minChunks: 2,
+      cacheGroups: {
+        musicSdk: {
+          test: /[\\/]src[\\/]renderer[\\/]utils[\\/]musicSdk[\\/]/,
+          name: 'renderer.music-sdk',
+          chunks: 'all',
+          enforce: true,
+        },
+      },
     },
   },
   performance: {
@@ -90,5 +98,4 @@ module.exports = merge(baseConfig, {
     __filename: false,
   },
 })
-
 

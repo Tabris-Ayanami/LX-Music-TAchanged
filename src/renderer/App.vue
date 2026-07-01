@@ -161,7 +161,7 @@ body {
   display: flex;
   flex-flow: column nowrap;
   min-height: 0;
-  z-index: 3;
+  z-index: 1;
   padding: 0;
   background:
     radial-gradient(120% 90% at 0% 0%, var(--shell-sidebar-glow), transparent 58%),
@@ -197,12 +197,13 @@ body {
 #left::after {
   content: '';
   position: absolute;
-  top: 12px;
+  top: 0;
   right: 0;
-  bottom: 12px;
+  bottom: 0;
   width: 1px;
-  background: linear-gradient(180deg, transparent, var(--shell-divider), transparent);
-  opacity: .72;
+  background:
+    linear-gradient(180deg, transparent 0, var(--shell-divider) 12%, var(--shell-divider) 88%, transparent 100%);
+  opacity: .62;
   pointer-events: none;
 }
 #right {
@@ -214,10 +215,21 @@ body {
   min-height: 0;
   padding-bottom: 0;
   position: relative;
-  z-index: 1;
+  z-index: 2;
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--shell-surface, rgba(255, 255, 255, 0.82)) 34%, transparent), transparent 28%),
     linear-gradient(90deg, var(--shell-stage-edge), transparent 14%);
+}
+#right::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 0;
+  width: 4px;
+  background:
+    linear-gradient(90deg, var(--shell-main-edge-highlight), transparent 1px),
+    linear-gradient(90deg, var(--shell-main-edge-shadow), transparent 100%);
+  pointer-events: none;
 }
 #toolbar, #player {
   flex: none;
@@ -309,7 +321,7 @@ body {
   --shell-grain-top: rgba(255, 255, 255, 0.64);
   --shell-panel: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(244, 248, 253, 0.9));
   --shell-panel-highlight: rgba(255, 255, 255, 0.56);
-  --shell-panel-shadow: 18px 0 46px rgba(82, 103, 137, 0.13), inset -1px 0 0 rgba(255, 255, 255, 0.48);
+  --shell-panel-shadow: inset -2px 0 4px rgba(76, 96, 128, 0.08), inset -1px 0 0 rgba(69, 88, 118, 0.1), inset 1px 0 0 rgba(255, 255, 255, 0.36);
   --shell-sidebar-panel: linear-gradient(180deg, rgba(232, 240, 251, 0.74), rgba(217, 228, 243, 0.66));
   --shell-sidebar-highlight: rgba(255, 255, 255, 0.46);
   --shell-sidebar-glow: color-mix(in srgb, var(--color-primary) 16%, rgba(141, 170, 210, 0.18));
@@ -326,7 +338,9 @@ body {
   --shell-edge-shadow: rgba(92, 112, 144, 0.08);
   --shell-glass-sheen: rgba(255, 255, 255, 0.34);
   --shell-glass-foot: rgba(255, 255, 255, 0.12);
-  --shell-stage-edge: rgba(255, 255, 255, 0.12);
+  --shell-stage-edge: rgba(255, 255, 255, 0.1);
+  --shell-main-edge-highlight: rgba(255, 255, 255, 0.34);
+  --shell-main-edge-shadow: rgba(78, 99, 132, 0.08);
   --shell-accent: var(--color-primary);
   --shell-accent-glow: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 34%, transparent), transparent 72%);
   --shell-secondary-glow: radial-gradient(circle, rgba(102, 155, 218, 0.34), rgba(102, 155, 218, 0));
@@ -360,7 +374,7 @@ body {
   --shell-grain-top: rgba(255, 255, 255, 0.025);
   --shell-panel: linear-gradient(180deg, rgba(33, 37, 46, 0.82), rgba(19, 22, 29, 0.9));
   --shell-panel-highlight: color-mix(in srgb, var(--color-primary) 12%, rgba(255, 255, 255, 0.06));
-  --shell-panel-shadow: 18px 0 46px rgba(0, 0, 0, 0.24), inset -1px 0 0 rgba(255, 255, 255, 0.055);
+  --shell-panel-shadow: inset -2px 0 4px rgba(0, 0, 0, 0.22), inset -1px 0 0 rgba(0, 0, 0, 0.24), inset 1px 0 0 rgba(255, 255, 255, 0.035);
   --shell-sidebar-panel: linear-gradient(180deg, rgba(42, 48, 60, 0.62), rgba(25, 30, 40, 0.72));
   --shell-sidebar-highlight: color-mix(in srgb, var(--color-primary) 16%, rgba(255, 255, 255, 0.045));
   --shell-sidebar-glow: color-mix(in srgb, var(--color-primary) 18%, rgba(62, 84, 112, 0.2));
@@ -377,7 +391,9 @@ body {
   --shell-edge-shadow: rgba(0, 0, 0, 0.16);
   --shell-glass-sheen: rgba(255, 255, 255, 0.1);
   --shell-glass-foot: rgba(255, 255, 255, 0.035);
-  --shell-stage-edge: rgba(255, 255, 255, 0.035);
+  --shell-stage-edge: rgba(255, 255, 255, 0.03);
+  --shell-main-edge-highlight: rgba(255, 255, 255, 0.045);
+  --shell-main-edge-shadow: rgba(0, 0, 0, 0.16);
   --shell-accent: var(--color-primary);
   --shell-accent-glow: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 28%, rgba(92, 139, 190, 0.1)), transparent 72%);
   --shell-secondary-glow: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 14%, rgba(116, 151, 193, 0.12)), transparent 70%);

@@ -1,7 +1,8 @@
 import { computed, ref, shallowReactive, reactive, nextTick } from '@common/utils/vueTools'
-import musicSdk from '@renderer/utils/musicSdk'
 import { useI18n } from '@renderer/plugins/i18n'
 import { hasDislike } from '@renderer/core/dislikeList'
+
+const SOURCE_DETAIL_SUPPORTED = new Set(['kw', 'kg', 'tx', 'wy', 'mg', 'bd', 'bili'])
 
 export default ({
   assertApiSupport,
@@ -104,7 +105,7 @@ export default ({
   })
 
   const showMenu = (event, musicInfo) => {
-    itemMenuControl.sourceDetail = !!musicSdk[musicInfo.source]?.getMusicDetailPageUrl
+    itemMenuControl.sourceDetail = SOURCE_DETAIL_SUPPORTED.has(musicInfo.source)
     // itemMenuControl.play =
     //   itemMenuControl.playLater =
     itemMenuControl.download = assertApiSupport(musicInfo.source) && musicInfo.source != 'local'
@@ -165,7 +166,9 @@ export default ({
         handleRemoveMusic(index)
         break
       case 'sourceDetail':
-        handleOpenMusicDetail(index)
+        handleOpenMusicDetail(index).catch(error => {
+          console.warn('open music detail failed', error)
+        })
     }
   }
 

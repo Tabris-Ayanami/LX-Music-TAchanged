@@ -23,6 +23,7 @@ import {
   watch,
   onMounted,
   onBeforeUnmount,
+  onActivated,
 } from 'vue'
 import scrollHelper from './virtualizedListScrollHelper.cjs'
 
@@ -94,6 +95,8 @@ export default {
     let resizeObserver = null
     let resizeTimer = null
     let updateFrame = null
+    let viewFrame = null
+    let pendingViewRange = null
     let isUnmounted = false
 
     const clearScheduledUpdate = () => {
@@ -105,6 +108,11 @@ export default {
         window.cancelAnimationFrame(updateFrame)
         updateFrame = null
       }
+      if (viewFrame != null) {
+        window.cancelAnimationFrame(viewFrame)
+        viewFrame = null
+      }
+      pendingViewRange = null
     }
 
     const scheduleUpdateView = () => {
@@ -116,9 +124,16 @@ export default {
       })
     }
 
-    const scheduleUpdateViewAfterNextTick = () => {
+    const resetViewRange = () => {
+      startIndex = -1
+      endIndex = -1
+      scrollTop = -1
+    }
+
+    const scheduleUpdateViewAfterNextTick = (resetRange = false) => {
       void nextTick(() => {
         if (isUnmounted || !dom_scrollContainer.value) return
+        if (resetRange) resetViewRange()
         scheduleUpdateView()
       })
     }
@@ -148,6 +163,18 @@ export default {
       return list
     }
 
+    const scheduleSetViews = (startIndex, endIndex) => {
+      pendingViewRange = [startIndex, endIndex]
+      if (viewFrame != null) return
+      viewFrame = window.requestAnimationFrame(() => {
+        viewFrame = null
+        const range = pendingViewRange
+        pendingViewRange = null
+        if (!range || isUnmounted || !dom_scrollContainer.value) return
+        views.value = createList(range[0], range[1])
+      })
+    }
+
     const pruneCache = (startIndex, endIndex) => {
       const buffer = Math.max(Math.ceil((endIndex - startIndex) * 3), 30)
       const min = Math.max(startIndex - buffer, 0)
@@ -160,6 +187,11 @@ export default {
     const updateView = currentScrollTop => {
       const container = dom_scrollContainer.value
       if (!container) return
+      if (!props.list.length) {
+        views.value = []
+        return
+      }
+      if (!container.clientHeight) return
       const resolvedScrollTop = currentScrollTop ?? container.scrollTop
       // const currentScrollTop = this.$refs.dom_scrollContainer.scrollTop
       const itemHeight = props.itemHeight
@@ -187,16 +219,10 @@ export default {
         //   // console.log('scroll up')
         //   views.value = createList(currentStartRenderIndex, currentEndRenderIndex)
         // } else return
-        if (resolvedScrollTop == scrollTop && endIndex >= currentEndIndex) return
-        requestAnimationFrame(() => {
-          if (isUnmounted || !dom_scrollContainer.value) return
-          views.value = createList(currentStartRenderIndex, currentEndRenderIndex)
-        })
+        if (resolvedScrollTop == scrollTop && endIndex >= currentEndIndex && views.value.length) return
+        scheduleSetViews(currentStartRenderIndex, currentEndRenderIndex)
       } else {
-        requestAnimationFrame(() => {
-          if (isUnmounted || !dom_scrollContainer.value) return
-          views.value = createList(currentStartRenderIndex, currentEndRenderIndex)
-        })
+        scheduleSetViews(currentStartRenderIndex, currentEndRenderIndex)
       }
       startIndex = currentStartIndex
       endIndex = currentEndIndex
@@ -296,8 +322,7 @@ export default {
 
     const handleReset = list => {
       cachedList.clear()
-      startIndex = -1
-      endIndex = -1
+      resetViewRange()
       if (list.length) {
         scheduleUpdateViewAfterNextTick()
       } else {
@@ -320,22 +345,21 @@ export default {
       })
       if (window.ResizeObserver) {
         resizeObserver = new window.ResizeObserver(() => {
-          updateFrame = window.requestAnimationFrame(() => {
-            updateFrame = null
-            if (!dom_scrollContainer.value?.clientHeight) return
-            updateView()
-          })
+          scheduleUpdateView()
         })
         resizeObserver.observe(container)
       }
       cachedList.clear()
-      startIndex = -1
-      endIndex = -1
+      resetViewRange()
 
       if (props.list.length) {
         scheduleUpdateViewAfterNextTick()
       }
       window.addEventListener('resize', handleResize)
+    })
+    onActivated(() => {
+      if (!props.list.length) return
+      scheduleUpdateViewAfterNextTick(true)
     })
     onBeforeUnmount(() => {
       isUnmounted = true

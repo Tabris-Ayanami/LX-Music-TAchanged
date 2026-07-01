@@ -3,7 +3,6 @@
 </template>
 
 <script>
-import music from '@renderer/utils/musicSdk'
 import { debounce } from '@common/utils'
 import {
   ref,
@@ -16,6 +15,17 @@ import { appSetting } from '@renderer/store/setting'
 import { searchText as _searchText } from '@renderer/store/search/state'
 import { setSearchText } from '@renderer/store/search/action'
 import { getSearchSetting } from '@renderer/utils/data'
+
+const tipSearchLoaders = {
+  kw: async() => import('@renderer/utils/musicSdk/kw/tipSearch').then(({ default: tipSearch }) => tipSearch),
+}
+const tipSearchApis = {}
+const getTipSearchApi = (source) => {
+  const loader = tipSearchLoaders[source]
+  if (!loader) return Promise.resolve(null)
+  tipSearchApis[source] ||= loader()
+  return tipSearchApis[source]
+}
 
 export default {
   setup() {
@@ -59,14 +69,22 @@ export default {
       const currentRequestId = ++tipRequestId
       if (searchText.value === '' && prevTempSearchSource) {
         tipList.value = []
-        music[prevTempSearchSource].tipSearch.cancelTipSearch()
+        const tipSearch = await getTipSearchApi(prevTempSearchSource)
+        if (currentRequestId != tipRequestId) return
+        tipSearch?.cancelTipSearch()
         return
       }
       const { temp_source } = await getSearchSetting()
       if (currentRequestId != tipRequestId) return
       prevTempSearchSource ||= temp_source
       const keyword = searchText.value
-      music[prevTempSearchSource].tipSearch.search(keyword).then(list => {
+      const tipSearch = await getTipSearchApi(prevTempSearchSource)
+      if (currentRequestId != tipRequestId) return
+      if (!tipSearch) {
+        tipList.value = []
+        return
+      }
+      tipSearch.search(keyword).then(list => {
         if (currentRequestId != tipRequestId) return
         if (keyword != searchText.value) return
         if (!isFocused) return

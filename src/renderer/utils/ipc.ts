@@ -158,20 +158,6 @@ export const userApiRequestCancel = (requestKey: LX.UserApi.UserApiRequestCancel
   rendererSend(WIN_MAIN_RENDERER_EVENT_NAME.request_user_api_cancel, requestKey)
 }
 
-// export const setDesktopLyricInfo = (type, data, info) => {
-//   rendererSend(WIN_MAIN_RENDERER_EVENT_NAME.set_lyric_info, {
-//     type,
-//     data,
-//     info,
-//   })
-// }
-// export const onGetDesktopLyricInfo = callback => {
-//   rendererOn(WIN_MAIN_RENDERER_EVENT_NAME.get_lyric_info, callback)
-//   return () => {
-//     rendererOff(callback)
-//   }
-// }
-
 export const sendPlayerStatus = (status: Partial<LX.Player.Status>) => {
   rendererSend<Partial<LX.Player.Status>>(WIN_MAIN_RENDERER_EVENT_NAME.player_status, status)
 }
@@ -444,21 +430,6 @@ export const allHotKeys = markRaw({
       name: hotKeys.HOTKEY_PLAYER.music_dislike.name,
       action: hotKeys.HOTKEY_PLAYER.music_dislike.action,
       type: APP_EVENT_NAMES.winMainName,
-    },
-    {
-      name: hotKeys.HOTKEY_DESKTOP_LYRIC.toggle_visible.name,
-      action: hotKeys.HOTKEY_DESKTOP_LYRIC.toggle_visible.action,
-      type: APP_EVENT_NAMES.winLyricName,
-    },
-    {
-      name: hotKeys.HOTKEY_DESKTOP_LYRIC.toggle_lock.name,
-      action: hotKeys.HOTKEY_DESKTOP_LYRIC.toggle_lock.action,
-      type: APP_EVENT_NAMES.winLyricName,
-    },
-    {
-      name: hotKeys.HOTKEY_DESKTOP_LYRIC.toggle_always_top.name,
-      action: hotKeys.HOTKEY_DESKTOP_LYRIC.toggle_always_top.action,
-      type: APP_EVENT_NAMES.winLyricName,
     },
   ],
 })
@@ -861,19 +832,6 @@ export const removeSyncServerDevice = (clientId: string) => {
 //     rendererOff(WIN_MAIN_RENDERER_EVENT_NAME.sync_status, listener)
 //   }
 // }
-
-/**
- * 桌面歌词进程创建事件
- * @param listener
- * @returns
- */
-export const onNewDesktopLyricProcess = (listener: LX.IpcRendererEventListener): RemoveListener => {
-  rendererOn(WIN_MAIN_RENDERER_EVENT_NAME.process_new_desktop_lyric_client, listener)
-  return () => {
-    rendererOff(WIN_MAIN_RENDERER_EVENT_NAME.process_new_desktop_lyric_client, listener)
-  }
-}
-
 
 export const downloadTasksGet = async() => {
   return rendererInvoke<LX.Download.ListItem[]>(WIN_MAIN_RENDERER_EVENT_NAME.download_list_get)

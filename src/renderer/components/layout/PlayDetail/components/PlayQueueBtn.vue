@@ -526,6 +526,10 @@ onBeforeUnmount(() => {
 
 .activeItem {
   background: rgba(174, 181, 194, 0.26);
+
+  .playBadge {
+    display: inline-flex;
+  }
 }
 
 .coverWrap {
@@ -573,10 +577,6 @@ onBeforeUnmount(() => {
     fill: currentColor;
     transform: translateX(1px);
   }
-}
-
-.activeItem .playBadge {
-  display: inline-flex;
 }
 
 .meta {

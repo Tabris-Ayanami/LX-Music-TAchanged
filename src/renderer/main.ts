@@ -86,19 +86,32 @@ window.addEventListener('unhandledrejection', event => {
 void (async() => {
   try {
     await import('@common/error')
-    const { createApp } = await import('vue')
     await import('./core/globalData')
-    await import('@renderer/event')
-    const { default: mountComponents } = await import('./components')
-    const { default: initPlugins } = await import('./plugins')
-    const { i18nPlugin } = await import('./plugins/i18n')
-    const { default: App } = await import('./App.vue')
-    const { default: router } = await import('./router')
-    const { getSetting, updateSetting } = await import('./utils/ipc')
-    const { langList } = await import('@root/lang')
-    const { initSetting } = await import('./store/setting')
-    await import('./worker')
-    const { saveViewPrevState } = await import('./utils/data')
+    const [
+      { createApp },
+      ,
+      { default: mountComponents },
+      { default: initPlugins },
+      { i18nPlugin },
+      { default: App },
+      { default: router },
+      { getSetting, updateSetting },
+      { langList },
+      { initSetting },
+      { saveViewPrevState },
+    ] = await Promise.all([
+      import('vue'),
+      import('@renderer/event'),
+      import('./components'),
+      import('./plugins'),
+      import('./plugins/i18n'),
+      import('./App.vue'),
+      import('./router'),
+      import('./utils/ipc'),
+      import('@root/lang'),
+      import('./store/setting'),
+      import('./utils/data'),
+    ])
 
     router.afterEach((to) => {
       if (to.path != '/songList/detail') {

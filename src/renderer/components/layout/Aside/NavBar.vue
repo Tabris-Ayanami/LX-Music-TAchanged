@@ -146,14 +146,23 @@ const pillRect = ref({
   height: 0,
 })
 let pillMeasureFrame = 0
-let pillTrackFrame = 0
-let pillTrackUntil = 0
+let pillTrackTimer = 0
 let pillMeasurePending = false
 let pillMeasureNeedsTracking = false
 let isUnmounted = false
 
 const sidebarMotionMs = 460
 const pillInset = 2
+
+const getCssPxNumber = (el, property, fallback) => {
+  const value = Number.parseFloat(getComputedStyle(el).getPropertyValue(property))
+  return Number.isFinite(value) ? value : fallback
+}
+
+const getSidebarContentTargetWidth = el => Math.max(
+  0,
+  getCssPxNumber(el, '--sidebar-width', isSidebarCollapsed.value ? 80 : 196) - getCssPxNumber(el, '--sidebar-panel-x', 16) * 2,
+)
 
 const activeItemKey = computed(() => {
   for (const section of menus.value) {
@@ -188,11 +197,17 @@ const measurePillToKey = key => {
 
   const menuBounds = menuEl.getBoundingClientRect()
   const linkBounds = linkEl.getBoundingClientRect()
+  const inlineInset = pillInset
+  const blockInset = 0
+  const measuredHeight = Math.max(0, linkBounds.height - blockInset * 2)
+  const targetWidth = Math.max(0, getSidebarContentTargetWidth(menuEl) - inlineInset * 2)
+  const width = isSidebarCollapsed.value ? Math.min(targetWidth, measuredHeight) : targetWidth
+  const height = measuredHeight
   pillRect.value = {
-    x: linkBounds.left - menuBounds.left + pillInset,
-    y: linkBounds.top - menuBounds.top,
-    width: Math.max(0, linkBounds.width - pillInset * 2),
-    height: linkBounds.height,
+    x: linkBounds.left - menuBounds.left + inlineInset,
+    y: linkBounds.top - menuBounds.top + blockInset,
+    width,
+    height,
   }
   pillVisible.value = true
 }
@@ -207,20 +222,12 @@ const measureCurrentPill = () => {
 
 const trackPillDuringLayoutMotion = () => {
   pillTracking.value = true
-  pillTrackUntil = performance.now() + sidebarMotionMs + 80
-  if (pillTrackFrame) return
-
-  const tick = () => {
-    measureCurrentPill()
-    if (performance.now() < pillTrackUntil) {
-      pillTrackFrame = requestAnimationFrame(tick)
-      return
-    }
-    pillTrackFrame = 0
+  if (pillTrackTimer) clearTimeout(pillTrackTimer)
+  pillTrackTimer = setTimeout(() => {
+    pillTrackTimer = 0
     pillTracking.value = false
     measureCurrentPill()
-  }
-  pillTrackFrame = requestAnimationFrame(tick)
+  }, sidebarMotionMs + 80)
 }
 
 const schedulePillUpdate = (trackLayoutMotion = false) => {
@@ -282,7 +289,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   isUnmounted = true
   if (pillMeasureFrame) cancelAnimationFrame(pillMeasureFrame)
-  if (pillTrackFrame) cancelAnimationFrame(pillTrackFrame)
+  if (pillTrackTimer) clearTimeout(pillTrackTimer)
   window.removeEventListener('resize', handleWindowResize)
 })
 </script>
@@ -324,7 +331,7 @@ onBeforeUnmount(() => {
   border-radius: var(--sidebar-nav-radius);
   corner-shape: squircle;
   pointer-events: none;
-  will-change: transform, width, height;
+  will-change: transform, width;
   overflow: hidden;
   background:
     linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 84%, #fff 16%), color-mix(in srgb, var(--color-primary) 66%, #2c5fc7 34%));
@@ -335,7 +342,6 @@ onBeforeUnmount(() => {
   transition:
     transform var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
-    height var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     box-shadow 220ms ease;
 }
 
@@ -347,7 +353,10 @@ onBeforeUnmount(() => {
 }
 
 .navPill.tracking {
-  transition: box-shadow 220ms ease;
+  transition:
+    transform var(--sidebar-motion-duration) var(--sidebar-motion-curve),
+    width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
+    box-shadow 220ms ease;
 }
 
 .section {
@@ -361,6 +370,7 @@ onBeforeUnmount(() => {
 }
 
 .sectionTitle {
+  margin: 0;
   padding: 0 5px;
   height: 11px;
   line-height: 11px;
@@ -369,7 +379,7 @@ onBeforeUnmount(() => {
   text-transform: uppercase;
   color: rgba(86, 100, 120, 0.56);
   overflow: hidden;
-  transition: height var(--sidebar-motion-duration) var(--sidebar-motion-curve), margin var(--sidebar-motion-duration) var(--sidebar-motion-curve), opacity .28s var(--sidebar-motion-curve), color @transition-fast;
+  transition: opacity .28s var(--sidebar-motion-curve), color @transition-fast;
 }
 
 .list {
@@ -471,7 +481,6 @@ onBeforeUnmount(() => {
 
 .collapsed {
   .sectionTitle {
-    height: 0;
     margin: 0;
     opacity: 0;
   }

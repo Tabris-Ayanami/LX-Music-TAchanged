@@ -2,6 +2,22 @@
   <section :class="[$style.queue, { [$style.collapsed]: isSidebarCollapsed }]">
     <p :class="$style.title" :aria-hidden="isSidebarCollapsed">LIST</p>
     <div ref="listRef" :class="['scroll', $style.list]" @wheel.stop @scroll.passive="handleListScroll">
+      <span
+        v-show="queuePillVisible"
+        :class="[$style.queuePill, { [$style.floating]: queuePillFloating, [$style.tracking]: queuePillTracking }]"
+        :style="queuePillStyle"
+        aria-hidden="true"
+      >
+        <LiquidGlassLayer
+          variant="capsule"
+          active
+          interactive
+          :highlight="false"
+          :displacement-scale="queuePillFloating ? 28 : 22"
+          :blur-amount="queuePillFloating ? 1.15 : .95"
+          corner-radius="inherit"
+        />
+      </span>
       <button
         v-for="item in queueList"
         :key="item.id + '_' + item.index"
@@ -9,6 +25,10 @@
         :data-queue-index="item.index"
         :class="[$style.row, { [$style.active]: item.index == currentQueueIndex }]"
         @click="handlePlay(item.index)"
+        @mouseenter="handleQueueItemEnter(item.index)"
+        @focus="handleQueueItemEnter(item.index)"
+        @mouseleave="handleQueueLeave"
+        @blur="handleQueueLeave"
       >
         <span :class="$style.coverWrap">
           <img v-if="item.pic" :class="$style.cover" :src="item.pic" loading="lazy" alt="">
@@ -33,6 +53,7 @@ import { playList } from '@renderer/core/player'
 import { getList } from '@renderer/store/player/action'
 import { playInfo } from '@renderer/store/player/state'
 import { isSidebarCollapsed } from '@renderer/store/ui'
+import LiquidGlassLayer from '@renderer/components/common/liquidGlass/LiquidGlassLayer.vue'
 
 const listRef = ref(null)
 const queueList = ref([])
@@ -43,7 +64,7 @@ let loadPicFrame = 0
 
 const LOCAL_PIC_BATCH_SIZE = 12
 const LOCAL_PIC_OVERSCAN = 8
-const LOCAL_PIC_ROW_HEIGHT = 49
+const LOCAL_PIC_ROW_HEIGHT = 55
 
 const normalizePicUrl = pic => {
   if (!pic || /^(?:https?:|data:|blob:|file:)/i.test(pic)) return pic || ''
@@ -158,6 +179,103 @@ const syncQueueList = () => {
 
 const currentQueueIndex = computed(() => playInfo.playerPlayIndex)
 const currentListId = computed(() => playInfo.playerListId)
+const queueHoverIndex = ref(-1)
+const queuePillVisible = ref(false)
+const queuePillTracking = ref(false)
+const queuePillRect = ref({
+  x: 0,
+  y: 0,
+  width: 0,
+  height: 0,
+})
+let queuePillMeasureFrame = 0
+let queuePillTrackTimer = 0
+let queuePillMeasurePending = false
+let queuePillMeasureNeedsTracking = false
+let isUnmounted = false
+
+const sidebarMotionMs = 460
+const queuePillInset = 2
+
+const getCssPxNumber = (el, property, fallback) => {
+  const value = Number.parseFloat(getComputedStyle(el).getPropertyValue(property))
+  return Number.isFinite(value) ? value : fallback
+}
+
+const getSidebarContentTargetWidth = el => Math.max(
+  0,
+  getCssPxNumber(el, '--sidebar-width', isSidebarCollapsed.value ? 80 : 196) - getCssPxNumber(el, '--sidebar-panel-x', 16) * 2,
+)
+
+const currentQueuePillIndex = computed(() => queueHoverIndex.value > -1 ? queueHoverIndex.value : currentQueueIndex.value)
+const queuePillFloating = computed(() => queueHoverIndex.value > -1 && queueHoverIndex.value != currentQueueIndex.value)
+const queuePillStyle = computed(() => ({
+  width: `${queuePillRect.value.width}px`,
+  height: `${queuePillRect.value.height}px`,
+  transform: `translate3d(${queuePillRect.value.x}px, ${queuePillRect.value.y}px, 0)`,
+}))
+
+const measureQueuePillToIndex = index => {
+  const listEl = listRef.value
+  if (!listEl || index < 0) {
+    queuePillVisible.value = false
+    return
+  }
+
+  const rowEl = listEl.querySelector(`[data-queue-index="${index}"]`)
+  if (!rowEl) {
+    queuePillVisible.value = false
+    return
+  }
+
+  const inlineInset = queuePillInset
+  const blockInset = queuePillInset
+  const measuredHeight = Math.max(0, rowEl.offsetHeight - blockInset * 2)
+  const targetWidth = Math.max(0, getSidebarContentTargetWidth(listEl) - inlineInset * 2)
+  const width = isSidebarCollapsed.value ? Math.min(targetWidth, measuredHeight) : targetWidth
+  const height = measuredHeight
+  queuePillRect.value = {
+    x: rowEl.offsetLeft + inlineInset,
+    y: rowEl.offsetTop + blockInset,
+    width,
+    height,
+  }
+  queuePillVisible.value = true
+}
+
+const measureCurrentQueuePill = () => {
+  measureQueuePillToIndex(currentQueuePillIndex.value)
+}
+
+const trackQueuePillDuringLayoutMotion = () => {
+  queuePillTracking.value = true
+  if (queuePillTrackTimer) clearTimeout(queuePillTrackTimer)
+  queuePillTrackTimer = setTimeout(() => {
+    queuePillTrackTimer = 0
+    queuePillTracking.value = false
+    measureCurrentQueuePill()
+  }, sidebarMotionMs + 80)
+}
+
+const scheduleQueuePillUpdate = (trackLayoutMotion = false) => {
+  if (isUnmounted) return
+  queuePillMeasureNeedsTracking = queuePillMeasureNeedsTracking || trackLayoutMotion
+  if (queuePillMeasurePending) return
+  if (queuePillMeasureFrame) cancelAnimationFrame(queuePillMeasureFrame)
+  queuePillMeasurePending = true
+  void nextTick(() => {
+    queuePillMeasurePending = false
+    if (isUnmounted) return
+    const shouldTrackLayoutMotion = queuePillMeasureNeedsTracking
+    queuePillMeasureNeedsTracking = false
+    queuePillMeasureFrame = requestAnimationFrame(() => {
+      queuePillMeasureFrame = 0
+      if (isUnmounted) return
+      measureCurrentQueuePill()
+      if (shouldTrackLayoutMotion) trackQueuePillDuringLayoutMotion()
+    })
+  })
+}
 
 const scrollToCurrentTop = behavior => {
   void nextTick(() => {
@@ -203,29 +321,55 @@ const handleListScroll = () => {
   scheduleLoadMissingLocalPics()
 }
 
+const handleQueueItemEnter = index => {
+  queueHoverIndex.value = index
+  scheduleQueuePillUpdate()
+}
+
+const handleQueueLeave = () => {
+  queueHoverIndex.value = -1
+  scheduleQueuePillUpdate()
+}
+
 const handleQueueListUpdate = ids => {
   if (!currentListId.value || !ids.includes(currentListId.value)) return
   syncQueueList()
 }
 
 watch(() => playInfo.playerListId, () => {
+  queueHoverIndex.value = -1
   syncQueueList()
   scrollToListTop('auto')
+  scheduleQueuePillUpdate(true)
 }, {
   immediate: true,
 })
 
 watch(() => playInfo.playerPlayIndex, () => {
   scrollToCurrentTop('smooth')
+  scheduleQueuePillUpdate()
+})
+
+watch(queueList, () => {
+  scheduleQueuePillUpdate(true)
+})
+
+watch(isSidebarCollapsed, () => {
+  queueHoverIndex.value = -1
+  scheduleQueuePillUpdate(true)
 })
 
 onMounted(() => {
+  scheduleQueuePillUpdate(true)
   window.app_event.on('myListUpdate', handleQueueListUpdate)
 })
 
 onBeforeUnmount(() => {
+  isUnmounted = true
   picRequestId++
   if (loadPicFrame) cancelAnimationFrame(loadPicFrame)
+  if (queuePillMeasureFrame) cancelAnimationFrame(queuePillMeasureFrame)
+  if (queuePillTrackTimer) clearTimeout(queuePillTrackTimer)
   loadingPicIds.clear()
   failedPicIds.clear()
   window.app_event.off('myListUpdate', handleQueueListUpdate)
@@ -237,7 +381,8 @@ onBeforeUnmount(() => {
 
 .queue {
   -webkit-app-region: no-drag;
-  --sidebar-queue-rail: var(--sidebar-icon-lane, 44px);
+  --sidebar-queue-rail: 48px;
+  --sidebar-queue-row-height: 48px;
   --sidebar-queue-cover: 36px;
   --sidebar-queue-radius: 10px;
   --sidebar-motion-duration: .46s;
@@ -254,6 +399,7 @@ onBeforeUnmount(() => {
 }
 
 .title {
+  margin: 0;
   padding: 0 5px;
   height: 14px;
   min-height: 14px;
@@ -263,17 +409,19 @@ onBeforeUnmount(() => {
   text-transform: uppercase;
   color: rgba(86, 100, 120, 0.56);
   overflow: hidden;
-  transition: height var(--sidebar-motion-duration) var(--sidebar-motion-curve), margin var(--sidebar-motion-duration) var(--sidebar-motion-curve), opacity .28s ease;
+  transition: opacity .28s ease;
 }
 
 .list {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 7px;
   flex: 1 1 auto;
   min-height: 0;
-  margin-top: 6px;
-  padding-right: 2px;
+  margin: 6px -4px 0;
+  padding: 0 4px;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: none;
@@ -285,18 +433,58 @@ onBeforeUnmount(() => {
   }
 }
 
+.queuePill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  border-radius: var(--sidebar-queue-radius);
+  corner-shape: squircle;
+  pointer-events: none;
+  will-change: transform, width;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 82%, #fff 18%), color-mix(in srgb, var(--color-primary) 60%, #2c5fc7 40%));
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--color-primary) 56%, rgba(255, 255, 255, .34)),
+    inset 0 1px 0 rgba(255, 255, 255, .24),
+    inset 0 -1px 0 rgba(0, 0, 0, .12);
+  transition:
+    transform var(--sidebar-motion-duration) var(--sidebar-motion-curve),
+    width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
+    box-shadow 220ms ease;
+}
+
+.queuePill.floating {
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--color-primary) 62%, rgba(255, 255, 255, .38)),
+    inset 0 1px 0 rgba(255, 255, 255, .26),
+    inset 0 -1px 0 rgba(0, 0, 0, .12);
+}
+
+.queuePill.tracking {
+  transition:
+    transform var(--sidebar-motion-duration) var(--sidebar-motion-curve),
+    width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
+    box-shadow 220ms ease;
+}
+
 .row {
   position: relative;
   isolation: isolate;
+  z-index: 1;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
-  height: 44px;
-  padding: 4px 6px;
+  height: var(--sidebar-queue-row-height);
+  min-height: var(--sidebar-queue-row-height);
+  flex: 0 0 var(--sidebar-queue-row-height);
+  padding: 0 6px 0 0;
   box-sizing: border-box;
   border: none;
   border-radius: 10px;
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-queue-rail) minmax(0, 1fr);
   align-items: center;
   gap: 7px;
   background: transparent;
@@ -306,9 +494,7 @@ onBeforeUnmount(() => {
   transition:
     width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     max-width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
-    height var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     padding var(--sidebar-motion-duration) var(--sidebar-motion-curve),
-    gap var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     background-color @transition-fast,
     color @transition-fast,
     text-shadow @transition-fast,
@@ -317,33 +503,19 @@ onBeforeUnmount(() => {
   &::before {
     content: '';
     position: absolute;
-    inset: 1px 2px;
+    inset: 0;
     z-index: -1;
     border-radius: inherit;
-    corner-shape: squircle;
-    background:
-      linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 78%, #fff 22%), color-mix(in srgb, var(--color-primary) 58%, #2c5fc7 42%));
-    box-shadow:
-      0 12px 24px color-mix(in srgb, var(--color-primary) 20%, rgba(16, 26, 44, .16)),
-      inset 0 1px 0 rgba(255, 255, 255, .18),
-      inset 0 -1px 0 rgba(0, 0, 0, .12);
+    background: rgba(255, 255, 255, .12);
     opacity: 0;
     transform: scale(.96);
-    transition:
-      opacity 220ms ease,
-      transform 260ms cubic-bezier(.2, .9, .22, 1.12),
-      box-shadow 220ms ease;
+    transition: opacity @transition-fast, transform @transition-fast;
     pointer-events: none;
   }
 
   &:hover {
     color: #fff;
     text-shadow: 0 1px 1px rgba(0, 0, 0, .28);
-
-    &::before {
-      opacity: .92;
-      transform: scale(1);
-    }
   }
 
   &:active {
@@ -362,10 +534,11 @@ onBeforeUnmount(() => {
 }
 
 .coverWrap {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  min-height: 34px;
+  justify-self: center;
+  width: var(--sidebar-queue-cover);
+  height: var(--sidebar-queue-cover);
+  min-width: var(--sidebar-queue-cover);
+  min-height: var(--sidebar-queue-cover);
   aspect-ratio: 1 / 1;
   box-sizing: border-box;
   border-radius: 8px;
@@ -376,8 +549,6 @@ onBeforeUnmount(() => {
   justify-content: center;
   box-shadow: 0 8px 18px rgba(35, 52, 78, 0.12);
   transition:
-    width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
-    height var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     border-radius var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     box-shadow @transition-fast;
 }
@@ -435,28 +606,18 @@ onBeforeUnmount(() => {
 }
 
 .collapsed {
-  margin-top: 20px;
-  padding-top: 12px;
-  border-top: 1px solid color-mix(in srgb, var(--shell-text, #182236) 10%, transparent);
   opacity: 1;
 
   .title {
-    height: 0;
-    margin: 0;
     opacity: 0;
-  }
-
-  .list {
-    margin-top: -5px;
-    padding-right: 0;
-    gap: 7px;
   }
 
   .row {
     width: var(--sidebar-queue-rail);
     max-width: var(--sidebar-queue-rail);
-    height: var(--sidebar-queue-rail);
-    min-height: var(--sidebar-queue-rail);
+    height: var(--sidebar-queue-row-height);
+    min-height: var(--sidebar-queue-row-height);
+    flex-basis: var(--sidebar-queue-row-height);
     padding: 0;
     grid-template-columns: var(--sidebar-queue-rail) minmax(0, 0);
     gap: 0;
@@ -464,10 +625,6 @@ onBeforeUnmount(() => {
     overflow: visible;
     justify-items: center;
     background: transparent;
-
-    &::before {
-      inset: 2px;
-    }
   }
 
   .coverWrap {

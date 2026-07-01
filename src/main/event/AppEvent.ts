@@ -105,10 +105,6 @@ export class Event extends EventEmitter {
   main_window_fullscreen(isFullscreen: boolean) {
     this.emit('main_window_fullscreen', isFullscreen)
   }
-
-  desktop_lyric_window_created(win: BrowserWindow) {
-    this.emit('desktop_lyric_window_created', win)
-  }
 }
 
 

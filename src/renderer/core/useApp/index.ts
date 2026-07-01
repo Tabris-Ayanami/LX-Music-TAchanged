@@ -4,8 +4,6 @@ import { proxy, isFullscreen, themeId } from '@renderer/store'
 import { appSetting, updateSetting } from '@renderer/store/setting'
 
 import useSync from './useSync'
-import useOpenAPI from './useOpenAPI'
-import useStatusbarLyric from './useStatusbarLyric'
 import useUpdate from './useUpdate'
 import useDataInit from './useDataInit'
 import useHandleEnvParams from './useHandleEnvParams'
@@ -15,6 +13,35 @@ import usePlayer from './usePlayer'
 import useSettingSync from './useSettingSync'
 import { useRouter } from '@common/utils/vueRouter'
 import handleListAutoUpdate from './listAutoUpdate'
+import { watch } from '@common/utils/vueTools'
+
+let openAPIInitPromise: Promise<void> | null = null
+const initOpenAPI = async() => {
+  const { default: useOpenAPI } = await import('./useOpenAPI')
+  await useOpenAPI()()
+}
+const ensureOpenAPI = async() => {
+  openAPIInitPromise ||= initOpenAPI()
+    .catch(error => {
+      openAPIInitPromise = null
+      console.warn('init open api failed', error)
+    })
+  await openAPIInitPromise
+}
+
+let statusbarLyricInitPromise: Promise<void> | null = null
+const initStatusbarLyric = async() => {
+  const { default: useStatusbarLyric } = await import('./useStatusbarLyric')
+  await useStatusbarLyric()()
+}
+const ensureStatusbarLyric = async() => {
+  statusbarLyricInitPromise ||= initStatusbarLyric()
+    .catch(error => {
+      statusbarLyricInitPromise = null
+      console.warn('init statusbar lyric failed', error)
+    })
+  await statusbarLyricInitPromise
+}
 
 
 export default () => {
@@ -34,8 +61,6 @@ export default () => {
 
   const router = useRouter()
   const initSyncService = useSync()
-  const initOpenAPI = useOpenAPI()
-  const initStatusbarLyric = useStatusbarLyric()
   useEventListener()
   const initPlayer = usePlayer()
   const handleEnvParams = useHandleEnvParams()
@@ -45,6 +70,13 @@ export default () => {
 
   useUpdate()
   useSettingSync()
+
+  watch(() => appSetting['openAPI.enable'], enable => {
+    if (enable) void ensureOpenAPI()
+  })
+  watch(() => appSetting['player.isShowStatusBarLyric'], enable => {
+    if (enable) void ensureStatusbarLyric()
+  })
 
   void getEnvParams().then(envParams => {
     // 移除代理相关的环境变量设置，防止请求库自动应用它们
@@ -73,8 +105,8 @@ export default () => {
       handleEnvParams(envParams) // 处理传入的启动参数
       void initDeeplink(envParams)
       void initSyncService()
-      void initOpenAPI()
-      void initStatusbarLyric()
+      if (appSetting['openAPI.enable']) void ensureOpenAPI()
+      if (appSetting['player.isShowStatusBarLyric']) void ensureStatusbarLyric()
       sendInited()
 
       handleListAutoUpdate()

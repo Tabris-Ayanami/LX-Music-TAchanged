@@ -77,22 +77,6 @@ export default (setting: any): Partial<LX.AppSetting> => {
     setting['playDetail.style.fontSize'] = setting.playDetail?.style?.fontSize
     setting['playDetail.style.align'] = setting.playDetail?.style?.align
 
-    setting['desktopLyric.enable'] = setting.desktopLyric?.enable
-    setting['desktopLyric.isLock'] = setting.desktopLyric?.isLock
-    setting['desktopLyric.isAlwaysOnTop'] = setting.desktopLyric?.isAlwaysOnTop
-    setting['desktopLyric.isAlwaysOnTopLoop'] = setting.desktopLyric?.isAlwaysOnTopLoop
-    setting['desktopLyric.width'] = setting.desktopLyric?.width
-    setting['desktopLyric.height'] = setting.desktopLyric?.height
-    setting['desktopLyric.x'] = setting.desktopLyric?.x
-    setting['desktopLyric.y'] = setting.desktopLyric?.y
-    setting['desktopLyric.isLockScreen'] = setting.desktopLyric?.isLockScreen
-    setting['desktopLyric.isDelayScroll'] = setting.desktopLyric?.isDelayScroll
-    setting['desktopLyric.isHoverHide'] = setting.desktopLyric?.isHoverHide
-    setting['desktopLyric.style.font'] = setting.desktopLyric?.style?.font
-    if (setting.desktopLyric?.style?.fontSize) setting['desktopLyric.style.fontSize'] = setting.desktopLyric.style.fontSize / 100 * 16
-    setting['desktopLyric.style.opacity'] = setting.desktopLyric?.style?.opacity
-    setting['desktopLyric.style.isZoomActiveLrc'] = setting.desktopLyric?.style?.isZoomActiveLrc
-
     setting['list.isClickPlayList'] = setting.list?.isClickPlayList
     setting['list.isShowAlbumName'] = setting.list?.isShowAlbumName
     setting['list.isShowSource'] = setting.list?.isShowSource

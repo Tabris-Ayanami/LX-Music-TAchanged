@@ -46,7 +46,7 @@ import NowPlayingList from './NowPlayingList.vue'
   --sidebar-icon-glyph-size: 16px;
   --sidebar-item-height: 40px;
   --sidebar-item-radius: 12px;
-  --sidebar-panel-x: 18px;
+  --sidebar-panel-x: 16px;
   --sidebar-motion-duration: .46s;
   --sidebar-motion-curve: cubic-bezier(.2, 0, 0, 1);
   -webkit-app-region: drag;

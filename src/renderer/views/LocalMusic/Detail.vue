@@ -32,16 +32,74 @@
     </section>
 
     <section :class="$style.listCard">
-      <MusicList
-        v-if="detailTracks.length && localListId"
-        :key="`${detailType}:${detailKey}`"
-        :list-id="localListId"
-        :music-list="detailTracks"
-        play-mode="single-temp"
-        play-on-click
-        :temp-list-id-prefix="`${LOCAL_MUSIC_LIST_ID}__${detailType}__${detailKey}`"
-      />
+      <div v-if="detailTracks.length && localListId" :key="`${detailType}:${detailKey}`" :class="$style.detailList">
+        <div class="thead">
+          <table>
+            <thead>
+              <tr v-if="actionButtonsVisible">
+                <th class="num" style="width: 5%;">#</th>
+                <th class="nobreak">歌曲名</th>
+                <th class="nobreak" style="width: 22%;">艺术家</th>
+                <th class="nobreak" style="width: 22%;">专辑名</th>
+                <th class="nobreak" style="width: 9%;">时长</th>
+                <th class="nobreak" style="width: 16%;">操作</th>
+              </tr>
+              <tr v-else>
+                <th class="num" style="width: 5%;">#</th>
+                <th class="nobreak">歌曲名</th>
+                <th class="nobreak" style="width: 25%;">艺术家</th>
+                <th class="nobreak" style="width: 28%;">专辑名</th>
+                <th class="nobreak" style="width: 10%;">时长</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+        <div :class="$style.listBody">
+          <base-virtualized-list
+            v-if="actionButtonsVisible"
+            v-slot="{ item, index }: { item: unknown, index: number }"
+            :list="detailTracks"
+            key-name="id"
+            :item-height="listItemHeight"
+            container-class="scroll"
+            content-class="list"
+          >
+            <div class="list-item" @click="playDetailTrack(index)">
+              <div class="list-item-cell no-select num" style="flex: 0 0 5%;">{{ Number(index) + 1 }}</div>
+              <div class="list-item-cell auto name" :aria-label="toDetailTrack(item).name">
+                <span class="select name">{{ toDetailTrack(item).name }}</span>
+              </div>
+              <div class="list-item-cell" style="flex: 0 0 22%;"><span class="select" :aria-label="toDetailTrack(item).singer">{{ toDetailTrack(item).singer || '--' }}</span></div>
+              <div class="list-item-cell" style="flex: 0 0 22%;"><span class="select" :aria-label="toDetailTrack(item).meta.albumName">{{ toDetailTrack(item).meta.albumName || '--' }}</span></div>
+              <div class="list-item-cell" style="flex: 0 0 9%;"><span class="no-select">{{ toDetailTrack(item).interval || '--/--' }}</span></div>
+              <div class="list-item-cell" style="flex: 0 0 16%; padding-left: 0; padding-right: 0;">
+                <material-list-buttons :index="index" :download-btn="false" @btn-click="handleDetailAction" />
+              </div>
+            </div>
+          </base-virtualized-list>
+          <base-virtualized-list
+            v-else
+            v-slot="{ item, index }: { item: unknown, index: number }"
+            :list="detailTracks"
+            key-name="id"
+            :item-height="listItemHeight"
+            container-class="scroll"
+            content-class="list"
+          >
+            <div class="list-item" @click="playDetailTrack(index)">
+              <div class="list-item-cell no-select num" style="flex: 0 0 5%;">{{ Number(index) + 1 }}</div>
+              <div class="list-item-cell auto name" :aria-label="toDetailTrack(item).name">
+                <span class="select name">{{ toDetailTrack(item).name }}</span>
+              </div>
+              <div class="list-item-cell" style="flex: 0 0 25%;"><span class="select" :aria-label="toDetailTrack(item).singer">{{ toDetailTrack(item).singer || '--' }}</span></div>
+              <div class="list-item-cell" style="flex: 0 0 28%;"><span class="select" :aria-label="toDetailTrack(item).meta.albumName">{{ toDetailTrack(item).meta.albumName || '--' }}</span></div>
+              <div class="list-item-cell" style="flex: 0 0 10%;"><span class="no-select">{{ toDetailTrack(item).interval || '--/--' }}</span></div>
+            </div>
+          </base-virtualized-list>
+        </div>
+      </div>
       <div v-else :class="$style.emptyState">这个分类下暂时还没有歌曲。</div>
+      <common-list-add-modal v-if="isShowListAdd && selectedAddMusicInfo" v-model:show="isShowListAdd" :music-info="selectedAddMusicInfo" teleport="#view" />
     </section>
   </div>
 </template>
@@ -51,7 +109,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from '@common/utils/
 import { useRoute, useRouter } from '@common/utils/vueRouter'
 import { getPicPath } from '@renderer/core/music'
 import { getListMusics } from '@renderer/store/list/action'
-import MusicList from '@renderer/views/List/MusicList/index.vue'
+import { appSetting } from '@renderer/store/setting'
 import {
   LOCAL_MUSIC_LIST_ID,
   buildLocalAlbumGroups,
@@ -60,6 +118,7 @@ import {
   getCachedLocalGroupCover,
   getCachedLocalTracks,
   playLocalTempTracks,
+  playSingleLocalTrack,
   setCachedLocalGroupCover,
   setCachedLocalTracks,
 } from '@renderer/utils/localMusic'
@@ -69,7 +128,12 @@ const router = useRouter()
 const localListId = ref('')
 const tracks = ref<LX.Music.MusicInfoLocal[]>([])
 const detailCover = ref('')
+const isShowListAdd = ref(false)
+const selectedAddMusicInfo = ref<LX.Music.MusicInfoLocal | null>(null)
+const actionButtonsVisible = appSetting['list.actionButtonsVisible']
+const listItemHeight = 45
 const toCssUrl = (value: string) => `url("${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}")`
+const toDetailTrack = (item: unknown) => item as LX.Music.MusicInfoLocal
 
 const detailType = computed(() => route.query.type == 'artists' ? 'artists' : 'albums')
 const detailKey = computed(() => typeof route.query.key == 'string' ? route.query.key : '')
@@ -155,6 +219,24 @@ const playFirstTrack = () => {
   void playLocalTempTracks(`${LOCAL_MUSIC_LIST_ID}__${detailType.value}__${detailKey.value}`, detailTracks.value, 0, {
     interrupt: false,
   })
+}
+
+const playDetailTrack = (index: number) => {
+  const track = detailTracks.value[index]
+  if (!track) return
+  void playSingleLocalTrack(track)
+}
+
+const handleDetailAction = ({ action, index }: { action: string, index: number }) => {
+  switch (action) {
+    case 'play':
+      playDetailTrack(index)
+      break
+    case 'listAdd':
+      selectedAddMusicInfo.value = detailTracks.value[index] ?? null
+      isShowListAdd.value = !!selectedAddMusicInfo.value
+      break
+  }
 }
 </script>
 
@@ -363,11 +445,65 @@ const playFirstTrack = () => {
   background: var(--color-content-background);
 }
 
+.detailList {
+  overflow: hidden;
+  height: 100%;
+  flex: auto;
+  min-height: 0;
+  display: flex;
+  flex-flow: column nowrap;
+
+  :global(.thead) {
+    color: var(--shell-soft-text, var(--color-font-label));
+  }
+
+  :global(.list) {
+    color: var(--shell-text, var(--color-font));
+  }
+
+  :global(.list-item) {
+    cursor: pointer;
+
+    &:hover {
+      background-color: color-mix(in srgb, var(--color-primary) 34%, rgba(255, 255, 255, 0.94)) !important;
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 48%, rgba(255, 255, 255, 0.62)) !important;
+    }
+  }
+}
+
+.listBody {
+  min-height: 0;
+  font-size: 14px;
+  display: flex;
+  flex-flow: column nowrap;
+  flex: auto;
+}
+
 .emptyState {
   flex: auto;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--shell-muted, var(--color-font-label));
+}
+
+:global(.themeShellDark) {
+  .detailList {
+    color: rgba(246, 247, 248, .94);
+
+    :global(.thead) {
+      color: rgba(235, 238, 241, .72);
+      border-bottom-color: rgba(255, 255, 255, .08);
+    }
+
+    :global(.list-item) {
+      color: rgba(246, 247, 248, .94);
+
+      &:hover {
+        background-color: rgba(255, 255, 255, .075) !important;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1) !important;
+      }
+    }
+  }
 }
 </style>

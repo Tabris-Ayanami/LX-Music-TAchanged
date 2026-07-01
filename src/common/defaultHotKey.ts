@@ -1,4 +1,4 @@
-import { HOTKEY_PLAYER, HOTKEY_COMMON, HOTKEY_DESKTOP_LYRIC } from './hotKey'
+import { HOTKEY_PLAYER, HOTKEY_COMMON } from './hotKey'
 
 const local: LX.HotKeyConfig = {
   enable: true,
@@ -68,21 +68,6 @@ const global: LX.HotKeyConfig = {
       type: HOTKEY_PLAYER.volume_down.type,
       name: HOTKEY_PLAYER.volume_down.name,
       action: HOTKEY_PLAYER.volume_down.action,
-    },
-    'mod+alt+0': {
-      type: HOTKEY_DESKTOP_LYRIC.toggle_visible.type,
-      name: HOTKEY_DESKTOP_LYRIC.toggle_visible.name,
-      action: HOTKEY_DESKTOP_LYRIC.toggle_visible.action,
-    },
-    'mod+alt+-': {
-      type: HOTKEY_DESKTOP_LYRIC.toggle_lock.type,
-      name: HOTKEY_DESKTOP_LYRIC.toggle_lock.name,
-      action: HOTKEY_DESKTOP_LYRIC.toggle_lock.action,
-    },
-    'mod+alt+=': {
-      type: HOTKEY_DESKTOP_LYRIC.toggle_always_top.type,
-      name: HOTKEY_DESKTOP_LYRIC.toggle_always_top.name,
-      action: HOTKEY_DESKTOP_LYRIC.toggle_always_top.action,
     },
   },
 }

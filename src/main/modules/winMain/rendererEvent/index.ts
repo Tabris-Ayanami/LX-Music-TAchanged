@@ -18,7 +18,6 @@ export * from './app'
 export * from './hotKey'
 export * from './userApi'
 export * from './sync'
-export * from './process'
 
 let isInitialized = false
 export default () => {
@@ -44,4 +43,3 @@ export default () => {
     sendConfigChange(setting)
   })
 }
-

@@ -2,7 +2,6 @@ import { useRouter } from '@common/utils/vueRouter'
 import { parseUrlParams } from '@common/utils/common'
 import { defaultList, loveList, userLists } from '@renderer/store/list/state'
 import { getListMusics } from '@renderer/store/list/action'
-import usePlaySonglist from './compositions/usePlaySonglist'
 import { playList } from '@renderer/core/player'
 
 const getListPlayIndex = (list: LX.Music.MusicInfo[], indexStr?: string): number => {
@@ -39,8 +38,6 @@ const useInitEnvParamSearch = () => {
 const useInitEnvParamPlay = () => {
   // const setPlayList = useCommit('player', 'setList')
 
-  const playSongListDetail = usePlaySonglist()
-
   return async(playStr?: string) => {
     if (playStr == null || typeof playStr != 'string') return
     // -play="source=kw&link=链接、ID"
@@ -68,9 +65,12 @@ const useInitEnvParamPlay = () => {
       case 'kg':
       case 'tx':
       case 'mg':
-      case 'wy':
+      case 'wy': {
+        const { default: usePlaySonglist } = await import('./compositions/usePlaySonglist')
+        const playSongListDetail = usePlaySonglist()
         void playSongListDetail(params.source, params.link, parseInt(params.index))
         break
+      }
     }
   }
 }

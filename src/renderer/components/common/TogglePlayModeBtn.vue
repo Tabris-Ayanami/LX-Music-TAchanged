@@ -76,7 +76,6 @@
 <script setup>
 import { ref } from '@common/utils/vueTools'
 // import useNextTogglePlay from '@renderer/utils/compositions/useNextTogglePlay'
-// import useToggleDesktopLyric from '@renderer/utils/compositions/useToggleDesktopLyric'
 // import { musicInfo, playMusicInfo } from '@renderer/store/player/state'
 import { appSetting } from '@renderer/store/setting'
 import useNextTogglePlay from '@renderer/utils/compositions/useNextTogglePlay'
