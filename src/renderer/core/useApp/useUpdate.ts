@@ -11,7 +11,6 @@ import {
 } from '@renderer/utils/ipc'
 import { compareVer, isWin } from '@common/utils'
 import { isShowChangeLog, versionInfo } from '@renderer/store'
-import { getVersionInfo } from '@renderer/utils/update'
 import { dialog } from '@renderer/plugins/Dialog'
 import { appSetting } from '@renderer/store/setting'
 
@@ -71,7 +70,7 @@ export default () => {
   const handleGetVersionInfo = async(): Promise<NonNullable<typeof versionInfo['newVersion']>> => {
     return (versionInfo.newVersion?.history && !versionInfo.reCheck
       ? Promise.resolve(versionInfo.newVersion)
-      : getVersionInfo().then((body: any) => {
+      : import('@renderer/utils/update').then(({ getVersionInfo }) => getVersionInfo()).then((body: any) => {
         versionInfo.newVersion = body
         return body
       })

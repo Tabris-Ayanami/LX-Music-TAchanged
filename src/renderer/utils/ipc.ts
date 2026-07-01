@@ -504,6 +504,13 @@ export const getCacheSize = async() => {
   return rendererInvoke<number>(WIN_MAIN_RENDERER_EVENT_NAME.get_cache_size)
 }
 
+export const getMemoryMetrics = async() => {
+  return rendererInvoke<{
+    main: NodeJS.MemoryUsage
+    processes: Electron.ProcessMetric[]
+  }>(WIN_MAIN_RENDERER_EVENT_NAME.get_memory_metrics)
+}
+
 /**
  * 清除缓存
  */

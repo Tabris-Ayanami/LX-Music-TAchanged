@@ -1,6 +1,5 @@
 // import { getSongListSetting } from '@renderer/utils/data'
 import { deduplicationList, toNewMusicInfo } from '@renderer/utils'
-import musicSdk from '@renderer/utils/musicSdk'
 import { markRaw, markRawList } from '@common/utils/vueTools'
 import { createLimitedCache } from '@renderer/utils/limitedCache'
 import {
@@ -19,6 +18,12 @@ import type {
 } from './state'
 
 const cache = createLimitedCache(60, 30 * 60 * 1000)
+let musicSdkPromise: Promise<typeof import('@renderer/utils/musicSdk')> | null = null
+
+const getMusicSdk = async() => {
+  musicSdkPromise ??= import('@renderer/utils/musicSdk')
+  return (await musicSdkPromise).default
+}
 
 export const setTags = (tagInfo: TagInfo, source: LX.OnlineSource) => {
   tags[source] = markRaw(tagInfo)
@@ -79,6 +84,7 @@ export const clearListDetail = () => {
 }
 
 export const getTags = async<T extends LX.OnlineSource>(source: T) => {
+  const musicSdk = await getMusicSdk()
   return musicSdk[source]?.songList.getTags() as Promise<TagInfo<T>>
 }
 
@@ -110,6 +116,7 @@ export const getAndSetList = async(source: LX.OnlineSource, tabId: string, sortI
   listInfo.noItemLabel = window.i18n.t('list__loading')
   listInfo.key = key
   // clearList()
+  const musicSdk = await getMusicSdk()
   return musicSdk[source]?.songList.getList(sortId, tabId, page).then((result: ListInfo) => {
     cache.set(key, result)
     if (key != listInfo.key) return
@@ -134,6 +141,7 @@ export const getListDetail = async(id: string, source: LX.OnlineSource, page: nu
   let key = `sdetail__${source}__${id}__${page}`
   if (!isRefresh && cache.has(key)) return cache.get(key)
 
+  const musicSdk = await getMusicSdk()
   return musicSdk[source]?.songList.getListDetail(id, page).then((result: ListDetailInfo) => {
     result.list = markRawList(deduplicationList(result.list.map(m => toNewMusicInfo(m)) as LX.Music.MusicInfoOnline[]))
     cache.set(key, result)
@@ -156,11 +164,11 @@ export const getListDetailAll = async(id: string, source: LX.OnlineSource, isRef
     if (isRefresh && cache.has(key)) cache.delete(key)
     return cache.has(key)
       ? Promise.resolve(cache.get(key))
-      : musicSdk[source]?.songList.getListDetail(id, page).then((result: ListDetailInfo) => {
+      : getMusicSdk().then(musicSdk => musicSdk[source]?.songList.getListDetail(id, page).then((result: ListDetailInfo) => {
         result.list = markRawList(deduplicationList(result.list.map(m => toNewMusicInfo(m)) as LX.Music.MusicInfoOnline[]))
         cache.set(key, result)
         return result
-      }) ?? Promise.reject(new Error('source not found' + source))
+      }) ?? Promise.reject(new Error('source not found' + source)))
   }
   // eslint-disable-next-line @typescript-eslint/promise-function-async
   return loadData(id, 1).then((result: ListDetailInfo) => {

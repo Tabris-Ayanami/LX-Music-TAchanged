@@ -1,18 +1,12 @@
 import { autoUpdater } from 'electron-updater'
 import { log, isWin } from '@common/utils'
-import { mainOn } from '@common/mainIpc'
 import { isExistWindow, sendEvent } from './index'
 import { WIN_MAIN_RENDERER_EVENT_NAME } from '@common/ipcNames'
 
-autoUpdater.logger = log
-autoUpdater.autoDownload = false
 // autoUpdater.forceDevUpdateConfig = true
 // autoUpdater.autoDownload = false
 
 // let isFirstCheckedUpdate = true
-
-log.info('App starting...')
-
 
 // -------------------------------------------------------------------
 // Open a window that displays the version
@@ -76,7 +70,15 @@ const handleSendEvent = (action: WaitEvent) => {
   }
 }
 
+let isInitialized = false
+
 export default () => {
+  if (isInitialized) return
+  isInitialized = true
+  autoUpdater.logger = log
+  autoUpdater.autoDownload = false
+  log.info('Auto updater initialized.')
+
   autoUpdater.on('checking-for-update', () => {
     sendStatusToWindow('Checking for update...')
   })
@@ -103,27 +105,22 @@ export default () => {
     sendStatusToWindow('Update downloaded.')
     handleSendEvent({ type: WIN_MAIN_RENDERER_EVENT_NAME.update_downloaded, info })
   })
-
-  mainOn(WIN_MAIN_RENDERER_EVENT_NAME.update_check, () => {
-    console.log('check')
-    checkUpdate()
-  })
-
-  mainOn(WIN_MAIN_RENDERER_EVENT_NAME.update_download_update, () => {
-    if (!autoUpdater.isUpdaterActive()) return
-    void autoUpdater.downloadUpdate()
-  })
-
-  mainOn(WIN_MAIN_RENDERER_EVENT_NAME.quit_update, () => {
-    global.lx.isSkipTrayQuit = true
-
-    setTimeout(() => {
-      autoUpdater.quitAndInstall(true, true)
-    }, 1000)
-  })
 }
 
-const checkUpdate = () => {
+export const downloadUpdate = () => {
+  if (!autoUpdater.isUpdaterActive()) return
+  void autoUpdater.downloadUpdate()
+}
+
+export const quitUpdate = () => {
+  global.lx.isSkipTrayQuit = true
+
+  setTimeout(() => {
+    autoUpdater.quitAndInstall(true, true)
+  }, 1000)
+}
+
+export const checkUpdate = () => {
   // if (!isFirstCheckedUpdate) {
   //   if (waitEvent.length) {
   //     waitEvent.forEach((event, index) => {

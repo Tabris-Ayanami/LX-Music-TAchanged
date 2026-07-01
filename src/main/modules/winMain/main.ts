@@ -1,4 +1,4 @@
-import { BrowserWindow, dialog, session } from 'electron'
+import { app, BrowserWindow, dialog, session } from 'electron'
 import path from 'node:path'
 import { createTaskBarButtons, getWindowSizeInfo } from './utils'
 import { getPlatform, isLinux, isWin, log } from '@common/utils'
@@ -305,6 +305,18 @@ export const clearCache = async() => {
 export const getCacheSize = async() => {
   if (!browserWindow) throw new Error('main window is undefined')
   return browserWindow.webContents.session.getCacheSize()
+}
+
+export const getMemoryMetrics = () => {
+  return {
+    main: process.memoryUsage(),
+    processes: app.getAppMetrics(),
+  }
+}
+
+export const logMemoryMetrics = (label = 'snapshot') => {
+  const metrics = getMemoryMetrics()
+  log.info(`[memory][${label}] ${JSON.stringify(metrics)}`)
 }
 
 export const getWebContents = (): Electron.WebContents => {

@@ -39,7 +39,7 @@
 import { computed, ref } from '@common/utils/vueTools'
 import { userLists, fetchingListStatus, listUpdateTimes } from '@renderer/store/list/state'
 import handleSyncSourceList from '@renderer/store/list/syncSourceList'
-import musicSdk from '@renderer/utils/musicSdk'
+import { hasSongList } from '@renderer/utils/musicSdk/staticMeta'
 // import { dateFormat } from '@common/utils/renderer'
 import { getListUpdateInfo, setListAutoUpdate } from '@renderer/utils/data'
 
@@ -52,7 +52,7 @@ export default {
   },
   emits: ['update:visible'],
   setup() {
-    const lists = computed(() => userLists.filter(l => !!l.source && !!musicSdk[l.source]?.songList))
+    const lists = computed(() => userLists.filter(l => hasSongList(l.source)))
     const updateInfo = ref({})
     // const updateTimes = ref({})
 

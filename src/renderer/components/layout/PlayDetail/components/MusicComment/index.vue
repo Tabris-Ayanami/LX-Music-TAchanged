@@ -38,12 +38,18 @@ div.comment(ref="dom_container" :class="$style.comment")
 
 <script>
 import { toOldMusicInfo } from '@renderer/utils'
-import music from '@renderer/utils/musicSdk'
+import { hasComment } from '@renderer/utils/musicSdk/staticMeta'
 import CommentFloor from './CommentFloor.vue'
 
 const CANCELLED_REQUEST_MESSAGE = '鍙栨秷璇锋眰'
 let activeCommentKey = ''
 let activeCommentCache = null
+let musicSdkPromise = null
+
+const getMusicSdk = async() => {
+  musicSdkPromise ||= import('@renderer/utils/musicSdk').then(({ default: music }) => music)
+  return musicSdkPromise
+}
 
 const createCommentState = (limit = 20, isLoading = false, isLoadError = false) => ({
   isLoading,
@@ -137,6 +143,7 @@ export default {
     async getComment(musicInfo, page, limit, retryNum = 0) {
       let resp
       try {
+        const music = await getMusicSdk()
         resp = await music[musicInfo.source].comment.getComment(musicInfo, page, limit)
       } catch (error) {
         if (error.message == CANCELLED_REQUEST_MESSAGE || ++retryNum > 2) throw error
@@ -147,6 +154,7 @@ export default {
     async getHotComment(musicInfo, page, limit, retryNum = 0) {
       let resp
       try {
+        const music = await getMusicSdk()
         resp = await music[musicInfo.source].comment.getHotComment(musicInfo, page, limit)
       } catch (error) {
         if (error.message == CANCELLED_REQUEST_MESSAGE || ++retryNum > 2) throw error
@@ -251,7 +259,7 @@ export default {
 
       if (!force && this.applyActiveCache()) return
 
-      if (!music[this.currentMusicInfo.source]?.comment) {
+      if (!hasComment(this.currentMusicInfo.source)) {
         this.available = false
         this.saveActiveCache()
         return

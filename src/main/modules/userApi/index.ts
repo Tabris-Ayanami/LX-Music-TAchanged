@@ -1,6 +1,6 @@
 import { closeWindow } from './main'
 import { getUserApis, importApi as handleImportApi, removeApi as handleRemoveApi, setAllowShowUpdateAlert as saveAllowShowUpdateAlert } from './utils'
-import { loadApi, setAllowShowUpdateAlert as setRendererEventAllowShowUpdateAlert, init } from './rendererEvent/rendererEvent'
+import { cancelAllRequests, loadApi, setAllowShowUpdateAlert as setRendererEventAllowShowUpdateAlert, init } from './rendererEvent/rendererEvent'
 
 let userApiId: string | null
 
@@ -15,6 +15,7 @@ export const importApi = async(script: string): Promise<LX.UserApi.ImportUserApi
 export const removeApi = async(ids: string[]): Promise<LX.UserApi.UserApiInfo[]> => {
   if (userApiId && ids.includes(userApiId)) {
     userApiId = null
+    cancelAllRequests('API removed')
     await closeWindow()
   }
   handleRemoveApi(ids)
@@ -24,6 +25,7 @@ export const removeApi = async(ids: string[]): Promise<LX.UserApi.UserApiInfo[]>
 export const setApi = async(id: string) => {
   if (userApiId) {
     userApiId = null
+    cancelAllRequests('API changed')
     await closeWindow()
   }
   const apiList = getUserApis()
@@ -44,6 +46,7 @@ export default () => {
   init()
 
   global.lx.event_app.on('main_window_close', () => {
+    cancelAllRequests('Main window closed')
     void closeWindow()
   })
 }

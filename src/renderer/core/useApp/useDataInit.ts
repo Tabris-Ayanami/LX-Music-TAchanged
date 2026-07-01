@@ -57,18 +57,25 @@ export default () => {
   })
 
   return async() => {
-    await Promise.all([
-      initUserApi(), // 自定义API
-    ]).catch((err: any) => {
+    const initUserApiTask = initUserApi().catch((err: any) => {
       log.error(err)
     })
-    if (appSetting['common.apiSource'] != 'temp') initMusicSdk() // 初始化非默认音乐 API
+
     unregister = registerAction((ids) => {
       window.app_event.myListUpdate(ids)
     })
-    window.lxData.userLists = await getUserLists() // 获取用户列表
     unregisterDislikeEvent = registerRemoteDislikeAction()
-    await initDislikeInfo() // 获取不喜欢列表
+
+    const userListsTask = getUserLists().then(lists => {
+      window.lxData.userLists = lists
+    }) // 获取用户列表
+    const dislikeInfoTask = initDislikeInfo() // 获取不喜欢列表
+
+    await initUserApiTask
+    if (appSetting['common.apiSource'] != 'temp') initMusicSdk() // 初始化非默认音乐 API
+
+    await userListsTask
+    await dislikeInfoTask
     await initPrevPlayInfo().catch(err => {
       log.error(err)
     }) // 初始化上次的歌曲播放信息

@@ -5,16 +5,20 @@ import { playProgress } from '@renderer/store/player/playProgress'
 import { pause, play, playNext, playPrev, stop } from '@renderer/core/player'
 
 export default () => {
-  // 创建一个空白音频以保持对 Media Session 的注册
-  const emptyAudio = new Audio()
-  emptyAudio.autoplay = false
-  emptyAudio.src = require('@renderer/assets/medias/Silence02s.mp3')
-  emptyAudio.controls = false
-  emptyAudio.preload = 'auto'
-  emptyAudio.onplaying = () => {
-    emptyAudio.pause()
+  let emptyAudio: HTMLAudioElement | null = null
+  const getEmptyAudio = () => {
+    if (emptyAudio) return emptyAudio
+    // 创建一个空白音频以保持对 Media Session 的注册
+    emptyAudio = new Audio()
+    emptyAudio.autoplay = false
+    emptyAudio.src = require('@renderer/assets/medias/Silence02s.mp3')
+    emptyAudio.controls = false
+    emptyAudio.preload = 'auto'
+    emptyAudio.onplaying = () => {
+      emptyAudio?.pause()
+    }
+    return emptyAudio
   }
-  void emptyAudio.play().catch(_ => _)
   let prevPicUrl = ''
 
   const updateMediaSessionInfo = () => {
@@ -73,7 +77,8 @@ export default () => {
     navigator.mediaSession.playbackState = 'none'
   }
   const handleSetPlayInfo = () => {
-    void emptyAudio.play().catch(_ => _).finally(() => {
+    const audio = getEmptyAudio()
+    void audio.play().catch(_ => _).finally(() => {
       updateMediaSessionInfo()
       updatePositionState({
         position: playProgress.nowPlayTime,
@@ -150,5 +155,8 @@ export default () => {
     // window.app_event.off('playerLoadstart', handleSetPlayInfo)
     window.app_event.off('musicToggled', handleSetPlayInfo)
     window.app_event.off('picUpdated', updateMediaSessionInfo)
+    emptyAudio?.pause()
+    emptyAudio?.removeAttribute('src')
+    emptyAudio = null
   })
 }

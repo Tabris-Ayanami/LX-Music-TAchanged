@@ -1,4 +1,3 @@
-import Dialog from './Dialog.vue'
 import { createApp } from 'vue'
 
 
@@ -14,7 +13,7 @@ const defaultOptions = {
 export const dialog = function(options) {
   const { message, showCancel, cancelButtonText, confirmButtonText, teleport, selection } =
     Object.assign({}, defaultOptions, typeof options == 'string' ? { message: options } : options || {})
-  return new Promise((resolve, reject) => {
+  return import('./Dialog.vue').then(({ default: Dialog }) => new Promise((resolve, reject) => {
     let app = createApp(Dialog, {
       afterLeave() {
         app?.unmount()
@@ -45,7 +44,7 @@ export const dialog = function(options) {
       instance.visible = false
       resolve(true)
     }
-  })
+  }))
 }
 
 dialog.confirm = options => dialog(

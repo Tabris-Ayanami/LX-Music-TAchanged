@@ -1,4 +1,4 @@
-import { getFontSizeWithScreen } from '@renderer/utils'
+import { getFontSizeWithScreen } from '@renderer/utils/screen'
 import {
   minWindow,
   onFocus,
@@ -25,9 +25,13 @@ import {
   watch,
 } from '@common/utils/vueTools'
 // import { isLinux, isProd } from '@common/utils'
-import { openUrl } from '@common/utils/electron'
 import { HOTKEY_COMMON } from '@common/hotKey'
 import { clearDownKeys } from '@renderer/event'
+
+const openExternalUrl = async(url: string) => {
+  const { openUrl } = await import('@common/utils/electron')
+  await openUrl(url)
+}
 
 const handle_key_down = ({ event, type, key }: LX.KeyDownEevent) => {
   // console.log(key)
@@ -50,7 +54,7 @@ const handleBodyClick = (event: MouseEvent) => {
   if ((event?.target as HTMLElement)?.tagName != 'A') return
   if ((event?.target as HTMLAnchorElement).host == window.location.host) return
   event.preventDefault()
-  if (/^https?:\/\//.test((event?.target as HTMLAnchorElement).href)) void openUrl((event?.target as HTMLAnchorElement).href)
+  if (/^https?:\/\//.test((event?.target as HTMLAnchorElement).href)) void openExternalUrl((event?.target as HTMLAnchorElement).href)
 }
 const handle_open_devtools = () => {
   openDevTools()

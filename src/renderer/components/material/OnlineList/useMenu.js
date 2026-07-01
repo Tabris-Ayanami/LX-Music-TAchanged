@@ -1,7 +1,7 @@
 import { computed, ref, reactive, nextTick } from '@common/utils/vueTools'
-import musicSdk from '@renderer/utils/musicSdk'
 import { useI18n } from '@renderer/plugins/i18n'
 import { hasDislike } from '@renderer/core/dislikeList'
+import { hasMusicDetailPage } from '@renderer/utils/musicSdk/staticMeta'
 
 export default ({
   props,
@@ -70,7 +70,7 @@ export default ({
   })
 
   const showMenu = (event, musicInfo) => {
-    itemMenuControl.sourceDetail = !!musicSdk[musicInfo.source]?.getMusicDetailPageUrl
+    itemMenuControl.sourceDetail = hasMusicDetailPage(musicInfo.source)
     // this.listMenu.itemMenuControl.play =
     //   this.listMenu.itemMenuControl.playLater =
     itemMenuControl.download = assertApiSupport(musicInfo.source)

@@ -51,6 +51,7 @@ const modules = {
     set_app_name: 'set_app_name',
     clear_cache: 'clear_cache',
     get_cache_size: 'get_cache_size',
+    get_memory_metrics: 'get_memory_metrics',
     inited: 'inited',
     show_save_dialog: 'show_save_dialog',
     show_select_dialog: 'show_select_dialog',

@@ -1,5 +1,4 @@
 import { markRawList } from '@common/utils/vueTools'
-import music from '@renderer/utils/musicSdk'
 import { sortInsert, similar } from '@common/utils/common'
 
 import type { ListInfoItem } from './state'
@@ -10,6 +9,13 @@ interface SearchResult {
   limit: number
   total: number
   source: LX.OnlineSource
+}
+
+let musicSdkPromise: Promise<typeof import('@renderer/utils/musicSdk')> | null = null
+
+const getMusicSdk = async() => {
+  musicSdkPromise ??= import('@renderer/utils/musicSdk')
+  return (await musicSdkPromise).default
 }
 
 
@@ -94,6 +100,7 @@ export const search = async(text: string, page: number, sourceId: LX.OnlineSourc
   if (sourceId == 'all') {
     listInfo.noItemLabel = window.i18n.t('list__loading')
     listInfo.key = key
+    const music = await getMusicSdk()
     let task = []
     for (const source of sources) {
       if (source == 'all' || (page > 1 && page > (maxPages[source]!))) continue
@@ -115,6 +122,7 @@ export const search = async(text: string, page: number, sourceId: LX.OnlineSourc
     if (listInfo?.key == key && listInfo?.list.length) return listInfo?.list
     listInfo.noItemLabel = window.i18n.t('list__loading')
     listInfo.key = key
+    const music = await getMusicSdk()
     return (music[sourceId]?.songList.search(text, page, listInfo.limit).then((data: SearchResult) => {
       if (key != listInfo.key) return []
       return setList(data, page, text)

@@ -89,7 +89,16 @@ export const clearRequestTimeout = (requestKey: string) => {
   }
 }
 
+export const cancelAllRequests = (message = 'Cancel request') => {
+  for (const [requestKey, request] of requestQueue) {
+    request[1](new Error(message))
+    clearRequestTimeout(requestKey)
+  }
+  requestQueue.clear()
+}
+
 export const loadApi = async(apiId: string) => {
+  cancelAllRequests('API runtime reloaded')
   if (!apiId) {
     apiStatus = { status: false, message: 'api id is null' }
     sendStatusChange(apiStatus)

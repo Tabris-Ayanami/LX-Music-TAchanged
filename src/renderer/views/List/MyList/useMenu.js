@@ -1,7 +1,7 @@
 import { computed, ref, reactive, nextTick } from '@common/utils/vueTools'
 import { useI18n } from '@renderer/plugins/i18n'
 import { userLists, defaultList, loveList } from '@renderer/store/list/state'
-import musicSdk from '@renderer/utils/musicSdk'
+import { hasLeaderboardDetailPage, hasSongList, hasSongListDetailPage } from '@renderer/utils/musicSdk/staticMeta'
 import { addLocalFile } from './actions'
 
 export default ({
@@ -87,9 +87,9 @@ export default ({
       if (sourceListId) {
         if (/board__/.test(sourceListId)) {
           // const id = sourceListId.replace(/board__/, '')
-          return !!musicSdk[source]?.leaderboard?.getDetailPageUrl
+          return hasLeaderboardDetailPage(source)
         } else {
-          return !!musicSdk[source]?.songList?.getDetailPageUrl
+          return hasSongListDetailPage(source)
         }
       }
     }
@@ -109,7 +109,7 @@ export default ({
         menuControl.rename = true
         menuControl.remove = true
         source = userLists[index].source
-        menuControl.sync = !!source && !!musicSdk[source]?.songList
+        menuControl.sync = hasSongList(source)
         break
     }
     // menuControl.sort = !!getList(this.getTargetListInfo(index)?.id).length
