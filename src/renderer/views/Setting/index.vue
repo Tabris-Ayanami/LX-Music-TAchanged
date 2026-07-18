@@ -53,6 +53,7 @@ import { useI18n } from '@renderer/plugins/i18n'
 import { useRoute } from '@common/utils/vueRouter'
 
 import SettingBasic from './components/SettingBasic.vue'
+import SettingAppearance from './components/SettingAppearance.vue'
 import SettingPlay from './components/SettingPlay.vue'
 import SettingPlayDetail from './components/SettingPlayDetail.vue'
 import SettingDesktopLyric from './components/SettingDesktopLyric.vue'
@@ -75,6 +76,7 @@ export default {
   name: 'Setting',
   components: {
     SettingBasic,
+    SettingAppearance,
     SettingPlay,
     SettingPlayDetail,
     SettingDesktopLyric,
@@ -102,6 +104,7 @@ export default {
     const tocList = computed(() => {
       return [
         { id: 'SettingBasic', title: t('setting__basic') },
+        { id: 'SettingAppearance', title: '外观设置' },
         { id: 'SettingPlay', title: t('setting__play') },
         { id: 'SettingPlayDetail', title: t('setting__play_detail') },
         { id: 'SettingDesktopLyric', title: t('setting__desktop_lyric') },

@@ -29,6 +29,21 @@ test('RG-001: VirtualizedList clears deferred updates during unmount', () => {
     /onBeforeUnmount\(\(\) => \{[\s\S]*clearScheduledUpdate\(\)/,
     'VirtualizedList should cancel pending async updates before the component is destroyed',
   )
+  assert.match(
+    virtualizedListSource,
+    /const scheduleUpdateView = \(\) => \{[\s\S]*if \(updateFrame != null\) return[\s\S]*requestAnimationFrame/,
+    'VirtualizedList should coalesce repeated scroll and resize updates into one animation frame',
+  )
+  assert.doesNotMatch(
+    virtualizedListSource,
+    /const updateView = [\s\S]*?requestAnimationFrame\(/,
+    'VirtualizedList should not enqueue a second untracked animation frame while rendering a scheduled update',
+  )
+  assert.match(
+    virtualizedListSource,
+    /onBeforeUnmount\(\(\) => \{[\s\S]*setStopScrollStatus\.cancel\(\)/,
+    'VirtualizedList should release the scroll debounce closure during unmount',
+  )
 })
 
 test('RG-001: list scroll restore waits for a mounted list controller', () => {

@@ -516,6 +516,16 @@ declare global {
       'list.actionButtonsVisible': boolean
 
       /**
+       * 本地音乐专辑页的浏览样式
+       */
+      'localMusic.albumViewStyle': 'waterfall' | 'carousel' | 'planet'
+
+      /**
+       * 本地音乐歌手页的浏览样式
+       */
+      'localMusic.artistViewStyle': 'waterfall' | 'carousel' | 'planet'
+
+      /**
        * 是否启用下载功能
        */
       'download.enable': boolean

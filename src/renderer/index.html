@@ -42,18 +42,19 @@
     if (/theme=(.+)(#|$)/.test(window.location.search)) applyThemeColor(RegExp.$1)
 
     window.__lxRendererBootstrapped = false
-    window.setTimeout(() => {
+    window.__lxRendererStartupTimer = window.setTimeout(() => {
       if (window.__lxRendererBootstrapped) return
       const root = document.getElementById('root')
-      if (root) root.style.display = 'block'
+      if (!root) return
+      root.style.display = 'block'
       document.body.style.background = '#f5f6fa'
-      document.body.innerHTML = `
+      root.innerHTML = `
         <div style="box-sizing:border-box;padding:24px;font-family:Segoe UI,Microsoft YaHei,sans-serif;color:#1f2937;line-height:1.6;">
           <h1 style="margin:0 0 12px;font-size:24px;">LX-TA startup failed</h1>
           <p style="margin:0;">Renderer bundle did not finish booting. This usually means a production-only startup error occurred.</p>
         </div>
       `
-    }, 6000)
+    }, 20000)
   </script>
 </body>
 </html>

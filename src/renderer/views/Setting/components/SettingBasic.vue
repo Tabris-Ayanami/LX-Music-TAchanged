@@ -1,6 +1,6 @@
 <template lang="pug">
-dt#basic {{ $t('setting__basic') }}
-dd
+dt#basic(v-if="!appearanceOnly") {{ $t('setting__basic') }}
+dd(v-if="!appearanceOnly")
   div
     .gap-top
       base-checkbox(id="setting_show_animate" :model-value="appSetting['common.isShowAnimation']" :label="$t('setting__basic_show_animation')" @update:model-value="updateSetting({'common.isShowAnimation': $event})")
@@ -13,7 +13,7 @@ dd
     .p.gap-top
       base-btn.btn(min @click="isShowPlayTimeoutModal = true") {{ $t('setting__play_timeout')}} {{ timeLabel ? ` (${timeLabel})` : '' }}
 
-dd
+dd(v-if="appearanceOnly")
   h3#basic_theme {{ $t('setting__basic_theme') }}
   div
     .gap-top(:class="$style.themeComposer")
@@ -37,7 +37,7 @@ dd
         div(:class="$style.bg")
         span(:class="$style.label") +
 
-dd
+dd(v-if="!appearanceOnly")
   h3#basic_source {{ $t('setting__basic_source') }}
   div
     .gap-top(v-for="item in apiSources" :key="item.id")
@@ -51,7 +51,7 @@ dd
     .p.gap-top
       base-btn.btn(min @click="isShowUserApiModal = true") {{ $t('setting__basic_source_user_api_btn') }}
 
-dd
+dd(v-if="!appearanceOnly")
   h3#basic_window_size {{ $t('setting__basic_window_size') }}
   div
     base-checkbox.gap-left(
@@ -59,7 +59,7 @@ dd
       name="setting_window_size" need :model-value="appSetting['common.windowSizeId']" :disabled="isFullscreen" :value="item.id" :label="$t('setting__basic_window_size_' + item.name)"
       @update:model-value="updateSetting({'common.windowSizeId': $event})")
 
-dd
+dd(v-if="!appearanceOnly")
   h3#basic_font_size {{ $t('setting__basic_font_size') }}
   div
     base-checkbox.gap-left(
@@ -67,28 +67,28 @@ dd
       name="setting_basic_font_size" need :model-value="appSetting['common.fontSize']" :value="item.id"
       :label="item.label" :disabled="isFullscreen" @update:model-value="updateSetting({'common.fontSize': $event})")
 
-dd
+dd(v-if="!appearanceOnly")
   h3#basic_font {{ $t('setting__basic_font') }}
   div(style="--selection-width: 12rem;")
     base-selection.gap-left(:list="fontList" :model-value="fonts[0]" item-key="id" item-name="label" @update:model-value="updateFonts($event, fonts[1])")
     base-selection.gap-left(v-if="fonts[0]" :list="fontList" :model-value="fonts[1]" item-key="id" item-name="label" @update:model-value="updateFonts(fonts[0], $event)")
 
-dd
+dd(v-if="!appearanceOnly")
   h3#basic_lang {{ $t('setting__basic_lang') }}
   div
     base-checkbox.gap-left(
       v-for="item in langList" :id="`setting_lang_${item.locale}`" :key="item.locale" name="setting_lang"
       need :model-value="appSetting['common.langId']" :value="item.locale" :label="item.name" @update:model-value="updateSetting({'common.langId': $event})")
 
-dd
+dd(v-if="!appearanceOnly")
   h3#basic_sourcename {{ $t('setting__basic_sourcename') }}
   div
     base-checkbox.gap-left(
       v-for="item in sourceNameTypes" :id="`setting_abasic_sourcename_${item.id}`" :key="item.id"
       name="setting_basic_sourcename" need :model-value="appSetting['common.sourceNameType']" :value="item.id" :label="item.label" @update:model-value="updateSetting({'common.sourceNameType': $event})")
 
-play-timeout-modal(v-model="isShowPlayTimeoutModal")
-user-api-modal(v-model="isShowUserApiModal")
+play-timeout-modal(v-if="!appearanceOnly" v-model="isShowPlayTimeoutModal")
+user-api-modal(v-if="!appearanceOnly" v-model="isShowUserApiModal")
 </template>
 
 <script>
@@ -110,6 +110,12 @@ export default {
   components: {
     PlayTimeoutModal,
     UserApiModal,
+  },
+  props: {
+    appearanceOnly: {
+      type: Boolean,
+      default: false,
+    },
   },
   setup() {
     const t = useI18n()

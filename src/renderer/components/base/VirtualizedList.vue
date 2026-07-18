@@ -36,14 +36,21 @@ const { animateElementScroll } = scrollHelper
 export const debounce = (fn, delay = 100) => {
   let timer = null
   let _args = null
-  return function(...args) {
+  const debounced = function(...args) {
     _args = args
     if (timer) clearTimeout(timer)
     timer = setTimeout(() => {
       timer = null
       fn.apply(this, _args)
+      _args = null
     }, delay)
   }
+  debounced.cancel = () => {
+    if (timer) clearTimeout(timer)
+    timer = null
+    _args = null
+  }
+  return debounced
 }
 
 export default {
@@ -84,7 +91,6 @@ export default {
     const dom_scrollContainer = ref(null)
     let isListScrolling = false
     const isListScrollingRef = ref(false)
-    let startIndex = -1
     let endIndex = -1
     let scrollTop = -1
     let cachedList = new Map()
@@ -108,7 +114,7 @@ export default {
     }
 
     const scheduleUpdateView = () => {
-      clearScheduledUpdate()
+      if (updateFrame != null) return
       updateFrame = window.requestAnimationFrame(() => {
         updateFrame = null
         if (isUnmounted || !dom_scrollContainer.value) return
@@ -166,41 +172,12 @@ export default {
       const currentStartIndex = Math.floor(resolvedScrollTop / itemHeight)
       const scrollContainerHeight = container.clientHeight
       const currentEndIndex = currentStartIndex + Math.ceil(scrollContainerHeight / itemHeight)
-      const continuous = currentStartIndex <= endIndex && currentEndIndex >= startIndex
       const currentStartRenderIndex = Math.max(currentStartIndex, 0)
       const currentEndRenderIndex = currentEndIndex + 1
-      // console.log(continuous)
-      // debugger
-      if (continuous) {
-        // if (Math.abs(currentScrollTop - this.scrollTop) < this.itemHeight * 0.6) return
-        // console.log('update')
-        // if (currentScrollTop > scrollTop) { // scroll down
-        //   // console.log('scroll down')
-        //   views.value = createList(currentStartRenderIndex, currentEndRenderIndex)
-        //   // views.value.push(...list.slice(list.indexOf(views.value[views.value.length - 1]) + 1))
-        //   // // if (this.views.length > 100) {
-        //   // nextTick(() => {
-        //   //   views.value.splice(0, views.value.indexOf(list[0]))
-        //   // })
-        //   // }
-        // } else if (currentScrollTop < scrollTop) { // scroll up
-        //   // console.log('scroll up')
-        //   views.value = createList(currentStartRenderIndex, currentEndRenderIndex)
-        // } else return
-        if (resolvedScrollTop == scrollTop && endIndex >= currentEndIndex) return
-        requestAnimationFrame(() => {
-          if (isUnmounted || !dom_scrollContainer.value) return
-          views.value = createList(currentStartRenderIndex, currentEndRenderIndex)
-        })
-      } else {
-        requestAnimationFrame(() => {
-          if (isUnmounted || !dom_scrollContainer.value) return
-          views.value = createList(currentStartRenderIndex, currentEndRenderIndex)
-        })
-      }
-      startIndex = currentStartIndex
+      if (resolvedScrollTop == scrollTop && endIndex >= currentEndIndex) return
       endIndex = currentEndIndex
       scrollTop = resolvedScrollTop
+      views.value = createList(currentStartRenderIndex, currentEndRenderIndex)
     }
 
     const setStopScrollStatus = debounce(() => {
@@ -215,7 +192,7 @@ export default {
       if (!container) return
       const currentScrollTop = container.scrollTop
       if (Math.abs(currentScrollTop - scrollTop) > props.itemHeight * 0.6) {
-        updateView(currentScrollTop)
+        scheduleUpdateView()
       }
       emit('scroll', event)
     }
@@ -281,7 +258,7 @@ export default {
       resizeTimer = window.setTimeout(() => {
         resizeTimer = null
         if (isUnmounted || !dom_scrollContainer.value) return
-        updateView()
+        scheduleUpdateView()
       })
     }
 
@@ -296,7 +273,6 @@ export default {
 
     const handleReset = list => {
       cachedList.clear()
-      startIndex = -1
       endIndex = -1
       if (list.length) {
         scheduleUpdateViewAfterNextTick()
@@ -320,16 +296,12 @@ export default {
       })
       if (window.ResizeObserver) {
         resizeObserver = new window.ResizeObserver(() => {
-          updateFrame = window.requestAnimationFrame(() => {
-            updateFrame = null
-            if (!dom_scrollContainer.value?.clientHeight) return
-            updateView()
-          })
+          if (!dom_scrollContainer.value?.clientHeight) return
+          scheduleUpdateView()
         })
         resizeObserver.observe(container)
       }
       cachedList.clear()
-      startIndex = -1
       endIndex = -1
 
       if (props.list.length) {
@@ -340,6 +312,7 @@ export default {
     onBeforeUnmount(() => {
       isUnmounted = true
       clearScheduledUpdate()
+      setStopScrollStatus.cancel()
       dom_scrollContainer.value?.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', handleResize)
       resizeObserver?.disconnect?.()

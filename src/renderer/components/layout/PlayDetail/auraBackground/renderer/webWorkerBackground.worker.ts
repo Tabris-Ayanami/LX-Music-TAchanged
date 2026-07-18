@@ -600,9 +600,13 @@ const initPipeline = (): boolean => {
 // ---------------------------------------------------------------------------
 
 const onNewCover = (bitmap: ImageBitmap) => {
-  const next = makeCoverTex(bitmap)
-  if (!next) return
-  swapTex(next)
+  try {
+    const next = makeCoverTex(bitmap)
+    if (!next) return
+    swapTex(next)
+  } finally {
+    bitmap.close()
+  }
 }
 
 const onNewColors = (colors: string[]) => {

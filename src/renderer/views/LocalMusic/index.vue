@@ -1,6 +1,6 @@
 <template>
-  <div :class="$style.page">
-    <section :class="$style.contentCard">
+  <div :class="[$style.page, { [$style.reduceMotion]: !appSetting['common.isShowAnimation'] }]">
+    <section ref="contentCardRef" :class="$style.contentCard">
       <div :class="$style.searchRow">
         <label :class="$style.searchBox">
           <LiquidGlassLayer
@@ -26,6 +26,88 @@
             </svg>
           </button>
         </label>
+      </div>
+
+      <div
+        v-if="selectedAlbum && selectedAlbumDetailStyle == 'planet'"
+        :style="planetPortalStyle"
+        :class="[
+          $style.planetPortal,
+          { [$style.detailOpen]: albumDetailVisible },
+          { [$style.reduceMotion]: !appSetting['common.isShowAnimation'] },
+        ]"
+        @click="closePlanetAlbum"
+      >
+        <span :class="[$style.planetEdgeCue, $style.edgeCueTop]" aria-hidden="true">
+          <svg viewBox="0 0 512 512"><use xlink:href="#icon-back" /></svg>
+        </span>
+        <span :class="[$style.planetEdgeCue, $style.edgeCueRight]" aria-hidden="true">
+          <svg viewBox="0 0 512 512"><use xlink:href="#icon-back" /></svg>
+        </span>
+        <span :class="[$style.planetEdgeCue, $style.edgeCueBottom]" aria-hidden="true">
+          <svg viewBox="0 0 512 512"><use xlink:href="#icon-back" /></svg>
+        </span>
+        <span :class="[$style.planetEdgeCue, $style.edgeCueLeft]" aria-hidden="true">
+          <svg viewBox="0 0 512 512"><use xlink:href="#icon-back" /></svg>
+        </span>
+        <div :class="$style.planetPortalSurface" @click.stop>
+          <header :class="$style.planetDetailHeader">
+            <div :class="$style.planetHeroCover">
+              <img v-if="selectedAlbumCover" :src="selectedAlbumCover" :alt="selectedAlbumName">
+              <div v-else :class="$style.coverFallback">{{ selectedAlbumInitial }}</div>
+            </div>
+            <div :class="$style.planetDetailMeta">
+              <span>专辑行星系</span>
+              <strong>{{ selectedAlbumName }}</strong>
+              <small>{{ selectedAlbum?.singer }} · {{ selectedAlbumItems.length }} 首歌曲</small>
+            </div>
+          </header>
+          <div
+            ref="songPlanetViewportRef"
+            :class="[$style.songPlanetViewport, { [$style.spatialDragging]: songPlanetDragging }]"
+            tabindex="0"
+            aria-label="歌曲二维行星画布，可拖拽浏览"
+            @pointerdown="startSpatialDrag('songs', $event)"
+            @pointermove="moveSpatialDrag('songs', $event)"
+            @pointerup="endSpatialDrag('songs', $event)"
+            @pointercancel="endSpatialDrag('songs', $event)"
+            @wheel.prevent="handleSpatialWheel('songs', $event)"
+          >
+            <div v-if="selectedAlbumItems.length" :class="$style.spatialLayer" role="list" :aria-label="`${selectedAlbumName}的歌曲`">
+              <button
+                v-for="entry in songPlanetEntries"
+                :key="`${entry.item.track.id}_${entry.index}`"
+                type="button"
+                role="listitem"
+                :style="entry.style"
+                :class="$style.songPlanet"
+                :aria-label="`播放 ${entry.item.track.name}`"
+                @click.stop="handleSongPlanetClick(entry.item.track)"
+              >
+                <span :class="$style.spatialCardBody">
+                  <span :class="$style.songPlanetHalo">
+                  <span :class="$style.songPlanetCover">
+                    <img
+                      v-if="entry.item.track.meta.picUrl || selectedAlbumCover"
+                      :src="entry.item.track.meta.picUrl || selectedAlbumCover"
+                      :alt="entry.item.track.name"
+                      decoding="async"
+                      loading="eager"
+                      draggable="false"
+                    >
+                    <span v-else :class="$style.coverFallback">{{ entry.item.track.name.slice(0, 1).toUpperCase() }}</span>
+                  </span>
+                  </span>
+                  <span :class="$style.songPlanetLabel">
+                    <strong>{{ entry.item.track.name }}</strong>
+                    <small>{{ entry.item.track.singer || '--' }}</small>
+                  </span>
+                </span>
+              </button>
+            </div>
+            <div v-else :class="$style.emptyState">这个专辑下暂时还没有歌曲。</div>
+          </div>
+        </div>
       </div>
 
       <div v-if="normalizedView == 'tracks'" :class="$style.listShell">
@@ -69,16 +151,22 @@
       <div
         v-else-if="normalizedView == 'albums'"
         ref="albumGridRef"
-        :class="[$style.gridShell, { [$style.detailMode]: selectedAlbum }]"
-        @wheel.prevent="handleAlbumWheel"
+        :class="[
+          $style.gridShell,
+          { [$style.waterfallGridShell]: albumViewStyle == 'waterfall' },
+          { [$style.planetGridShell]: albumViewStyle == 'planet' },
+          { [$style.detailMode]: selectedAlbum && selectedAlbumDetailStyle == 'carousel' },
+        ]"
+        @scroll.passive="handleAlbumScroll"
+        @wheel="handleAlbumWheel"
         @click="handleAlbumBackdropClick"
       >
-        <div v-if="selectedAlbum" :class="[$style.flyingCover, { [$style.detailOpen]: albumDetailVisible }]">
+        <div v-if="selectedAlbum && selectedAlbumDetailStyle == 'carousel'" :class="[$style.flyingCover, { [$style.detailOpen]: albumDetailVisible }]">
           <img v-if="selectedAlbumCover" :src="selectedAlbumCover" :alt="selectedAlbumName">
           <div v-else :class="$style.coverFallback">{{ selectedAlbumInitial }}</div>
         </div>
         <div
-          v-if="selectedAlbum"
+          v-if="selectedAlbum && selectedAlbumDetailStyle == 'carousel'"
           :class="[$style.albumDetailPanel, { [$style.detailOpen]: albumDetailVisible }]"
           @click.stop
         >
@@ -105,7 +193,26 @@
             </button>
           </div>
         </div>
-        <div v-if="albums.length" :class="$style.albumStage">
+        <div v-if="albums.length && albumViewStyle == 'waterfall'" :class="$style.waterfallGrid">
+          <button
+            v-for="album in visibleAlbums"
+            :key="album.key"
+            type="button"
+            :class="[$style.groupCard, $style.albumWaterfallCard]"
+            :title="`${album.name} · ${album.singer}`"
+            @click.stop="openDetail('albums', album.key)"
+          >
+            <span :class="$style.albumWaterfallCover">
+              <img v-if="albumCovers[album.key]" :src="albumCovers[album.key]" :alt="album.name" decoding="async" loading="lazy">
+              <span v-else :class="$style.coverFallback">{{ album.initial }}</span>
+            </span>
+            <span :class="$style.groupMeta">
+              <strong :class="$style.cardTitle">{{ album.name }}</strong>
+              <span :class="$style.cardMeta">{{ album.singer }} · {{ album.count }} 首</span>
+            </span>
+          </button>
+        </div>
+        <div v-if="albums.length && albumViewStyle == 'carousel'" :class="$style.albumStage">
           <div :class="$style.albumDeck">
             <button
               v-for="album in carouselAlbums"
@@ -126,29 +233,140 @@
             </button>
           </div>
         </div>
+        <div
+          v-else-if="albums.length && albumViewStyle == 'planet'"
+          ref="planetStageRef"
+          :class="[$style.planetStage, { [$style.spatialDragging]: albumPlanetDragging }]"
+          tabindex="0"
+          aria-label="本地专辑二维行星画布，可拖拽浏览"
+          @pointerdown="startSpatialDrag('albums', $event)"
+          @pointermove="moveSpatialDrag('albums', $event)"
+          @pointerup="endSpatialDrag('albums', $event)"
+          @pointercancel="endSpatialDrag('albums', $event)"
+          @wheel.prevent="handleSpatialWheel('albums', $event)"
+        >
+          <div :class="$style.planetAlbumCluster" role="list" aria-label="本地专辑行星视图">
+            <button
+              v-for="entry in albumPlanetEntries"
+              :key="entry.album.key"
+              type="button"
+              role="listitem"
+              :style="entry.style"
+              :class="$style.planetAlbum"
+              :title="`${entry.album.name} · ${entry.album.singer}`"
+              :aria-label="`打开专辑 ${entry.album.name}，${entry.album.count} 首歌曲`"
+              @click.stop="handlePlanetAlbumClick(entry.album, $event)"
+            >
+              <span :class="$style.spatialCardBody">
+                <span :class="$style.planetAlbumHalo">
+                  <span :class="$style.planetAlbumCover">
+                    <img v-if="albumCovers[entry.album.key]" :src="albumCovers[entry.album.key]" :alt="entry.album.name" decoding="async" loading="eager" draggable="false">
+                    <span v-else :class="$style.coverFallback">{{ entry.album.initial }}</span>
+                  </span>
+                </span>
+                <span :class="$style.planetAlbumLabel">
+                  <strong>{{ entry.album.name }}</strong>
+                  <small>{{ entry.album.singer }} · {{ entry.album.count }} 首</small>
+                </span>
+              </span>
+            </button>
+          </div>
+        </div>
         <div v-if="!albums.length" :class="$style.emptyState">
           {{ hasKeyword ? '没有匹配到本地专辑。' : '导入歌曲后会在这里生成专辑墙。' }}
         </div>
       </div>
 
-      <div v-else ref="artistGridRef" :class="$style.artistShell" @scroll.passive="handleArtistScroll">
-        <button
-          v-for="artist in visibleArtists"
-          :key="artist.key"
-          type="button"
-          :class="$style.artistCard"
-          :title="artist.name"
-          @click="openDetail('artists', artist.key)"
+      <div
+        v-else
+        ref="artistGridRef"
+        :class="[
+          $style.artistViewShell,
+          { [$style.waterfallGridShell]: artistViewStyle == 'waterfall' },
+          { [$style.planetGridShell]: artistViewStyle == 'planet' },
+        ]"
+        @scroll.passive="handleArtistScroll"
+        @wheel="handleArtistWheel"
+      >
+        <div v-if="artists.length && artistViewStyle == 'waterfall'" :class="$style.waterfallGrid">
+          <button
+            v-for="artist in visibleArtists"
+            :key="artist.key"
+            type="button"
+            :class="[$style.groupCard, $style.artistCard]"
+            :title="artist.name"
+            @click="openDetail('artists', artist.key)"
+          >
+            <span :class="$style.artistCover">
+              <img v-if="artistCovers[artist.key]" :src="artistCovers[artist.key]" :alt="artist.name" decoding="async" loading="lazy">
+              <span v-else :class="$style.artistInitial">{{ artist.initial }}</span>
+            </span>
+            <span :class="$style.groupMeta">
+              <strong :class="$style.cardTitle">{{ artist.name }}</strong>
+              <span :class="$style.cardMeta">{{ artist.subtitle }} · {{ artist.count }} 首</span>
+            </span>
+          </button>
+        </div>
+        <div v-else-if="artists.length && artistViewStyle == 'carousel'" :class="$style.albumStage">
+          <div :class="$style.albumDeck">
+            <button
+              v-for="artist in carouselArtists"
+              :key="artist.key"
+              type="button"
+              :class="[$style.albumSlide, $style.artistSlide, $style[artist.slot]]"
+              :title="artist.name"
+              @click.stop="handleArtistSlideClick(artist)"
+            >
+              <span :class="$style.albumBubble">
+                <strong>{{ artist.name }}</strong>
+                <span>{{ artist.subtitle }} · {{ artist.count }} 首</span>
+              </span>
+              <span :class="[$style.coverFrame, $style.artistCarouselCover]">
+                <img v-if="artistCovers[artist.key]" :src="artistCovers[artist.key]" :alt="artist.name" decoding="async" loading="lazy">
+                <span v-else :class="$style.artistInitial">{{ artist.initial }}</span>
+              </span>
+            </button>
+          </div>
+        </div>
+        <div
+          v-else-if="artists.length && artistViewStyle == 'planet'"
+          ref="artistPlanetStageRef"
+          :class="[$style.planetStage, { [$style.spatialDragging]: artistPlanetDragging }]"
+          tabindex="0"
+          aria-label="本地歌手二维行星画布，可拖拽浏览"
+          @pointerdown="startSpatialDrag('artists', $event)"
+          @pointermove="moveSpatialDrag('artists', $event)"
+          @pointerup="endSpatialDrag('artists', $event)"
+          @pointercancel="endSpatialDrag('artists', $event)"
+          @wheel.prevent="handleSpatialWheel('artists', $event)"
         >
-          <div :class="$style.artistCover">
-            <img v-if="artistCovers[artist.key]" :src="artistCovers[artist.key]" :alt="artist.name" decoding="async" loading="lazy">
-            <span v-else :class="$style.artistInitial">{{ artist.initial }}</span>
+          <div :class="$style.planetAlbumCluster" role="list" aria-label="本地歌手行星视图">
+            <button
+              v-for="entry in artistPlanetEntries"
+              :key="entry.artist.key"
+              type="button"
+              role="listitem"
+              :style="entry.style"
+              :class="[$style.planetAlbum, $style.artistPlanet]"
+              :title="entry.artist.name"
+              :aria-label="`打开歌手 ${entry.artist.name}，${entry.artist.count} 首歌曲`"
+              @click.stop="handlePlanetArtistClick(entry.artist)"
+            >
+              <span :class="$style.spatialCardBody">
+                <span :class="[$style.planetAlbumHalo, $style.artistPlanetHalo]">
+                  <span :class="$style.planetAlbumCover">
+                    <img v-if="artistCovers[entry.artist.key]" :src="artistCovers[entry.artist.key]" :alt="entry.artist.name" decoding="async" loading="eager" draggable="false">
+                    <span v-else :class="$style.artistInitial">{{ entry.artist.initial }}</span>
+                  </span>
+                </span>
+                <span :class="$style.planetAlbumLabel">
+                  <strong>{{ entry.artist.name }}</strong>
+                  <small>{{ entry.artist.subtitle }} · {{ entry.artist.count }} 首</small>
+                </span>
+              </span>
+            </button>
           </div>
-          <div :class="$style.artistMeta">
-            <strong :class="$style.cardTitle">{{ artist.name }}</strong>
-            <span :class="$style.cardMeta">{{ artist.subtitle }} · {{ artist.count }} 首</span>
-          </div>
-        </button>
+        </div>
         <div v-if="!artists.length" :class="$style.emptyState">
           {{ hasKeyword ? '没有匹配到本地音乐家。' : '导入歌曲后会在这里汇总音乐家。' }}
         </div>
@@ -163,6 +381,7 @@ import { useRoute, useRouter } from '@common/utils/vueRouter'
 import { getPicPath } from '@renderer/core/music'
 import LiquidGlassLayer from '@renderer/components/common/liquidGlass/LiquidGlassLayer.vue'
 import { getListMusics } from '@renderer/store/list/action'
+import { appSetting } from '@renderer/store/setting'
 import {
   LOCAL_MUSIC_LIST_ID,
   buildLocalAlbumGroups,
@@ -176,6 +395,15 @@ import {
   setCachedLocalTracks,
 } from '@renderer/utils/localMusic'
 import MusicList from '@renderer/views/List/MusicList/index.vue'
+import {
+  buildSpatialHexLayout,
+  buildSpatialIndex,
+  querySpatialIndex,
+  resolveSpatialFrame,
+  type SpatialPan,
+  type SpatialPoint,
+  type SpatialViewport,
+} from './spatialCanvas'
 
 interface LocalTrackItem {
   id: string
@@ -190,13 +418,37 @@ interface LocalTrackSearchItem extends LocalTrackItem {
 const toLocalTrackItem = (item: unknown) => item as LocalTrackItem
 
 type LocalView = 'tracks' | 'albums' | 'artists'
+type SpatialCanvasKind = 'albums' | 'artists' | 'songs'
+
+interface SpatialMetrics {
+  spacingX: number
+  spacingY: number
+  visibilityBuffer: number
+}
+
+interface SpatialDragState {
+  active: boolean
+  pointerId: number
+  startX: number
+  startY: number
+  originX: number
+  originY: number
+  moved: boolean
+}
 
 const GRID_BATCH_SIZE = 20
 const GRID_LOAD_OFFSET = 120
+const DEFAULT_SPATIAL_VIEWPORT = { width: 1040, height: 640 }
+const DRAG_THRESHOLD = 7
+const MAX_MOUNTED_SPATIAL_PLANETS = 50
 
 const route = useRoute()
 const router = useRouter()
+const contentCardRef = ref<HTMLElement | null>(null)
 const albumGridRef = ref<HTMLElement | null>(null)
+const planetStageRef = ref<HTMLElement | null>(null)
+const artistPlanetStageRef = ref<HTMLElement | null>(null)
+const songPlanetViewportRef = ref<HTMLElement | null>(null)
 const artistGridRef = ref<HTMLElement | null>(null)
 const localListId = ref('')
 const tracks = shallowRef<LX.Music.MusicInfoLocal[]>([])
@@ -207,17 +459,44 @@ const defaultArtistGroups = shallowRef<ReturnType<typeof buildLocalArtistGroups>
 const visibleAlbumCount = ref(GRID_BATCH_SIZE)
 const visibleArtistCount = ref(GRID_BATCH_SIZE)
 const activeAlbumIndex = ref(0)
+const activeArtistIndex = ref(0)
 const selectedAlbum = ref<LocalMusicGroup | null>(null)
 const selectedAlbumCoverCache = ref('')
+const selectedAlbumDetailStyle = ref<LX.AppSetting['localMusic.albumViewStyle']>('carousel')
 const albumDetailVisible = ref(false)
+const planetPortalOrigin = ref({ top: 24, right: 24, bottom: 24, left: 24 })
 const normalizedView = ref<LocalView>('albums')
 const keyword = ref('')
+const albumPlanetPan = ref<SpatialPan>({ x: 0, y: 0 })
+const artistPlanetPan = ref<SpatialPan>({ x: 0, y: 0 })
+const songPlanetPan = ref<SpatialPan>({ x: 0, y: 0 })
+const albumPlanetViewport = ref<SpatialViewport>({ ...DEFAULT_SPATIAL_VIEWPORT })
+const artistPlanetViewport = ref<SpatialViewport>({ ...DEFAULT_SPATIAL_VIEWPORT })
+const songPlanetViewport = ref<SpatialViewport>({ ...DEFAULT_SPATIAL_VIEWPORT })
+const albumPlanetDragging = ref(false)
+const artistPlanetDragging = ref(false)
+const songPlanetDragging = ref(false)
+const albumDragState: SpatialDragState = { active: false, pointerId: -1, startX: 0, startY: 0, originX: 0, originY: 0, moved: false }
+const artistDragState: SpatialDragState = { active: false, pointerId: -1, startX: 0, startY: 0, originX: 0, originY: 0, moved: false }
+const songDragState: SpatialDragState = { active: false, pointerId: -1, startX: 0, startY: 0, originX: 0, originY: 0, moved: false }
+let lastPlanetTrigger: HTMLElement | null = null
+let albumClickSuppressedUntil = 0
+let artistClickSuppressedUntil = 0
+let songClickSuppressedUntil = 0
+let albumPanFrame = 0
+let artistPanFrame = 0
+let songPanFrame = 0
+let pendingAlbumPan: SpatialPan | null = null
+let pendingArtistPan: SpatialPan | null = null
+let pendingSongPan: SpatialPan | null = null
+let spatialResizeObserver: ResizeObserver | null = null
 let albumResolveTaskId = 0
 let artistResolveTaskId = 0
 let albumResolveTimer: ReturnType<typeof setTimeout> | null = null
 let artistResolveTimer: ReturnType<typeof setTimeout> | null = null
 let groupWarmupTimer: ReturnType<typeof setTimeout> | null = null
 let albumDetailCloseTimer: ReturnType<typeof setTimeout> | null = null
+let planetOpenFrame = 0
 
 const resolveLocalView = (view: unknown): LocalView => {
   if (view == 'tracks') return 'tracks'
@@ -227,6 +506,8 @@ const resolveLocalView = (view: unknown): LocalView => {
 
 const normalizedKeyword = computed(() => keyword.value.trim().toLowerCase())
 const hasKeyword = computed(() => !!normalizedKeyword.value)
+const albumViewStyle = computed(() => appSetting['localMusic.albumViewStyle'])
+const artistViewStyle = computed(() => appSetting['localMusic.artistViewStyle'])
 
 const trackSearchItems = computed<LocalTrackSearchItem[]>(() => {
   return tracks.value.map((track, index) => ({
@@ -255,6 +536,7 @@ const albums = computed(() => {
 const artists = computed(() => {
   return hasKeyword.value ? buildLocalArtistGroups(filteredTracks.value) : defaultArtistGroups.value
 })
+const visibleAlbums = computed(() => albums.value.slice(0, visibleAlbumCount.value))
 const visibleArtists = computed(() => artists.value.slice(0, visibleArtistCount.value))
 const selectedAlbumCover = computed(() => selectedAlbum.value
   ? selectedAlbumCoverCache.value || albumCovers.value[selectedAlbum.value.key] || selectedAlbum.value.cover
@@ -287,6 +569,188 @@ const carouselAlbums = computed(() => {
     }
   })
 })
+const wrapArtistIndex = (index: number) => {
+  const length = artists.value.length
+  if (!length) return 0
+  return (index + length) % length
+}
+const carouselArtists = computed(() => {
+  const length = artists.value.length
+  if (!length) return []
+  const offsets = length >= 7
+    ? [-3, -2, -1, 0, 1, 2, 3]
+    : Array.from({ length }, (_, index) => index - Math.floor(length / 2))
+
+  return offsets.map(offset => {
+    const artist = artists.value[wrapArtistIndex(activeArtistIndex.value + offset)]
+    return {
+      ...artist,
+      offset,
+      slot: offset == 0
+        ? 'centerSlide'
+        : offset < 0
+          ? `leftSlide${Math.abs(offset)}`
+          : `rightSlide${offset}`,
+    }
+  })
+})
+const resolveSpatialMetrics = (kind: SpatialCanvasKind, viewport: SpatialViewport): SpatialMetrics => {
+  const compact = viewport.width < 820 || viewport.height < 520
+  const visibilityBuffer = Math.min(420, Math.max(compact ? 280 : 340, Math.min(viewport.width, viewport.height) * 0.55))
+  if (kind != 'songs') {
+    return compact
+      ? { spacingX: 148, spacingY: 172, visibilityBuffer }
+      : { spacingX: 176, spacingY: 202, visibilityBuffer }
+  }
+  return compact
+    ? { spacingX: 132, spacingY: 154, visibilityBuffer }
+    : { spacingX: 150, spacingY: 174, visibilityBuffer }
+}
+const albumSpatialMetrics = computed(() => resolveSpatialMetrics('albums', albumPlanetViewport.value))
+const artistSpatialMetrics = computed(() => resolveSpatialMetrics('artists', artistPlanetViewport.value))
+const songSpatialMetrics = computed(() => resolveSpatialMetrics('songs', songPlanetViewport.value))
+const albumSpatialPoints = computed(() => buildSpatialHexLayout(
+  albums.value.length,
+  albumSpatialMetrics.value.spacingX,
+  albumSpatialMetrics.value.spacingY,
+))
+const artistSpatialPoints = computed(() => buildSpatialHexLayout(
+  artists.value.length,
+  artistSpatialMetrics.value.spacingX,
+  artistSpatialMetrics.value.spacingY,
+))
+const songSpatialPoints = computed(() => buildSpatialHexLayout(
+  selectedAlbumItems.value.length,
+  songSpatialMetrics.value.spacingX,
+  songSpatialMetrics.value.spacingY,
+))
+const getSpatialBucketSize = (metrics: SpatialMetrics) => Math.max(metrics.spacingX, metrics.spacingY) * 2
+const albumSpatialIndex = computed(() => buildSpatialIndex(
+  albumSpatialPoints.value,
+  getSpatialBucketSize(albumSpatialMetrics.value),
+))
+const artistSpatialIndex = computed(() => buildSpatialIndex(
+  artistSpatialPoints.value,
+  getSpatialBucketSize(artistSpatialMetrics.value),
+))
+const songSpatialIndex = computed(() => buildSpatialIndex(
+  songSpatialPoints.value,
+  getSpatialBucketSize(songSpatialMetrics.value),
+))
+const getSpatialItemStyle = (
+  point: SpatialPoint,
+  pan: SpatialPan,
+  viewport: SpatialViewport,
+  metrics: SpatialMetrics,
+  index: number,
+  kind: SpatialCanvasKind,
+) => {
+  const frame = resolveSpatialFrame(point, pan, viewport, {
+    peakScale: kind == 'songs' ? 1.08 : 1.12,
+    minScale: kind == 'songs' ? 0.5 : 0.48,
+    minOpacity: 0.58,
+    viewportBuffer: kind == 'songs' ? 92 : 102,
+    visibilityBuffer: metrics.visibilityBuffer,
+  })
+  return {
+    frame,
+    style: {
+      transform: `translate3d(calc(-50% + ${frame.x.toFixed(2)}px), calc(-50% + ${frame.y.toFixed(2)}px), 0) scale(${frame.scale.toFixed(4)})`,
+      zIndex: frame.zIndex,
+      '--spatial-opacity': frame.opacity.toFixed(3),
+      '--planet-delay': `${Math.min(index, 12) * 18}ms`,
+    },
+  }
+}
+const albumPlanetEntries = computed(() => {
+  if (selectedAlbum.value && selectedAlbumDetailStyle.value == 'planet') return []
+  return querySpatialIndex(
+    albumSpatialIndex.value,
+    albumPlanetPan.value,
+    albumPlanetViewport.value,
+    albumSpatialMetrics.value.visibilityBuffer,
+  ).flatMap(point => {
+    const index = point.index
+    const album = albums.value[index]
+    if (!album) return []
+    const { frame, style } = getSpatialItemStyle(
+      point,
+      albumPlanetPan.value,
+      albumPlanetViewport.value,
+      albumSpatialMetrics.value,
+      index,
+      'albums',
+    )
+    return frame.visible ? [{ album, index, style, distance: frame.distance, inViewport: frame.inViewport }] : []
+  })
+    .sort((a, b) => Number(b.inViewport) - Number(a.inViewport) || a.distance - b.distance)
+    .slice(0, MAX_MOUNTED_SPATIAL_PLANETS)
+    .sort((a, b) => a.index - b.index)
+})
+const artistPlanetEntries = computed(() => querySpatialIndex(
+  artistSpatialIndex.value,
+  artistPlanetPan.value,
+  artistPlanetViewport.value,
+  artistSpatialMetrics.value.visibilityBuffer,
+).flatMap(point => {
+  const index = point.index
+  const artist = artists.value[index]
+  if (!artist) return []
+  const { frame, style } = getSpatialItemStyle(
+    point,
+    artistPlanetPan.value,
+    artistPlanetViewport.value,
+    artistSpatialMetrics.value,
+    index,
+    'artists',
+  )
+  return frame.visible ? [{ artist, index, style, distance: frame.distance, inViewport: frame.inViewport }] : []
+})
+  .sort((a, b) => Number(b.inViewport) - Number(a.inViewport) || a.distance - b.distance)
+  .slice(0, MAX_MOUNTED_SPATIAL_PLANETS)
+  .sort((a, b) => a.index - b.index))
+const songPlanetEntries = computed(() => querySpatialIndex(
+  songSpatialIndex.value,
+  songPlanetPan.value,
+  songPlanetViewport.value,
+  songSpatialMetrics.value.visibilityBuffer,
+).flatMap(point => {
+  const index = point.index
+  const item = selectedAlbumItems.value[index]
+  if (!item) return []
+  const { frame, style } = getSpatialItemStyle(
+    point,
+    songPlanetPan.value,
+    songPlanetViewport.value,
+    songSpatialMetrics.value,
+    index,
+    'songs',
+  )
+  return frame.visible ? [{ item, index, style, distance: frame.distance, inViewport: frame.inViewport }] : []
+})
+  .sort((a, b) => Number(b.inViewport) - Number(a.inViewport) || a.distance - b.distance)
+  .slice(0, MAX_MOUNTED_SPATIAL_PLANETS)
+  .sort((a, b) => a.index - b.index))
+const albumCoverGroups = computed(() => {
+  if (albumViewStyle.value == 'waterfall') return visibleAlbums.value
+  if (albumViewStyle.value == 'carousel') return carouselAlbums.value
+  return [...albumPlanetEntries.value]
+    .sort((a, b) => Number(b.inViewport) - Number(a.inViewport) || a.distance - b.distance)
+    .map(entry => entry.album)
+})
+const artistCoverGroups = computed(() => {
+  if (artistViewStyle.value == 'waterfall') return visibleArtists.value
+  if (artistViewStyle.value == 'carousel') return carouselArtists.value
+  return [...artistPlanetEntries.value]
+    .sort((a, b) => Number(b.inViewport) - Number(a.inViewport) || a.distance - b.distance)
+    .map(entry => entry.artist)
+})
+const planetPortalStyle = computed<Record<string, string>>(() => ({
+  '--planet-origin-top': `${planetPortalOrigin.value.top}px`,
+  '--planet-origin-right': `${planetPortalOrigin.value.right}px`,
+  '--planet-origin-bottom': `${planetPortalOrigin.value.bottom}px`,
+  '--planet-origin-left': `${planetPortalOrigin.value.left}px`,
+}))
 
 const searchPlaceholder = computed(() => {
   switch (normalizedView.value) {
@@ -324,46 +788,204 @@ const warmupDefaultGroups = () => {
   }, 32)
 }
 
+const readSpatialViewport = (element: HTMLElement | null, current: SpatialViewport): SpatialViewport => {
+  if (!element) return current
+  const width = Math.max(1, element.clientWidth)
+  const height = Math.max(1, element.clientHeight)
+  return current.width == width && current.height == height ? current : { width, height }
+}
+
+const syncSpatialViewportSizes = () => {
+  albumPlanetViewport.value = readSpatialViewport(planetStageRef.value, albumPlanetViewport.value)
+  artistPlanetViewport.value = readSpatialViewport(artistPlanetStageRef.value, artistPlanetViewport.value)
+  songPlanetViewport.value = readSpatialViewport(songPlanetViewportRef.value, songPlanetViewport.value)
+}
+
+const observeSpatialStages = async() => {
+  await nextTick()
+  spatialResizeObserver?.disconnect()
+  if (planetStageRef.value) spatialResizeObserver?.observe(planetStageRef.value)
+  if (artistPlanetStageRef.value) spatialResizeObserver?.observe(artistPlanetStageRef.value)
+  if (songPlanetViewportRef.value) spatialResizeObserver?.observe(songPlanetViewportRef.value)
+  syncSpatialViewportSizes()
+}
+
 const increaseVisibleGroups = (type: 'albums' | 'artists') => {
-  const total = type == 'albums' ? albums.value.length : artists.value.length
-  const target = type == 'albums' ? visibleAlbumCount : visibleArtistCount
-  if (target.value >= total) return false
-  target.value = Math.min(total, target.value + GRID_BATCH_SIZE)
+  const groups = type == 'albums' ? albums.value : artists.value
+  const visibleCount = type == 'albums' ? visibleAlbumCount : visibleArtistCount
+  if (visibleCount.value >= groups.length) return false
+  visibleCount.value = Math.min(groups.length, visibleCount.value + GRID_BATCH_SIZE)
   return true
 }
 
 const ensureVisibleGroups = async(type: 'albums' | 'artists') => {
   await nextTick()
-  const container = type == 'albums' ? albumGridRef.value : artistGridRef.value
-  if (!container) return
-
-  if (type == 'albums') {
-    while (
-      container.scrollWidth <= container.clientWidth + GRID_LOAD_OFFSET &&
-      increaseVisibleGroups(type)
-    ) {
-      await nextTick()
-    }
+  const viewStyle = type == 'albums' ? albumViewStyle.value : artistViewStyle.value
+  if (viewStyle == 'planet') {
+    syncSpatialViewportSizes()
     return
   }
+  if (viewStyle != 'waterfall') return
 
+  const container = type == 'albums' ? albumGridRef.value : artistGridRef.value
+  if (!container) return
   while (container.scrollHeight <= container.clientHeight + GRID_LOAD_OFFSET && increaseVisibleGroups(type)) {
     await nextTick()
   }
 }
 
 const handleGridScroll = (type: 'albums' | 'artists') => {
+  const viewStyle = type == 'albums' ? albumViewStyle.value : artistViewStyle.value
+  if (viewStyle != 'waterfall') return
   const container = type == 'albums' ? albumGridRef.value : artistGridRef.value
   if (!container) return
-  if (type == 'albums') {
-    if (container.scrollLeft + container.clientWidth < container.scrollWidth - GRID_LOAD_OFFSET) return
-    if (!increaseVisibleGroups(type)) return
-    void ensureVisibleGroups(type)
-    return
-  }
   if (container.scrollTop + container.clientHeight < container.scrollHeight - GRID_LOAD_OFFSET) return
   if (!increaseVisibleGroups(type)) return
   void ensureVisibleGroups(type)
+}
+
+const getSpatialDragState = (kind: SpatialCanvasKind) => {
+  if (kind == 'albums') return albumDragState
+  if (kind == 'artists') return artistDragState
+  return songDragState
+}
+
+const applyPendingSpatialPan = (kind: SpatialCanvasKind) => {
+  if (kind == 'albums') {
+    albumPanFrame = 0
+    if (!pendingAlbumPan) return
+    albumPlanetPan.value = pendingAlbumPan
+    pendingAlbumPan = null
+    return
+  }
+  if (kind == 'artists') {
+    artistPanFrame = 0
+    if (!pendingArtistPan) return
+    artistPlanetPan.value = pendingArtistPan
+    pendingArtistPan = null
+    return
+  }
+  songPanFrame = 0
+  if (!pendingSongPan) return
+  songPlanetPan.value = pendingSongPan
+  pendingSongPan = null
+}
+
+const scheduleSpatialPan = (kind: SpatialCanvasKind, pan: SpatialPan) => {
+  if (kind == 'albums') {
+    pendingAlbumPan = pan
+    if (!albumPanFrame) {
+      albumPanFrame = requestAnimationFrame(() => {
+        applyPendingSpatialPan(kind)
+      })
+    }
+    return
+  }
+  if (kind == 'artists') {
+    pendingArtistPan = pan
+    if (!artistPanFrame) {
+      artistPanFrame = requestAnimationFrame(() => {
+        applyPendingSpatialPan(kind)
+      })
+    }
+    return
+  }
+  pendingSongPan = pan
+  if (!songPanFrame) {
+    songPanFrame = requestAnimationFrame(() => {
+      applyPendingSpatialPan(kind)
+    })
+  }
+}
+
+const getPendingSpatialPan = (kind: SpatialCanvasKind) => {
+  if (kind == 'albums') return pendingAlbumPan ?? albumPlanetPan.value
+  if (kind == 'artists') return pendingArtistPan ?? artistPlanetPan.value
+  return pendingSongPan ?? songPlanetPan.value
+}
+
+const startSpatialDrag = (kind: SpatialCanvasKind, event: PointerEvent) => {
+  if (event.button != 0) return
+  const dragState = getSpatialDragState(kind)
+  const pan = getPendingSpatialPan(kind)
+  dragState.active = true
+  dragState.pointerId = event.pointerId
+  dragState.startX = event.clientX
+  dragState.startY = event.clientY
+  dragState.originX = pan.x
+  dragState.originY = pan.y
+  dragState.moved = false
+}
+
+const moveSpatialDrag = (kind: SpatialCanvasKind, event: PointerEvent) => {
+  const dragState = getSpatialDragState(kind)
+  if (!dragState.active || dragState.pointerId != event.pointerId) return
+  const deltaX = event.clientX - dragState.startX
+  const deltaY = event.clientY - dragState.startY
+  if (!dragState.moved && Math.hypot(deltaX, deltaY) >= DRAG_THRESHOLD) {
+    dragState.moved = true
+    const target = event.currentTarget as HTMLElement
+    target.setPointerCapture(event.pointerId)
+    if (kind == 'albums') albumPlanetDragging.value = true
+    else if (kind == 'artists') artistPlanetDragging.value = true
+    else songPlanetDragging.value = true
+  }
+  if (!dragState.moved) return
+  event.preventDefault()
+  scheduleSpatialPan(kind, {
+    x: dragState.originX + deltaX,
+    y: dragState.originY + deltaY,
+  })
+}
+
+const endSpatialDrag = (kind: SpatialCanvasKind, event: PointerEvent) => {
+  const dragState = getSpatialDragState(kind)
+  if (!dragState.active || dragState.pointerId != event.pointerId) return
+  const target = event.currentTarget as HTMLElement
+  if (target.hasPointerCapture(event.pointerId)) target.releasePointerCapture(event.pointerId)
+  if (dragState.moved) {
+    if (kind == 'albums') albumClickSuppressedUntil = performance.now() + 220
+    else if (kind == 'artists') artistClickSuppressedUntil = performance.now() + 220
+    else songClickSuppressedUntil = performance.now() + 220
+  }
+  dragState.active = false
+  dragState.pointerId = -1
+  if (kind == 'albums') albumPlanetDragging.value = false
+  else if (kind == 'artists') artistPlanetDragging.value = false
+  else songPlanetDragging.value = false
+}
+
+const handleSpatialWheel = (kind: SpatialCanvasKind, event: WheelEvent) => {
+  event.preventDefault()
+  const viewport = kind == 'albums'
+    ? albumPlanetViewport.value
+    : kind == 'artists'
+      ? artistPlanetViewport.value
+      : songPlanetViewport.value
+  const pan = getPendingSpatialPan(kind)
+  const deltaUnit = event.deltaMode == 1 ? 28 : event.deltaMode == 2 ? Math.max(viewport.height, 1) : 1
+  const useShiftAxis = event.shiftKey && Math.abs(event.deltaX) < 1
+  const deltaX = (useShiftAxis ? event.deltaY : event.deltaX) * deltaUnit
+  const deltaY = (useShiftAxis ? 0 : event.deltaY) * deltaUnit
+  scheduleSpatialPan(kind, {
+    x: pan.x - deltaX,
+    y: pan.y - deltaY,
+  })
+}
+
+const handlePlanetAlbumClick = (album: LocalMusicGroup, event: MouseEvent) => {
+  if (performance.now() < albumClickSuppressedUntil) return
+  openPlanetAlbum(album, event)
+}
+
+const handlePlanetArtistClick = (artist: LocalMusicGroup) => {
+  if (performance.now() < artistClickSuppressedUntil) return
+  openDetail('artists', artist.key)
+}
+
+const handleSongPlanetClick = (track: LX.Music.MusicInfoLocal) => {
+  if (performance.now() < songClickSuppressedUntil) return
+  playTrack(track)
 }
 
 const prevAlbum = () => {
@@ -374,9 +996,26 @@ const nextAlbum = () => {
   activeAlbumIndex.value = wrapAlbumIndex(activeAlbumIndex.value + 1)
 }
 
+const prevArtist = () => {
+  activeArtistIndex.value = wrapArtistIndex(activeArtistIndex.value - 1)
+}
+
+const nextArtist = () => {
+  activeArtistIndex.value = wrapArtistIndex(activeArtistIndex.value + 1)
+}
+
 const handleAlbumWheel = (event: Event) => {
+  if (albumViewStyle.value != 'carousel' || selectedAlbum.value) return
   const wheelEvent = event as WheelEvent
+  wheelEvent.preventDefault()
   wheelEvent.deltaY > 0 || wheelEvent.deltaX > 0 ? nextAlbum() : prevAlbum()
+}
+
+const handleArtistWheel = (event: Event) => {
+  if (artistViewStyle.value != 'carousel') return
+  const wheelEvent = event as WheelEvent
+  wheelEvent.preventDefault()
+  wheelEvent.deltaY > 0 || wheelEvent.deltaX > 0 ? nextArtist() : prevArtist()
 }
 
 const handleAlbumSlideClick = (album: { offset: number, key: string }) => {
@@ -394,6 +1033,7 @@ const openAlbumDetail = (key: string) => {
     clearTimeout(albumDetailCloseTimer)
     albumDetailCloseTimer = null
   }
+  selectedAlbumDetailStyle.value = 'carousel'
   selectedAlbum.value = album
   selectedAlbumCoverCache.value = albumCovers.value[album.key] || album.cover || getCachedLocalGroupCover('albums', album.key) || ''
   albumDetailVisible.value = false
@@ -402,19 +1042,99 @@ const openAlbumDetail = (key: string) => {
   })
 }
 
-const closeAlbumDetail = () => {
-  if (!selectedAlbum.value || !albumDetailVisible.value) return
-  albumDetailVisible.value = false
+const handleArtistSlideClick = (artist: { offset: number, key: string }) => {
+  if (artist.offset == 0) {
+    openDetail('artists', artist.key)
+    return
+  }
+  activeArtistIndex.value = wrapArtistIndex(activeArtistIndex.value + artist.offset)
+}
+
+const clearSelectedAlbum = (delay: number, onCleared?: () => void) => {
   if (albumDetailCloseTimer) clearTimeout(albumDetailCloseTimer)
   albumDetailCloseTimer = setTimeout(() => {
     selectedAlbum.value = null
     selectedAlbumCoverCache.value = ''
     albumDetailCloseTimer = null
-  }, 320)
+    onCleared?.()
+  }, delay)
+}
+
+const closeCarouselAlbum = () => {
+  if (!selectedAlbum.value || selectedAlbumDetailStyle.value != 'carousel' || !albumDetailVisible.value) return
+  albumDetailVisible.value = false
+  clearSelectedAlbum(appSetting['common.isShowAnimation'] ? 320 : 0)
+}
+
+const cancelPlanetOpenFrame = () => {
+  if (!planetOpenFrame) return
+  cancelAnimationFrame(planetOpenFrame)
+  planetOpenFrame = 0
+}
+
+const revealPlanetAlbum = () => {
+  cancelPlanetOpenFrame()
+  if (!appSetting['common.isShowAnimation']) {
+    albumDetailVisible.value = true
+    return
+  }
+  planetOpenFrame = requestAnimationFrame(() => {
+    planetOpenFrame = requestAnimationFrame(() => {
+      planetOpenFrame = 0
+      if (!selectedAlbum.value || selectedAlbumDetailStyle.value != 'planet') return
+      albumDetailVisible.value = true
+    })
+  })
+}
+
+const openPlanetAlbum = (album: LocalMusicGroup, event: MouseEvent) => {
+  const contentCard = contentCardRef.value
+  const trigger = event.currentTarget as HTMLElement | null
+  if (!contentCard || !trigger) return
+  if (albumDetailCloseTimer) {
+    clearTimeout(albumDetailCloseTimer)
+    albumDetailCloseTimer = null
+  }
+  const contentRect = contentCard.getBoundingClientRect()
+  const triggerRect = trigger.getBoundingClientRect()
+  planetPortalOrigin.value = {
+    top: Math.max(0, triggerRect.top - contentRect.top),
+    right: Math.max(0, contentRect.right - triggerRect.right),
+    bottom: Math.max(0, contentRect.bottom - triggerRect.bottom),
+    left: Math.max(0, triggerRect.left - contentRect.left),
+  }
+  lastPlanetTrigger = trigger
+  selectedAlbumDetailStyle.value = 'planet'
+  selectedAlbum.value = album
+  selectedAlbumCoverCache.value = albumCovers.value[album.key] || album.cover || getCachedLocalGroupCover('albums', album.key) || ''
+  albumDetailVisible.value = false
+  songPlanetPan.value = { x: 0, y: 0 }
+  void nextTick(() => {
+    void observeSpatialStages()
+    revealPlanetAlbum()
+  })
+}
+
+const closePlanetAlbum = () => {
+  if (!selectedAlbum.value || selectedAlbumDetailStyle.value != 'planet' || !albumDetailVisible.value) return
+  cancelPlanetOpenFrame()
+  albumDetailVisible.value = false
+  clearSelectedAlbum(appSetting['common.isShowAnimation'] ? 460 : 0, () => {
+    void nextTick(() => lastPlanetTrigger?.focus())
+  })
+}
+
+const closeAlbumDetail = () => {
+  if (selectedAlbumDetailStyle.value == 'planet') closePlanetAlbum()
+  else closeCarouselAlbum()
 }
 
 const handleAlbumBackdropClick = () => {
-  closeAlbumDetail()
+  closeCarouselAlbum()
+}
+
+const handleAlbumScroll = () => {
+  handleGridScroll('albums')
 }
 
 const handleArtistScroll = () => {
@@ -493,7 +1213,7 @@ const scheduleResolveGroupCovers = (
 
   const nextTimer = setTimeout(() => {
     void resolveGroupCovers(type, groups, target, taskId)
-  }, 48)
+  }, type == 'albums' ? 12 : 48)
 
   if (type == 'albums') albumResolveTimer = nextTimer
   else artistResolveTimer = nextTimer
@@ -507,8 +1227,18 @@ const init = async() => {
   await refreshTracks()
 }
 
+const handlePlanetKeydown = (event: KeyboardEvent) => {
+  if (event.key != 'Escape' || selectedAlbumDetailStyle.value != 'planet' || !selectedAlbum.value) return
+  event.preventDefault()
+  closePlanetAlbum()
+}
+
 onMounted(() => {
+  if (typeof ResizeObserver != 'undefined') spatialResizeObserver = new ResizeObserver(syncSpatialViewportSizes)
   void init()
+  void observeSpatialStages()
+  window.addEventListener('keydown', handlePlanetKeydown)
+  window.addEventListener('resize', syncSpatialViewportSizes)
 })
 
 onBeforeUnmount(() => {
@@ -516,6 +1246,13 @@ onBeforeUnmount(() => {
   if (artistResolveTimer) clearTimeout(artistResolveTimer)
   if (groupWarmupTimer) clearTimeout(groupWarmupTimer)
   if (albumDetailCloseTimer) clearTimeout(albumDetailCloseTimer)
+  cancelPlanetOpenFrame()
+  if (albumPanFrame) cancelAnimationFrame(albumPanFrame)
+  if (artistPanFrame) cancelAnimationFrame(artistPanFrame)
+  if (songPanFrame) cancelAnimationFrame(songPanFrame)
+  spatialResizeObserver?.disconnect()
+  window.removeEventListener('keydown', handlePlanetKeydown)
+  window.removeEventListener('resize', syncSpatialViewportSizes)
 })
 
 watch(tracks, () => {
@@ -534,27 +1271,49 @@ watch(normalizedView, view => {
   } else if (view == 'artists' && tracks.value.length && !defaultArtistGroups.value.length) {
     defaultArtistGroups.value = buildLocalArtistGroups(tracks.value)
   }
+  void observeSpatialStages()
   if (view == 'albums' || view == 'artists') void ensureVisibleGroups(view)
+})
+
+watch(albumViewStyle, () => {
+  closeAlbumDetail()
+  visibleAlbumCount.value = Math.min(GRID_BATCH_SIZE, albums.value.length)
+  albumPlanetPan.value = { x: 0, y: 0 }
+  void observeSpatialStages()
+  if (normalizedView.value == 'albums') void ensureVisibleGroups('albums')
+})
+
+watch(artistViewStyle, () => {
+  visibleArtistCount.value = Math.min(GRID_BATCH_SIZE, artists.value.length)
+  artistPlanetPan.value = { x: 0, y: 0 }
+  void observeSpatialStages()
+  if (normalizedView.value == 'artists') void ensureVisibleGroups('artists')
 })
 
 watch(albums, groups => {
   visibleAlbumCount.value = Math.min(GRID_BATCH_SIZE, groups.length)
   activeAlbumIndex.value = Math.min(activeAlbumIndex.value, Math.max(groups.length - 1, 0))
+  albumPlanetPan.value = { x: 0, y: 0 }
   if (selectedAlbum.value && !groups.some(group => group.key == selectedAlbum.value?.key)) closeAlbumDetail()
+  void observeSpatialStages()
   if (normalizedView.value == 'albums') void ensureVisibleGroups('albums')
 }, { immediate: true })
 
 watch(artists, groups => {
   visibleArtistCount.value = Math.min(GRID_BATCH_SIZE, groups.length)
+  activeArtistIndex.value = Math.min(activeArtistIndex.value, Math.max(groups.length - 1, 0))
+  artistPlanetPan.value = { x: 0, y: 0 }
+  void observeSpatialStages()
   if (normalizedView.value == 'artists') void ensureVisibleGroups('artists')
 }, { immediate: true })
 
-watch([normalizedView, carouselAlbums], ([view, groups]) => {
+watch([normalizedView, albumCoverGroups], ([view, groups]) => {
   if (view != 'albums') return
+  if (selectedAlbum.value && selectedAlbumDetailStyle.value == 'planet') return
   scheduleResolveGroupCovers('albums', groups, albumCovers)
 }, { immediate: true })
 
-watch([normalizedView, visibleArtists], ([view, groups]) => {
+watch([normalizedView, artistCoverGroups], ([view, groups]) => {
   if (view != 'artists') return
   scheduleResolveGroupCovers('artists', groups, artistCovers)
 }, { immediate: true })
@@ -681,7 +1440,7 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
 
 .listShell,
 .gridShell,
-.artistShell {
+.artistViewShell {
   flex: auto;
   min-height: 0;
 }
@@ -692,11 +1451,12 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
 }
 
 .gridShell,
-.artistShell {
+.artistViewShell {
   padding-top: 4px;
 }
 
-.gridShell {
+.gridShell,
+.artistViewShell {
   position: relative;
   display: flex;
   align-items: flex-start;
@@ -706,6 +1466,478 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
   background:
     linear-gradient(180deg, transparent 0 56%, rgba(255, 255, 255, 0.1) 72%, transparent 100%),
     radial-gradient(ellipse at center 78%, rgba(255, 255, 255, 0.2), transparent 58%);
+}
+
+.waterfallGridShell {
+  display: block;
+  padding: 4px 6px 36px;
+  overflow: auto;
+  background: transparent;
+  scrollbar-color: var(--shell-scroll-thumb, var(--color-primary-alpha-600)) transparent;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+    background-color: transparent;
+  }
+
+  &::-webkit-scrollbar-track {
+    background-color: transparent;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+    background-color: var(--shell-scroll-thumb, var(--color-primary-alpha-600));
+    transition: background-color .24s ease;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(--shell-scroll-thumb-hover, var(--color-primary-alpha-400));
+  }
+}
+
+.planetGridShell {
+  padding: 0;
+  align-items: stretch;
+  background:
+    radial-gradient(circle at 50% 46%, color-mix(in srgb, var(--color-primary) 13%, transparent), transparent 34%),
+    radial-gradient(circle at 16% 20%, rgba(255, 255, 255, .3), transparent 22%),
+    linear-gradient(180deg, rgba(255, 255, 255, .08), transparent 62%);
+}
+
+.planetStage {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  outline: none;
+
+  &:focus-visible {
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-primary) 65%, transparent);
+  }
+}
+
+.planetAlbumCluster,
+.songPlanetCluster,
+.spatialLayer {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+}
+
+.planetAlbum,
+.songPlanet {
+  --spatial-opacity: 1;
+  --planet-delay: 0ms;
+  position: absolute;
+  left: 0;
+  top: 0;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  opacity: var(--spatial-opacity);
+  transform-origin: center;
+  transition: opacity .16s ease;
+  will-change: transform, opacity;
+  contain: layout style;
+
+  &:focus-visible {
+    outline: none;
+
+    .spatialCardBody {
+      box-shadow:
+        0 0 0 3px color-mix(in srgb, var(--color-primary) 74%, white),
+        0 18px 44px rgba(18, 27, 44, .22);
+    }
+  }
+}
+
+.planetAlbum {
+  width: 148px;
+  height: 190px;
+}
+
+.songPlanet {
+  width: 130px;
+  height: 170px;
+  opacity: 0;
+
+  .spatialCardBody {
+    opacity: 0;
+    transform: translateY(42px) scale(.68);
+  }
+}
+
+.spatialCardBody {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-flow: column nowrap;
+  gap: 6px;
+  padding: 6px 6px 8px;
+  border: 1px solid var(--shell-control-border, rgba(127, 145, 170, .2));
+  border-radius: 17px;
+  box-sizing: border-box;
+  background: color-mix(in srgb, var(--shell-card-strong, rgba(255, 255, 255, .9)) 94%, transparent);
+  box-shadow: 0 15px 38px rgba(24, 36, 54, .15);
+  backdrop-filter: blur(16px) saturate(135%);
+  transform-origin: center;
+  transition:
+    opacity .3s ease,
+    transform .28s cubic-bezier(.16, 1, .3, 1),
+    box-shadow .22s ease,
+    border-color .22s ease;
+}
+
+.planetAlbum:hover,
+.songPlanet:hover {
+  .spatialCardBody {
+    transform: translateY(-5px) scale(1.035);
+    border-color: color-mix(in srgb, var(--color-primary) 42%, transparent);
+    box-shadow:
+      0 22px 48px color-mix(in srgb, var(--color-primary) 17%, transparent),
+      0 14px 30px rgba(24, 36, 54, .18);
+  }
+}
+
+.planetAlbum:active,
+.songPlanet:active {
+  .spatialCardBody {
+    transform: translateY(-1px) scale(.98);
+  }
+}
+
+.planetAlbumHalo,
+.songPlanetHalo {
+  display: block;
+  flex: none;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-primary) 12%, rgba(255, 255, 255, .26));
+  box-shadow: 0 7px 18px rgba(18, 27, 44, .17);
+}
+
+.planetAlbumCover,
+.songPlanetCover {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 0;
+  border-radius: inherit;
+  background: var(--shell-card-strong, rgba(255, 255, 255, .88));
+  box-sizing: border-box;
+
+  img,
+  > span {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  img {
+    object-fit: cover;
+  }
+}
+
+.planetAlbumLabel,
+.songPlanetLabel {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 0 2px;
+  box-sizing: border-box;
+  text-align: left;
+  pointer-events: none;
+
+  strong,
+  small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
+  small {
+    margin-top: 1px;
+    color: var(--shell-muted, var(--color-font-label));
+    font-size: 9px;
+  }
+}
+
+.spatialDragging {
+  cursor: grabbing;
+
+  .planetAlbum,
+  .songPlanet {
+    transition: none;
+  }
+
+  .spatialCardBody {
+    pointer-events: none;
+  }
+}
+
+.planetPortal {
+  --planet-frame: rgba(252, 252, 250, .97);
+  --planet-inner: rgba(241, 245, 249, .96);
+  --planet-surface-inset: 24px;
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  overflow: hidden;
+  clip-path: inset(
+    var(--planet-origin-top)
+    var(--planet-origin-right)
+    var(--planet-origin-bottom)
+    var(--planet-origin-left)
+    round 24px
+  );
+  background: var(--planet-frame);
+  box-shadow: 0 24px 70px rgba(17, 25, 38, .24);
+  opacity: .9;
+  pointer-events: none;
+  cursor: pointer;
+  transition:
+    clip-path .46s cubic-bezier(.16, 1, .3, 1),
+    opacity .22s ease,
+    box-shadow .32s ease;
+  will-change: clip-path;
+
+  &.detailOpen {
+    clip-path: inset(8px round 26px);
+    opacity: 1;
+    pointer-events: auto;
+
+    .planetPortalSurface {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .planetHeroCover {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .planetDetailMeta {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .songPlanet {
+      opacity: var(--spatial-opacity);
+      transition-delay: var(--planet-delay);
+
+      .spatialCardBody {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        transition-delay: var(--planet-delay);
+      }
+    }
+  }
+
+  &:hover {
+    .planetPortalSurface {
+      inset: calc(var(--planet-surface-inset) + 8px);
+    }
+  }
+
+  &.reduceMotion {
+    transition-duration: .01ms;
+
+    .planetPortalSurface,
+    .planetHeroCover,
+    .planetDetailMeta,
+    .songPlanet {
+      transition-duration: .01ms;
+      transition-delay: 0ms;
+    }
+  }
+}
+
+.planetPortalSurface {
+  position: absolute;
+  inset: var(--planet-surface-inset);
+  display: flex;
+  flex-flow: column nowrap;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 50% 36%, color-mix(in srgb, var(--color-primary) 16%, transparent), transparent 30%),
+    radial-gradient(ellipse at 50% 78%, rgba(255, 255, 255, .54), transparent 50%),
+    var(--planet-inner);
+  opacity: .34;
+  transform: scale(.94);
+  transition:
+    inset .18s ease,
+    opacity .32s ease,
+    transform .42s cubic-bezier(.16, 1, .3, 1);
+
+  &:hover {
+    inset: var(--planet-surface-inset) !important;
+  }
+}
+
+.planetEdgeCue {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: color-mix(in srgb, var(--shell-muted, var(--color-font-label)) 66%, transparent);
+  opacity: .72;
+  pointer-events: none;
+
+  svg {
+    width: 12px;
+    height: 12px;
+    fill: currentColor;
+  }
+}
+
+.edgeCueTop,
+.edgeCueBottom {
+  left: 50%;
+}
+
+.edgeCueLeft,
+.edgeCueRight {
+  top: 50%;
+}
+
+.edgeCueTop {
+  top: 9px;
+  transform: translateX(-50%) rotate(90deg);
+}
+
+.edgeCueRight {
+  right: 9px;
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.edgeCueBottom {
+  bottom: 9px;
+  transform: translateX(-50%) rotate(-90deg);
+}
+
+.edgeCueLeft {
+  left: 9px;
+  transform: translateY(-50%);
+}
+
+.planetDetailHeader {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  min-height: 118px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 22px 96px 8px;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.planetHeroCover {
+  flex: none;
+  width: 82px;
+  height: 82px;
+  overflow: hidden;
+  border: 4px solid var(--planet-frame);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--color-primary) 20%, var(--planet-inner));
+  box-shadow: 0 16px 34px rgba(17, 25, 38, .2);
+  opacity: 0;
+  transform: translateY(-86px) scale(.72);
+  transition: opacity .24s ease, transform .46s cubic-bezier(.18, .86, .24, 1.12);
+
+  img,
+  div {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.planetDetailMeta {
+  min-width: 0;
+  max-width: 520px;
+  display: flex;
+  flex-flow: column nowrap;
+  gap: 3px;
+  opacity: 0;
+  transform: translateY(-14px);
+  transition: opacity .24s .12s ease, transform .34s .1s cubic-bezier(.16, 1, .3, 1);
+
+  > span {
+    color: var(--color-primary);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+  }
+
+  strong,
+  small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong {
+    color: var(--shell-text, var(--color-font));
+    font-size: clamp(20px, 3vw, 34px);
+    line-height: 1.16;
+  }
+
+  small {
+    color: var(--shell-muted, var(--color-font-label));
+    font-size: 12px;
+  }
+}
+
+.songPlanetViewport {
+  position: relative;
+  flex: auto;
+  min-height: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  outline: none;
+
+  &:focus-visible {
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-primary) 65%, transparent);
+  }
+}
+
+.songPlanetHalo {
+  border-radius: 10px;
+}
+
+.songPlanetCover {
+  border-width: 0;
 }
 
 .detailMode {
@@ -733,7 +1965,8 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
   height: 330px;
 }
 
-.artistShell {
+.waterfallGrid {
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 18px 16px;
@@ -741,34 +1974,10 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
   align-items: start;
   grid-auto-flow: row;
   grid-auto-rows: min-content;
-  overflow: auto;
-  scrollbar-color: var(--shell-scroll-thumb, var(--color-primary-alpha-600)) transparent;
-  scrollbar-width: thin;
-
-  &::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-    background-color: transparent;
-  }
-
-  &::-webkit-scrollbar-track {
-    background-color: transparent;
-    border-radius: 3px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    border-radius: 3px;
-    background-color: var(--shell-scroll-thumb, var(--color-primary-alpha-600));
-    transition: background-color .24s ease;
-  }
-
-  &::-webkit-scrollbar-thumb:hover {
-    background-color: var(--shell-scroll-thumb-hover, var(--color-primary-alpha-400));
-  }
 }
 
 .albumSlide,
-.artistCard {
+.groupCard {
   border: 1px solid var(--shell-control-border, rgba(255, 255, 255, 0.14));
   background: var(--shell-card, rgba(255, 255, 255, 0.54));
   color: inherit;
@@ -782,10 +1991,16 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
   align-self: start;
 }
 
-.artistCard:hover {
+.groupCard:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 26px rgba(28, 44, 68, 0.08);
   background: var(--shell-card-strong, rgba(255, 255, 255, 0.62));
+}
+
+.groupCard:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--color-primary) 72%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 24%, transparent);
 }
 
 .albumSlide {
@@ -950,7 +2165,8 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
 }
 
 .coverFrame,
-.artistCover {
+.artistCover,
+.albumWaterfallCover {
   flex: none;
   border-radius: 14px;
   overflow: hidden;
@@ -976,6 +2192,10 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
   -webkit-box-reflect: below 12px linear-gradient(transparent 50%, rgba(0, 0, 0, .28));
   transform-origin: center bottom;
   will-change: transform;
+}
+
+.artistCarouselCover {
+  border-radius: 32px;
 }
 
 .flyingCover {
@@ -1125,6 +2345,20 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
   flex: none;
 }
 
+.albumWaterfallCard {
+  display: flex;
+  flex-flow: column nowrap;
+  gap: 10px;
+}
+
+.albumWaterfallCover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(24, 36, 54, .13);
+}
+
 .coverFallback,
 .artistInitial {
   display: flex;
@@ -1144,8 +2378,13 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
   min-height: 98px;
 }
 
+.artistPlanetHalo {
+  border-radius: 30px;
+}
+
 .albumMeta,
-.artistMeta {
+.artistMeta,
+.groupMeta {
   min-width: 0;
   display: flex;
   flex-flow: column nowrap;
@@ -1160,6 +2399,12 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
 .artistMeta {
   align-self: center;
   padding: 0;
+}
+
+.groupMeta {
+  align-self: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .artistCard .cardTitle {
@@ -1198,14 +2443,44 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
 }
 
 @media (max-width: 1180px) {
-  .artistShell {
+  .waterfallGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 860px) {
-  .gridShell {
+  .gridShell,
+  .artistViewShell {
     padding-inline: 34px;
+  }
+
+  .waterfallGridShell {
+    padding-inline: 4px;
+  }
+
+  .planetGridShell {
+    padding-inline: 0;
+  }
+
+  .planetAlbum {
+    width: 132px;
+    height: 172px;
+  }
+
+  .songPlanet {
+    width: 120px;
+    height: 158px;
+  }
+
+  .planetDetailHeader {
+    justify-content: flex-start;
+    padding: 18px 28px 6px;
+  }
+
+  .planetHeroCover {
+    width: 68px;
+    height: 68px;
+    border-radius: 18px;
   }
 
   .detailMode {
@@ -1256,7 +2531,7 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
     width: 78px;
   }
 
-  .artistShell {
+  .waterfallGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1326,13 +2601,57 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
     border-color: rgba(255, 255, 255, .08);
   }
 
-  .gridShell {
+  .gridShell,
+  .artistViewShell {
     background:
       linear-gradient(180deg, transparent 0 58%, rgba(255, 255, 255, .035) 72%, transparent 100%),
       radial-gradient(ellipse at center 78%, rgba(255, 255, 255, .11), transparent 58%);
   }
 
-  .artistCard,
+  .waterfallGridShell {
+    background: transparent;
+  }
+
+  .planetGridShell {
+    background:
+      radial-gradient(circle at 50% 46%, color-mix(in srgb, var(--color-primary) 14%, transparent), transparent 35%),
+      radial-gradient(circle at 16% 20%, rgba(255, 255, 255, .05), transparent 22%),
+      linear-gradient(180deg, rgba(255, 255, 255, .025), transparent 62%);
+  }
+
+  .planetPortal {
+    --planet-frame: rgba(3, 4, 6, .98);
+    --planet-inner: rgba(13, 15, 19, .98);
+    box-shadow: 0 28px 78px rgba(0, 0, 0, .52);
+  }
+
+  .planetPortalSurface {
+    background:
+      radial-gradient(circle at 50% 36%, color-mix(in srgb, var(--color-primary) 18%, transparent), transparent 31%),
+      radial-gradient(ellipse at 50% 80%, rgba(255, 255, 255, .035), transparent 52%),
+      var(--planet-inner);
+  }
+
+  .spatialCardBody {
+    background: rgba(20, 22, 27, .94);
+    border-color: rgba(255, 255, 255, .09);
+    box-shadow: 0 16px 34px rgba(0, 0, 0, .38);
+  }
+
+  .planetAlbumHalo,
+  .songPlanetHalo {
+    background: color-mix(in srgb, var(--color-primary) 13%, rgba(255, 255, 255, .045));
+    box-shadow: 0 9px 24px rgba(0, 0, 0, .42);
+  }
+
+  .planetAlbumCover,
+  .songPlanetCover {
+    border-color: rgba(8, 9, 12, .92);
+    background: rgba(18, 20, 24, .96);
+    box-shadow: 0 9px 22px rgba(0, 0, 0, .48);
+  }
+
+  .groupCard,
   .albumSlide {
     background: rgba(24, 26, 30, .92);
     border-color: rgba(255, 255, 255, .09);
@@ -1384,6 +2703,50 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
     &:hover {
       background: rgba(255, 255, 255, .09);
     }
+  }
+}
+
+.reduceMotion {
+  .planetAlbum,
+  .spatialCardBody {
+    animation: none !important;
+  }
+
+  .planetAlbum,
+  .songPlanet,
+  .planetPortal,
+  .planetPortalSurface,
+  .planetHeroCover,
+  .planetDetailMeta {
+    transition-duration: .01ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  .spatialCardBody {
+    transition-duration: .01ms !important;
+    transition-delay: 0ms !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planetAlbum,
+  .spatialCardBody {
+    animation: none !important;
+  }
+
+  .planetAlbum,
+  .songPlanet,
+  .planetPortal,
+  .planetPortalSurface,
+  .planetHeroCover,
+  .planetDetailMeta {
+    transition-duration: .01ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  .spatialCardBody {
+    transition-duration: .01ms !important;
+    transition-delay: 0ms !important;
   }
 }
 </style>

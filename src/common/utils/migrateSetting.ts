@@ -20,6 +20,12 @@ const oldThemeMap = {
 export default (setting: any): Partial<LX.AppSetting> => {
   setting = { ...setting }
 
+  // 将旧的本地音乐统一视图设置迁移到独立的专辑页设置。
+  if (!setting['localMusic.albumViewStyle'] && setting['localMusic.viewStyle']) {
+    setting['localMusic.albumViewStyle'] = setting['localMusic.viewStyle']
+  }
+  delete setting['localMusic.viewStyle']
+
   // 迁移 v2.0.0 之前的配置
   if (compareVer(setting.version, '2.0.0') < 0) {
     // 迁移列表滚动位置设置 ~0.18.3

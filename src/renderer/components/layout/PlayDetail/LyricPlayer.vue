@@ -16,11 +16,15 @@
     <transition enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
       <div v-if="isShowLyricProgressSetting" v-show="isStopScroll && !isShowLrcSelectContent" :class="$style.skip">
         <div ref="dom_skip_line" :class="$style.line" />
-        <span :class="$style.label">{{ timeStr }}</span>
-        <base-btn :class="$style.skipBtn" @mouseenter="handleSkipMouseEnter" @mouseleave="handleSkipMouseLeave" @click="handleSkipPlay">
-          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" height="50%" viewBox="0 0 1024 1024" space="preserve">
-            <use xlink:href="#icon-play" />
-          </svg>
+        <base-btn
+          :class="$style.skipBtn"
+          :aria-label="`跳转到 ${timeStr}`"
+          :title="`跳转到 ${timeStr}`"
+          @mouseenter="handleSkipMouseEnter"
+          @mouseleave="handleSkipMouseLeave"
+          @click="handleSkipPlay"
+        >
+          <span :class="$style.skipTime">{{ timeStr }}</span>
         </base-btn>
       </div>
     </transition>
@@ -303,47 +307,104 @@ export default {
 }
 
 .skip {
+  --seek-control-push: clamp(12px, 1.6vw, 28px);
+  --seek-capsule-width: 56px;
+  --seek-capsule-bg: rgba(255, 255, 255, .96);
+  --seek-capsule-color: rgba(12, 14, 18, .96);
+  --seek-capsule-border: rgba(15, 18, 24, .12);
+  --seek-capsule-shadow: rgba(16, 20, 28, .22);
+  --seek-tail-color: rgba(255, 255, 255, .9);
   position: absolute;
   top: calc(38% + var(--playDetail-lrc-font-size, 16px) + 4px);
   left: 0;
-  // height: 6px;
-  width: 100%;
+  width: calc(100% + var(--seek-control-push));
+  height: 28px;
   pointer-events: none;
-  // opacity: .5;
+
   .line {
-    border-top: 2px dotted var(--color-primary-dark-100);
-    opacity: .15;
-    margin-right: 30px;
-    -webkit-mask-image: linear-gradient(90deg, transparent 0%, transparent 15%, #fff 100%);
-  }
-  .label {
     position: absolute;
-    right: 30px;
-    top: -14px;
-    line-height: 1.2;
-    font-size: 12px;
-    color: var(--color-primary-dark-100);
-    opacity: .7;
+    top: 50%;
+    right: calc(var(--seek-capsule-width) - 1px);
+    width: clamp(72px, 10vw, 124px);
+    height: 1px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--seek-tail-color) 18%, transparent) 38%, color-mix(in srgb, var(--seek-tail-color) 64%, transparent) 78%, var(--seek-tail-color) 100%);
+    transform: translateY(-50%);
+    opacity: .76;
+    pointer-events: none;
   }
+
   .skipBtn {
     position: absolute;
     right: 0;
-    top: 0;
+    top: 50%;
     transform: translateY(-50%);
-    width: 30px;
-    height: 30px;
-    padding: 0;
+    min-width: var(--seek-capsule-width);
+    width: auto;
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid var(--seek-capsule-border);
+    border-radius: 999px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: none !important;
+    box-sizing: border-box;
+    background: var(--seek-capsule-bg) !important;
+    color: var(--seek-capsule-color);
+    box-shadow: 0 4px 14px var(--seek-capsule-shadow), inset 0 1px 0 rgba(255, 255, 255, .28);
     pointer-events: initial;
-    transition: @transition-normal;
-    transition-property: opacity;
-    opacity: .8;
-    &:hover {
-      opacity: .6;
+    opacity: 1;
+    cursor: pointer;
+    transition: transform @transition-fast, box-shadow @transition-fast, border-color @transition-fast;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: -8px -5px;
+      border-radius: inherit;
     }
+
+    &:hover {
+      transform: translateY(-50%) scale(1.035);
+      box-shadow: 0 6px 18px var(--seek-capsule-shadow), inset 0 1px 0 rgba(255, 255, 255, .34);
+    }
+
+    &:active {
+      transform: translateY(-50%) scale(.98);
+    }
+
+    &:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--seek-capsule-color) 32%, transparent);
+      outline-offset: 3px;
+    }
+  }
+
+  .skipTime {
+    position: relative;
+    z-index: 1;
+    color: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: .025em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+}
+
+:global(.themeShellDark) {
+  .skip {
+    --seek-capsule-bg: rgba(8, 9, 11, .96);
+    --seek-capsule-color: rgba(255, 255, 255, .96);
+    --seek-capsule-border: rgba(255, 255, 255, .17);
+    --seek-capsule-shadow: rgba(0, 0, 0, .5);
+    --seek-tail-color: rgba(8, 9, 11, .92);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skip .skipBtn {
+    transition: none;
   }
 }
 .lyricSelectContent {

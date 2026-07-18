@@ -25,12 +25,34 @@ const appendStartupLog = (title: string, error: unknown) => {
   } catch {}
 }
 
+type RendererStartupWindow = typeof window & {
+  __lxRendererBootstrapped?: boolean
+  __lxRendererStartupTimer?: number
+}
+
+const clearStartupFallback = () => {
+  const startupWindow = window as RendererStartupWindow
+  if (startupWindow.__lxRendererStartupTimer === undefined) return
+  window.clearTimeout(startupWindow.__lxRendererStartupTimer)
+  startupWindow.__lxRendererStartupTimer = undefined
+}
+
 const markBootstrapped = () => {
-  ;(window as typeof window & { __lxRendererBootstrapped?: boolean }).__lxRendererBootstrapped = true
+  clearStartupFallback()
+  ;(window as RendererStartupWindow).__lxRendererBootstrapped = true
 }
 
 const isBootstrapped = () => {
-  return !!(window as typeof window & { __lxRendererBootstrapped?: boolean }).__lxRendererBootstrapped
+  return !!(window as RendererStartupWindow).__lxRendererBootstrapped
+}
+
+const getOrCreateRoot = () => {
+  const existingRoot = document.getElementById('root')
+  if (existingRoot) return existingRoot
+  const root = document.createElement('div')
+  root.id = 'root'
+  document.body.appendChild(root)
+  return root
 }
 
 const isWebpackDevOverlayError = (error: unknown) => {
@@ -46,15 +68,15 @@ const isWebpackDevOverlayError = (error: unknown) => {
 const showStartupError = (title: string, error: unknown) => {
   markBootstrapped()
   appendStartupLog(title, error)
-  const root = document.getElementById('root')
-  if (root) root.style.display = 'block'
+  const root = getOrCreateRoot()
+  root.style.display = 'block'
   const message = String(
     error instanceof Error
       ? `${error.name}: ${error.message}\n${error.stack ?? ''}`
       : error,
   )
   document.body.style.background = '#f5f6fa'
-  document.body.innerHTML = `
+  root.innerHTML = `
     <div style="box-sizing:border-box;padding:24px;font-family:Segoe UI,Microsoft YaHei,sans-serif;color:#1f2937;line-height:1.5;">
       <h1 style="margin:0 0 12px;font-size:24px;">LX-TA startup failed</h1>
       <p style="margin:0 0 12px;">Renderer startup crashed. Please send the details below.</p>
@@ -140,8 +162,8 @@ void (async() => {
     // store.commit('setSetting', setting)
     initSetting(setting)
 
-    const root = document.getElementById('root')
-    if (root) root.style.display = 'block'
+    const root = getOrCreateRoot()
+    root.style.display = 'block'
     const app = createApp(App)
     app.config.errorHandler = (error, instance, info) => {
       handleRendererError(`vue.error:${info}`, error)
@@ -152,7 +174,8 @@ void (async() => {
       .use(i18nPlugin)
     initPlugins(app)
     mountComponents(app)
-    app.mount('#root')
+    clearStartupFallback()
+    app.mount(root)
     markBootstrapped()
   } catch (error) {
     showStartupError('startup.bootstrap', error)

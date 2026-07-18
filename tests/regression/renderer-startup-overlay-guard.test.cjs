@@ -5,6 +5,7 @@ const path = require('node:path')
 
 const rootDir = path.resolve(__dirname, '..', '..')
 const rendererMainSource = fs.readFileSync(path.join(rootDir, 'src', 'renderer', 'main.ts'), 'utf8')
+const rendererHtmlSource = fs.readFileSync(path.join(rootDir, 'src', 'renderer', 'index.html'), 'utf8')
 const runnerDevSource = fs.readFileSync(path.join(rootDir, 'build-config', 'runner-dev.js'), 'utf8')
 
 test('RG-047: dev-server overlay errors do not replace the renderer with startup failure', () => {
@@ -32,5 +33,20 @@ test('RG-047: dev-server overlay errors do not replace the renderer with startup
     rendererMainSource,
     /if \(!isBootstrapped\(\)\) \{[\s\S]*showStartupError\(title, error\)[\s\S]*return[\s\S]*\}/m,
     'The startup failure page should only take over before the renderer has mounted',
+  )
+  assert.match(
+    rendererHtmlSource,
+    /__lxRendererStartupTimer = window\.setTimeout[\s\S]*root\.innerHTML[\s\S]*}, 20000\)/m,
+    'The slow-start fallback should wait long enough and render inside the persistent Vue mount root',
+  )
+  assert.doesNotMatch(
+    rendererHtmlSource,
+    /document\.body\.innerHTML/m,
+    'The slow-start fallback must not delete the Vue mount root before the renderer bundle finishes loading',
+  )
+  assert.match(
+    rendererMainSource,
+    /const clearStartupFallback = \(\) => \{[\s\S]*clearTimeout[\s\S]*app\.mount\(root\)[\s\S]*markBootstrapped\(\)/m,
+    'Renderer startup should cancel the fallback and mount against the retained root element',
   )
 })

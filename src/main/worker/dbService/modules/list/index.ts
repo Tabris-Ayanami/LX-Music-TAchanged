@@ -21,7 +21,38 @@ import {
 } from './dbHelper'
 
 let userLists: LX.DBService.UserListInfo[]
-let musicLists = new Map<string, LX.Music.MusicInfo[]>()
+const musicLists = new Map<string, LX.Music.MusicInfo[]>()
+const PINNED_LIST_IDS = new Set<string>([LIST_IDS.DEFAULT, LIST_IDS.LOVE, LIST_IDS.TEMP])
+const MAX_UNPINNED_LIST_CACHE_SIZE = 5
+
+const touchMusicListCache = (listId: string) => {
+  const list = musicLists.get(listId)
+  if (!list) return
+  musicLists.delete(listId)
+  musicLists.set(listId, list)
+}
+
+const trimMusicListCache = () => {
+  let unpinnedCount = 0
+  for (const listId of musicLists.keys()) {
+    if (!PINNED_LIST_IDS.has(listId)) unpinnedCount++
+  }
+  if (unpinnedCount <= MAX_UNPINNED_LIST_CACHE_SIZE) return
+
+  for (const listId of musicLists.keys()) {
+    if (PINNED_LIST_IDS.has(listId)) continue
+    musicLists.delete(listId)
+    unpinnedCount--
+    if (unpinnedCount <= MAX_UNPINNED_LIST_CACHE_SIZE) break
+  }
+}
+
+const setMusicListCache = (listId: string, list: LX.Music.MusicInfo[]) => {
+  musicLists.delete(listId)
+  musicLists.set(listId, list)
+  trimMusicListCache()
+  return list
+}
 
 const toDBMusicInfo = (musicInfos: LX.Music.MusicInfo[], listId: string, offset: number = 0): LX.DBService.MusicInfo[] => {
   return musicInfos.map((info, index) => {
@@ -96,6 +127,7 @@ export const createUserLists = (position: number, lists: LX.List.UserListInfo[])
  */
 export const removeUserLists = (ids: string[]) => {
   deleteUserLists(ids)
+  for (const id of ids) musicLists.delete(id)
   userLists &&= queryAllUserList()
 }
 
@@ -167,7 +199,9 @@ export const getListMusics = (listId: string): LX.Music.MusicInfo[] => {
         meta: JSON.parse(info.meta),
       }
     })
-    musicLists.set(listId, targetList)
+    setMusicListCache(listId, targetList)
+  } else {
+    touchMusicListCache(listId)
   }
 
   return targetList
@@ -227,7 +261,7 @@ export const musicsRemove = (listId: string, ids: string[]) => {
   if (!targetList.length) return
   removeMusicInfos(listId, ids)
   const idsSet = new Set<string>(ids)
-  musicLists.set(listId, targetList.filter(mInfo => !idsSet.has(mInfo.id)))
+  setMusicListCache(listId, targetList.filter(mInfo => !idsSet.has(mInfo.id)))
 }
 
 /**
@@ -264,7 +298,7 @@ export const musicsMove = (fromId: string, toId: string, musicInfos: LX.Music.Mu
   }
 
   listSet = new Set<string>(ids)
-  musicLists.set(fromId, fromList.filter(mInfo => !listSet.has(mInfo.id)))
+  setMusicListCache(fromId, fromList.filter(mInfo => !listSet.has(mInfo.id)))
 }
 
 /**
@@ -335,7 +369,7 @@ export const musicsPositionUpdate = (listId: string, position: number, ids: stri
       order: index,
     }
   }))
-  musicLists.set(listId, newTargetList)
+  setMusicListCache(listId, newTargetList)
 }
 
 /**
@@ -364,10 +398,10 @@ export const listDataOverwrite = (myListData: MakeOptional<LX.List.ListDataFull,
   else userLists = dbLists
 
   musicLists.clear()
-  musicLists.set(LIST_IDS.DEFAULT, listData.defaultList)
-  musicLists.set(LIST_IDS.LOVE, listData.loveList)
-  musicLists.set(LIST_IDS.TEMP, listData.tempList)
-  for (const list of listData.userList) musicLists.set(list.id, list.list)
+  setMusicListCache(LIST_IDS.DEFAULT, listData.defaultList)
+  setMusicListCache(LIST_IDS.LOVE, listData.loveList)
+  setMusicListCache(LIST_IDS.TEMP, listData.tempList)
+  for (const list of listData.userList) setMusicListCache(list.id, list.list)
 }
 
 /**

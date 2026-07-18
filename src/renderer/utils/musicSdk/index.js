@@ -7,10 +7,11 @@ import bd from './bd/index'
 import xm from './xm'
 import bili from './bili/index'
 import { supportQuality } from './api-source'
+import { createLimitedCache } from '@renderer/utils/limitedCache'
 
 const LOCAL_COMMENT_MATCH_SOURCES = ['wy', 'tx', 'kw', 'kg', 'mg']
 
-const localCommentMatchCache = new Map()
+const localCommentMatchCache = createLimitedCache(100, 30 * 60 * 1000)
 
 const getIntervalSeconds = interval => {
   if (!interval || typeof interval != 'string') return 0

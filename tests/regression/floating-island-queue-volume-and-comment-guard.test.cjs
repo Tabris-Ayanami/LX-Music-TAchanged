@@ -77,3 +77,31 @@ test('RG-039: comment toggling does not animate or rescale lyrics', () => {
     'The comment panel should avoid the old transform animation that made the lyric layout move',
   )
 })
+
+test('RG-050: lyric seek control is a themed time capsule with a fading left trail', () => {
+  assert.match(
+    lyricSource,
+    /ref="dom_skip_line"[\s\S]*:aria-label="`跳转到 \$\{timeStr\}`"[\s\S]*skipTime[\s\S]*\{\{ timeStr \}\}/m,
+    'The lyric seek action should expose its target time inside the accessible button',
+  )
+  assert.doesNotMatch(
+    lyricSource,
+    /\$style\.label|xlink:href="#icon-play"/m,
+    'The seek time should no longer sit beside a separate square play icon',
+  )
+  assert.match(
+    lyricSource,
+    /--seek-capsule-bg: rgba\(255, 255, 255, \.96\)[\s\S]*--seek-capsule-color: rgba\(12, 14, 18, \.96\)[\s\S]*linear-gradient\(90deg, transparent[\s\S]*border-radius: 999px/m,
+    'Light mode should use a white, dark-text capsule attached to a fading left trail',
+  )
+  assert.match(
+    lyricSource,
+    /--seek-control-push: clamp\(12px, 1\.6vw, 28px\)[\s\S]*--seek-capsule-width: 56px[\s\S]*width: calc\(100% \+ var\(--seek-control-push\)\);[\s\S]*\.line \{[\s\S]*right: calc\(var\(--seek-capsule-width\) - 1px\);[\s\S]*height: 1px;[\s\S]*\.skipBtn \{[\s\S]*right: 0;[\s\S]*height: 28px/m,
+    'The compact capsule should sit in the right gutter while its tail stays a thin line',
+  )
+  assert.match(
+    lyricSource,
+    /:global\(\.themeShellDark\)[\s\S]*--seek-capsule-bg: rgba\(8, 9, 11, \.96\)[\s\S]*--seek-capsule-color: rgba\(255, 255, 255, \.96\)/m,
+    'Dark mode should invert the capsule to black with white text',
+  )
+})

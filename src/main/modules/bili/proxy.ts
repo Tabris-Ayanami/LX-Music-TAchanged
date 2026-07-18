@@ -9,8 +9,32 @@ interface TokenInfo {
 }
 
 const tokenMap = new Map<string, TokenInfo>()
+const MAX_PROXY_TOKENS = 2_048
+const TOKEN_PRUNE_INTERVAL = 60_000
 let server: http.Server | null = null
 let port = 0
+let startServerPromise: Promise<number> | null = null
+let lastTokenPrune = 0
+
+const pruneTokens = (now: number) => {
+  for (const [token, info] of tokenMap) {
+    if (info.expiresAt <= now) tokenMap.delete(token)
+  }
+  while (tokenMap.size >= MAX_PROXY_TOKENS) {
+    tokenMap.delete(tokenMap.keys().next().value!)
+  }
+}
+
+const addToken = (info: TokenInfo) => {
+  const now = Date.now()
+  if (tokenMap.size >= MAX_PROXY_TOKENS || now - lastTokenPrune >= TOKEN_PRUNE_INTERVAL) {
+    pruneTokens(now)
+    lastTokenPrune = now
+  }
+  const token = `${now}_${Math.random().toString(36).slice(2)}`
+  tokenMap.set(token, info)
+  return token
+}
 
 const writeError = (res: http.ServerResponse, status: number, message: string) => {
   res.writeHead(status, { 'Content-Type': 'text/plain; charset=utf-8' })
@@ -19,8 +43,9 @@ const writeError = (res: http.ServerResponse, status: number, message: string) =
 
 const startServer = async() => {
   if (server?.listening && port) return port
+  if (startServerPromise) return startServerPromise
 
-  server = http.createServer(async(req, res) => {
+  const createdServer = http.createServer(async(req, res) => {
     try {
       const requestUrl = new URL(req.url ?? '/', `http://${req.headers.host ?? '127.0.0.1'}`)
       if (requestUrl.pathname !== '/bili/audio' && requestUrl.pathname !== '/bili/image') {
@@ -58,31 +83,37 @@ const startServer = async() => {
       writeError(res, 502, err.message || 'B站音频代理失败')
     }
   })
+  server = createdServer
 
-  await new Promise<void>((resolve, reject) => {
-    server!.once('error', reject)
-    server!.listen(0, '127.0.0.1', () => {
-      const address = server!.address()
+  startServerPromise = new Promise<number>((resolve, reject) => {
+    const handleError = (error: Error) => {
+      if (server === createdServer) server = null
+      port = 0
+      startServerPromise = null
+      reject(error)
+    }
+    createdServer.once('error', handleError)
+    createdServer.listen(0, '127.0.0.1', () => {
+      const address = createdServer.address()
       port = typeof address == 'object' && address ? address.port : 0
-      server!.off('error', reject)
-      resolve()
+      createdServer.off('error', handleError)
+      startServerPromise = null
+      resolve(port)
     })
   })
 
-  return port
+  return startServerPromise
 }
 
 export const createProxyUrl = async(url: string, expiresAt: number) => {
   const serverPort = await startServer()
-  const token = `${Date.now()}_${Math.random().toString(36).slice(2)}`
-  tokenMap.set(token, { url, expiresAt, contentType: 'audio/mp4' })
+  const token = addToken({ url, expiresAt, contentType: 'audio/mp4' })
   return `http://127.0.0.1:${serverPort}/bili/audio?token=${encodeURIComponent(token)}`
 }
 
 export const createImageProxyUrl = async(url: string) => {
   const serverPort = await startServer()
-  const token = `${Date.now()}_${Math.random().toString(36).slice(2)}`
-  tokenMap.set(token, {
+  const token = addToken({
     url,
     expiresAt: Date.now() + 24 * 60 * 60 * 1000,
     contentType: 'image/jpeg',
