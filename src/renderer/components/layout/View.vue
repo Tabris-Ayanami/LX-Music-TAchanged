@@ -1,7 +1,7 @@
 <template>
   <div :class="$style.view">
     <router-view v-slot="{ Component }">
-      <keep-alive :max="10">
+      <keep-alive :max="6">
         <component :is="Component" v-if="Component" :key="routeViewKey" class="view-container" />
       </keep-alive>
     </router-view>

@@ -1,11 +1,17 @@
 <template>
-  <div v-show="!isFullscreen" :class="$style.control">
+  <div :class="$style.control">
     <button type="button" :class="[$style.btn, $style.min]" :aria-label="$t('min')" @click="minWindow">
       <span />
     </button>
-    <button type="button" :class="[$style.btn, $style.tray]" :aria-label="$t('to_tray')" @click="showHideWindowToggle">
+    <button
+      type="button"
+      :class="[$style.btn, $style.fullscreen]"
+      :aria-label="$t(isFullscreen ? 'fullscreen_exit' : 'fullscreen')"
+      :title="$t(isFullscreen ? 'fullscreen_exit' : 'fullscreen')"
+      @click="toggleFullscreen"
+    >
       <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" space="preserve">
-        <use xlink:href="#icon-window-tray" />
+        <use :xlink:href="isFullscreen ? '#icon-window-restore-2' : '#icon-window-maximize-2'" />
       </svg>
     </button>
     <button type="button" :class="[$style.btn, $style.close]" :aria-label="$t('close_window')" @click="closeWindow">
@@ -16,7 +22,13 @@
 
 <script setup>
 import { isFullscreen } from '@renderer/store'
-import { closeWindow, minWindow, showHideWindowToggle } from '@renderer/utils/ipc'
+import { closeWindow, minWindow, setFullScreen } from '@renderer/utils/ipc'
+
+const toggleFullscreen = () => {
+  void setFullScreen(!isFullscreen.value).then(fullscreen => {
+    isFullscreen.value = fullscreen
+  })
+}
 </script>
 
 <style lang="less" module>
@@ -78,7 +90,7 @@ import { closeWindow, minWindow, showHideWindowToggle } from '@renderer/utils/ip
   background: #ffbf2f;
 }
 
-.tray {
+.fullscreen {
   background: #2ecb4f;
 }
 

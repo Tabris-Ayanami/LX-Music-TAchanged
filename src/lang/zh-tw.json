@@ -75,6 +75,7 @@
   "download_status_write_queue": "資料寫入中（{num}）",
   "duplicate_list_tip": "你之前已收藏過清單「{name}」，是否需要更新裡面的歌曲？",
   "export": "匯出",
+  "fullscreen": "全螢幕",
   "fullscreen_exit": "退出全螢幕",
   "history_clear": "清空搜尋歷史",
   "history_remove": "右擊移除該歷史",

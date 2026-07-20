@@ -75,6 +75,7 @@
   "download_status_write_queue": "Writing data in progress ({num})",
   "duplicate_list_tip": "You have collected this list \"{name}\" before. Do you need to update the songs in it?",
   "export": "Export",
+  "fullscreen": "Fullscreen",
   "fullscreen_exit": "Exit fullscreen",
   "history_clear": "Clear history",
   "history_remove": "Right-click to remove this entry",

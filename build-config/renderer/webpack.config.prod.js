@@ -76,7 +76,7 @@ module.exports = merge(baseConfig, {
       new CssMinimizerPlugin(),
     ],
     splitChunks: {
-      chunks: 'initial',
+      chunks: 'all',
       minChunks: 2,
     },
   },

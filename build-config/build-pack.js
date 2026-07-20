@@ -37,6 +37,7 @@ const options = {
     'node_modules/utf-8-validate',
     'build/Release/qrc_decode.node',
     'dist/**/*',
+    '!dist/**/*.map',
   ],
   asar: {
     smartUnpack: false,

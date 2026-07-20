@@ -57,9 +57,9 @@
               <div v-else :class="$style.coverFallback">{{ selectedAlbumInitial }}</div>
             </div>
             <div :class="$style.planetDetailMeta">
-              <span>专辑行星系</span>
+              <span>{{ selectedGroupType == 'artists' ? '歌手行星系' : '专辑行星系' }}</span>
               <strong>{{ selectedAlbumName }}</strong>
-              <small>{{ selectedAlbum?.singer }} · {{ selectedAlbumItems.length }} 首歌曲</small>
+              <small>{{ selectedAlbum?.subtitle }} · {{ selectedAlbumItems.length }} 首歌曲</small>
             </div>
           </header>
           <div
@@ -105,7 +105,7 @@
                 </span>
               </button>
             </div>
-            <div v-else :class="$style.emptyState">这个专辑下暂时还没有歌曲。</div>
+            <div v-else :class="$style.emptyState">这个分类下暂时还没有歌曲。</div>
           </div>
         </div>
       </div>
@@ -155,18 +155,18 @@
           $style.gridShell,
           { [$style.waterfallGridShell]: albumViewStyle == 'waterfall' },
           { [$style.planetGridShell]: albumViewStyle == 'planet' },
-          { [$style.detailMode]: selectedAlbum && selectedAlbumDetailStyle == 'carousel' },
+          { [$style.detailMode]: selectedGroupType == 'albums' && selectedAlbum && selectedAlbumDetailStyle == 'carousel' },
         ]"
         @scroll.passive="handleAlbumScroll"
         @wheel="handleAlbumWheel"
         @click="handleAlbumBackdropClick"
       >
-        <div v-if="selectedAlbum && selectedAlbumDetailStyle == 'carousel'" :class="[$style.flyingCover, { [$style.detailOpen]: albumDetailVisible }]">
+        <div v-if="selectedGroupType == 'albums' && selectedAlbum && selectedAlbumDetailStyle == 'carousel'" :class="[$style.flyingCover, { [$style.detailOpen]: albumDetailVisible }]">
           <img v-if="selectedAlbumCover" :src="selectedAlbumCover" :alt="selectedAlbumName">
           <div v-else :class="$style.coverFallback">{{ selectedAlbumInitial }}</div>
         </div>
         <div
-          v-if="selectedAlbum && selectedAlbumDetailStyle == 'carousel'"
+          v-if="selectedGroupType == 'albums' && selectedAlbum && selectedAlbumDetailStyle == 'carousel'"
           :class="[$style.albumDetailPanel, { [$style.detailOpen]: albumDetailVisible }]"
           @click.stop
         >
@@ -284,10 +284,44 @@
           $style.artistViewShell,
           { [$style.waterfallGridShell]: artistViewStyle == 'waterfall' },
           { [$style.planetGridShell]: artistViewStyle == 'planet' },
+          { [$style.detailMode]: selectedGroupType == 'artists' && selectedAlbum && selectedAlbumDetailStyle == 'carousel' },
         ]"
         @scroll.passive="handleArtistScroll"
         @wheel="handleArtistWheel"
+        @click="handleAlbumBackdropClick"
       >
+        <div v-if="selectedGroupType == 'artists' && selectedAlbum && selectedAlbumDetailStyle == 'carousel'" :class="[$style.flyingCover, { [$style.detailOpen]: albumDetailVisible }]">
+          <img v-if="selectedAlbumCover" :src="selectedAlbumCover" :alt="selectedAlbumName">
+          <div v-else :class="$style.coverFallback">{{ selectedAlbumInitial }}</div>
+        </div>
+        <div
+          v-if="selectedGroupType == 'artists' && selectedAlbum && selectedAlbumDetailStyle == 'carousel'"
+          :class="[$style.albumDetailPanel, { [$style.detailOpen]: albumDetailVisible }]"
+          @click.stop
+        >
+          <LiquidGlassLayer
+            variant="island"
+            :active="true"
+            :interactive="true"
+            :blur-amount="1.05"
+            :saturation="152"
+            :displacement-scale="14"
+          />
+          <div :class="$style.albumDetailBody" @wheel.stop>
+            <button
+              v-for="(item, index) in selectedAlbumItems"
+              :key="item.track.id"
+              type="button"
+              :class="$style.albumTrackRow"
+              @click="playTrack(item.track)"
+            >
+              <span :class="$style.trackIndex">{{ Number(index) + 1 }}</span>
+              <span :class="$style.trackName" :title="item.track.name">{{ item.track.name }}</span>
+              <span :class="$style.trackSinger" :title="item.track.singer">{{ item.track.singer || '--' }}</span>
+              <span :class="$style.trackTime">{{ item.track.interval || '--/--' }}</span>
+            </button>
+          </div>
+        </div>
         <div v-if="artists.length && artistViewStyle == 'waterfall'" :class="$style.waterfallGrid">
           <button
             v-for="artist in visibleArtists"
@@ -350,7 +384,7 @@
               :class="[$style.planetAlbum, $style.artistPlanet]"
               :title="entry.artist.name"
               :aria-label="`打开歌手 ${entry.artist.name}，${entry.artist.count} 首歌曲`"
-              @click.stop="handlePlanetArtistClick(entry.artist)"
+              @click.stop="handlePlanetArtistClick(entry.artist, $event)"
             >
               <span :class="$style.spatialCardBody">
                 <span :class="[$style.planetAlbumHalo, $style.artistPlanetHalo]">
@@ -377,6 +411,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from '@common/utils/vueTools'
+import { onActivated, onDeactivated } from 'vue'
 import { useRoute, useRouter } from '@common/utils/vueRouter'
 import { getPicPath } from '@renderer/core/music'
 import LiquidGlassLayer from '@renderer/components/common/liquidGlass/LiquidGlassLayer.vue'
@@ -460,10 +495,12 @@ const visibleAlbumCount = ref(GRID_BATCH_SIZE)
 const visibleArtistCount = ref(GRID_BATCH_SIZE)
 const activeAlbumIndex = ref(0)
 const activeArtistIndex = ref(0)
+const selectedGroupType = ref<'albums' | 'artists'>('albums')
 const selectedAlbum = ref<LocalMusicGroup | null>(null)
 const selectedAlbumCoverCache = ref('')
 const selectedAlbumDetailStyle = ref<LX.AppSetting['localMusic.albumViewStyle']>('carousel')
 const albumDetailVisible = ref(false)
+const planetDetailClosing = ref(false)
 const planetPortalOrigin = ref({ top: 24, right: 24, bottom: 24, left: 24 })
 const normalizedView = ref<LocalView>('albums')
 const keyword = ref('')
@@ -490,6 +527,8 @@ let pendingAlbumPan: SpatialPan | null = null
 let pendingArtistPan: SpatialPan | null = null
 let pendingSongPan: SpatialPan | null = null
 let spatialResizeObserver: ResizeObserver | null = null
+let spatialResizeFrame = 0
+let spatialLifecycleActive = false
 let albumResolveTaskId = 0
 let artistResolveTaskId = 0
 let albumResolveTimer: ReturnType<typeof setTimeout> | null = null
@@ -538,9 +577,11 @@ const artists = computed(() => {
 })
 const visibleAlbums = computed(() => albums.value.slice(0, visibleAlbumCount.value))
 const visibleArtists = computed(() => artists.value.slice(0, visibleArtistCount.value))
-const selectedAlbumCover = computed(() => selectedAlbum.value
-  ? selectedAlbumCoverCache.value || albumCovers.value[selectedAlbum.value.key] || selectedAlbum.value.cover
-  : '')
+const selectedAlbumCover = computed(() => {
+  if (!selectedAlbum.value) return ''
+  const covers = selectedGroupType.value == 'artists' ? artistCovers.value : albumCovers.value
+  return selectedAlbumCoverCache.value || covers[selectedAlbum.value.key] || selectedAlbum.value.cover
+})
 const selectedAlbumName = computed(() => selectedAlbum.value?.name ?? '')
 const selectedAlbumInitial = computed(() => selectedAlbum.value?.initial ?? '')
 const selectedAlbumItems = computed(() => selectedAlbum.value?.items ?? [])
@@ -663,7 +704,7 @@ const getSpatialItemStyle = (
   }
 }
 const albumPlanetEntries = computed(() => {
-  if (selectedAlbum.value && selectedAlbumDetailStyle.value == 'planet') return []
+  if (selectedGroupType.value == 'albums' && selectedAlbum.value && selectedAlbumDetailStyle.value == 'planet' && !planetDetailClosing.value) return []
   return querySpatialIndex(
     albumSpatialIndex.value,
     albumPlanetPan.value,
@@ -687,28 +728,31 @@ const albumPlanetEntries = computed(() => {
     .slice(0, MAX_MOUNTED_SPATIAL_PLANETS)
     .sort((a, b) => a.index - b.index)
 })
-const artistPlanetEntries = computed(() => querySpatialIndex(
-  artistSpatialIndex.value,
-  artistPlanetPan.value,
-  artistPlanetViewport.value,
-  artistSpatialMetrics.value.visibilityBuffer,
-).flatMap(point => {
-  const index = point.index
-  const artist = artists.value[index]
-  if (!artist) return []
-  const { frame, style } = getSpatialItemStyle(
-    point,
+const artistPlanetEntries = computed(() => {
+  if (selectedGroupType.value == 'artists' && selectedAlbum.value && selectedAlbumDetailStyle.value == 'planet' && !planetDetailClosing.value) return []
+  return querySpatialIndex(
+    artistSpatialIndex.value,
     artistPlanetPan.value,
     artistPlanetViewport.value,
-    artistSpatialMetrics.value,
-    index,
-    'artists',
-  )
-  return frame.visible ? [{ artist, index, style, distance: frame.distance, inViewport: frame.inViewport }] : []
+    artistSpatialMetrics.value.visibilityBuffer,
+  ).flatMap(point => {
+    const index = point.index
+    const artist = artists.value[index]
+    if (!artist) return []
+    const { frame, style } = getSpatialItemStyle(
+      point,
+      artistPlanetPan.value,
+      artistPlanetViewport.value,
+      artistSpatialMetrics.value,
+      index,
+      'artists',
+    )
+    return frame.visible ? [{ artist, index, style, distance: frame.distance, inViewport: frame.inViewport }] : []
+  })
+    .sort((a, b) => Number(b.inViewport) - Number(a.inViewport) || a.distance - b.distance)
+    .slice(0, MAX_MOUNTED_SPATIAL_PLANETS)
+    .sort((a, b) => a.index - b.index)
 })
-  .sort((a, b) => Number(b.inViewport) - Number(a.inViewport) || a.distance - b.distance)
-  .slice(0, MAX_MOUNTED_SPATIAL_PLANETS)
-  .sort((a, b) => a.index - b.index))
 const songPlanetEntries = computed(() => querySpatialIndex(
   songSpatialIndex.value,
   songPlanetPan.value,
@@ -745,6 +789,11 @@ const artistCoverGroups = computed(() => {
     .sort((a, b) => Number(b.inViewport) - Number(a.inViewport) || a.distance - b.distance)
     .map(entry => entry.artist)
 })
+const getCoverGroupSignature = (groups: LocalMusicGroup[]) => groups
+  .map(group => `${group.key.length}:${group.key}`)
+  .join('|')
+const albumCoverGroupSignature = computed(() => getCoverGroupSignature(albumCoverGroups.value))
+const artistCoverGroupSignature = computed(() => getCoverGroupSignature(artistCoverGroups.value))
 const planetPortalStyle = computed<Record<string, string>>(() => ({
   '--planet-origin-top': `${planetPortalOrigin.value.top}px`,
   '--planet-origin-right': `${planetPortalOrigin.value.right}px`,
@@ -801,13 +850,22 @@ const syncSpatialViewportSizes = () => {
   songPlanetViewport.value = readSpatialViewport(songPlanetViewportRef.value, songPlanetViewport.value)
 }
 
+const scheduleSpatialViewportSync = () => {
+  if (spatialResizeFrame) return
+  spatialResizeFrame = requestAnimationFrame(() => {
+    spatialResizeFrame = 0
+    if (spatialLifecycleActive) syncSpatialViewportSizes()
+  })
+}
+
 const observeSpatialStages = async() => {
   await nextTick()
+  if (!spatialLifecycleActive) return
   spatialResizeObserver?.disconnect()
   if (planetStageRef.value) spatialResizeObserver?.observe(planetStageRef.value)
   if (artistPlanetStageRef.value) spatialResizeObserver?.observe(artistPlanetStageRef.value)
   if (songPlanetViewportRef.value) spatialResizeObserver?.observe(songPlanetViewportRef.value)
-  syncSpatialViewportSizes()
+  scheduleSpatialViewportSync()
 }
 
 const increaseVisibleGroups = (type: 'albums' | 'artists') => {
@@ -975,12 +1033,12 @@ const handleSpatialWheel = (kind: SpatialCanvasKind, event: WheelEvent) => {
 
 const handlePlanetAlbumClick = (album: LocalMusicGroup, event: MouseEvent) => {
   if (performance.now() < albumClickSuppressedUntil) return
-  openPlanetAlbum(album, event)
+  openPlanetGroup('albums', album, event)
 }
 
-const handlePlanetArtistClick = (artist: LocalMusicGroup) => {
+const handlePlanetArtistClick = (artist: LocalMusicGroup, event: MouseEvent) => {
   if (performance.now() < artistClickSuppressedUntil) return
-  openDetail('artists', artist.key)
+  openPlanetGroup('artists', artist, event)
 }
 
 const handleSongPlanetClick = (track: LX.Music.MusicInfoLocal) => {
@@ -1005,14 +1063,14 @@ const nextArtist = () => {
 }
 
 const handleAlbumWheel = (event: Event) => {
-  if (albumViewStyle.value != 'carousel' || selectedAlbum.value) return
+  if (albumViewStyle.value != 'carousel' || (selectedGroupType.value == 'albums' && selectedAlbum.value)) return
   const wheelEvent = event as WheelEvent
   wheelEvent.preventDefault()
   wheelEvent.deltaY > 0 || wheelEvent.deltaX > 0 ? nextAlbum() : prevAlbum()
 }
 
 const handleArtistWheel = (event: Event) => {
-  if (artistViewStyle.value != 'carousel') return
+  if (artistViewStyle.value != 'carousel' || (selectedGroupType.value == 'artists' && selectedAlbum.value)) return
   const wheelEvent = event as WheelEvent
   wheelEvent.preventDefault()
   wheelEvent.deltaY > 0 || wheelEvent.deltaX > 0 ? nextArtist() : prevArtist()
@@ -1020,22 +1078,25 @@ const handleArtistWheel = (event: Event) => {
 
 const handleAlbumSlideClick = (album: { offset: number, key: string }) => {
   if (album.offset == 0) {
-    openAlbumDetail(album.key)
+    openCarouselGroup('albums', album.key)
     return
   }
   activeAlbumIndex.value = wrapAlbumIndex(activeAlbumIndex.value + album.offset)
 }
 
-const openAlbumDetail = (key: string) => {
-  const album = albums.value.find(item => item.key == key)
-  if (!album) return
+const openCarouselGroup = (type: 'albums' | 'artists', key: string) => {
+  const group = (type == 'artists' ? artists.value : albums.value).find(item => item.key == key)
+  if (!group) return
   if (albumDetailCloseTimer) {
     clearTimeout(albumDetailCloseTimer)
     albumDetailCloseTimer = null
   }
+  planetDetailClosing.value = false
+  selectedGroupType.value = type
   selectedAlbumDetailStyle.value = 'carousel'
-  selectedAlbum.value = album
-  selectedAlbumCoverCache.value = albumCovers.value[album.key] || album.cover || getCachedLocalGroupCover('albums', album.key) || ''
+  selectedAlbum.value = group
+  const covers = type == 'artists' ? artistCovers.value : albumCovers.value
+  selectedAlbumCoverCache.value = covers[group.key] || group.cover || getCachedLocalGroupCover(type, group.key) || ''
   albumDetailVisible.value = false
   void nextTick(() => {
     albumDetailVisible.value = true
@@ -1044,7 +1105,7 @@ const openAlbumDetail = (key: string) => {
 
 const handleArtistSlideClick = (artist: { offset: number, key: string }) => {
   if (artist.offset == 0) {
-    openDetail('artists', artist.key)
+    openCarouselGroup('artists', artist.key)
     return
   }
   activeArtistIndex.value = wrapArtistIndex(activeArtistIndex.value + artist.offset)
@@ -1087,7 +1148,7 @@ const revealPlanetAlbum = () => {
   })
 }
 
-const openPlanetAlbum = (album: LocalMusicGroup, event: MouseEvent) => {
+const openPlanetGroup = (type: 'albums' | 'artists', group: LocalMusicGroup, event: MouseEvent) => {
   const contentCard = contentCardRef.value
   const trigger = event.currentTarget as HTMLElement | null
   if (!contentCard || !trigger) return
@@ -1095,6 +1156,7 @@ const openPlanetAlbum = (album: LocalMusicGroup, event: MouseEvent) => {
     clearTimeout(albumDetailCloseTimer)
     albumDetailCloseTimer = null
   }
+  planetDetailClosing.value = false
   const contentRect = contentCard.getBoundingClientRect()
   const triggerRect = trigger.getBoundingClientRect()
   planetPortalOrigin.value = {
@@ -1104,9 +1166,11 @@ const openPlanetAlbum = (album: LocalMusicGroup, event: MouseEvent) => {
     left: Math.max(0, triggerRect.left - contentRect.left),
   }
   lastPlanetTrigger = trigger
+  selectedGroupType.value = type
   selectedAlbumDetailStyle.value = 'planet'
-  selectedAlbum.value = album
-  selectedAlbumCoverCache.value = albumCovers.value[album.key] || album.cover || getCachedLocalGroupCover('albums', album.key) || ''
+  selectedAlbum.value = group
+  const covers = type == 'artists' ? artistCovers.value : albumCovers.value
+  selectedAlbumCoverCache.value = covers[group.key] || group.cover || getCachedLocalGroupCover(type, group.key) || ''
   albumDetailVisible.value = false
   songPlanetPan.value = { x: 0, y: 0 }
   void nextTick(() => {
@@ -1118,8 +1182,12 @@ const openPlanetAlbum = (album: LocalMusicGroup, event: MouseEvent) => {
 const closePlanetAlbum = () => {
   if (!selectedAlbum.value || selectedAlbumDetailStyle.value != 'planet' || !albumDetailVisible.value) return
   cancelPlanetOpenFrame()
+  // Mount the parent canvas behind the portal before it starts collapsing so
+  // removing the detail layer cannot expose a one-frame empty surface.
+  planetDetailClosing.value = true
   albumDetailVisible.value = false
   clearSelectedAlbum(appSetting['common.isShowAnimation'] ? 460 : 0, () => {
+    planetDetailClosing.value = false
     void nextTick(() => lastPlanetTrigger?.focus())
   })
 }
@@ -1145,8 +1213,8 @@ const waitForCoverBatch = async() => new Promise<void>(resolve => {
   window.setTimeout(resolve, 0)
 })
 
-const syncSelectedAlbumCoverCache = (covers: Record<string, string>) => {
-  if (!selectedAlbum.value || selectedAlbumCoverCache.value) return
+const syncSelectedAlbumCoverCache = (type: 'albums' | 'artists', covers: Record<string, string>) => {
+  if (selectedGroupType.value != type || !selectedAlbum.value || selectedAlbumCoverCache.value) return
   const cover = covers[selectedAlbum.value.key]
   if (cover) selectedAlbumCoverCache.value = cover
 }
@@ -1192,14 +1260,14 @@ const resolveGroupCovers = async(
     if (handledCount % 6 == 0) {
       if (taskId != (type == 'albums' ? albumResolveTaskId : artistResolveTaskId)) return
       target.value = { ...resolvedCovers }
-      if (type == 'albums') syncSelectedAlbumCoverCache(resolvedCovers)
+      syncSelectedAlbumCoverCache(type, resolvedCovers)
       await waitForCoverBatch()
     }
   }
 
   if (taskId != (type == 'albums' ? albumResolveTaskId : artistResolveTaskId)) return
   target.value = { ...resolvedCovers }
-  if (type == 'albums') syncSelectedAlbumCoverCache(resolvedCovers)
+  syncSelectedAlbumCoverCache(type, resolvedCovers)
 }
 
 const scheduleResolveGroupCovers = (
@@ -1207,6 +1275,7 @@ const scheduleResolveGroupCovers = (
   groups: ReturnType<typeof buildLocalAlbumGroups>,
   target: typeof albumCovers,
 ) => {
+  if (!spatialLifecycleActive) return
   const taskId = type == 'albums' ? ++albumResolveTaskId : ++artistResolveTaskId
   const timer = type == 'albums' ? albumResolveTimer : artistResolveTimer
   if (timer) clearTimeout(timer)
@@ -1217,6 +1286,15 @@ const scheduleResolveGroupCovers = (
 
   if (type == 'albums') albumResolveTimer = nextTimer
   else artistResolveTimer = nextTimer
+}
+
+const cancelCoverResolutionTasks = () => {
+  albumResolveTaskId += 1
+  artistResolveTaskId += 1
+  if (albumResolveTimer) clearTimeout(albumResolveTimer)
+  if (artistResolveTimer) clearTimeout(artistResolveTimer)
+  albumResolveTimer = null
+  artistResolveTimer = null
 }
 
 const init = async() => {
@@ -1233,26 +1311,64 @@ const handlePlanetKeydown = (event: KeyboardEvent) => {
   closePlanetAlbum()
 }
 
-onMounted(() => {
-  if (typeof ResizeObserver != 'undefined') spatialResizeObserver = new ResizeObserver(syncSpatialViewportSizes)
-  void init()
-  void observeSpatialStages()
-  window.addEventListener('keydown', handlePlanetKeydown)
-  window.addEventListener('resize', syncSpatialViewportSizes)
-})
+const resetSpatialDragState = (dragState: SpatialDragState) => {
+  dragState.active = false
+  dragState.pointerId = -1
+  dragState.moved = false
+}
 
-onBeforeUnmount(() => {
-  if (albumResolveTimer) clearTimeout(albumResolveTimer)
-  if (artistResolveTimer) clearTimeout(artistResolveTimer)
-  if (groupWarmupTimer) clearTimeout(groupWarmupTimer)
-  if (albumDetailCloseTimer) clearTimeout(albumDetailCloseTimer)
+const deactivateSpatialLifecycle = () => {
+  if (!spatialLifecycleActive) return
+  spatialLifecycleActive = false
+  cancelCoverResolutionTasks()
   cancelPlanetOpenFrame()
   if (albumPanFrame) cancelAnimationFrame(albumPanFrame)
   if (artistPanFrame) cancelAnimationFrame(artistPanFrame)
   if (songPanFrame) cancelAnimationFrame(songPanFrame)
+  if (spatialResizeFrame) cancelAnimationFrame(spatialResizeFrame)
+  albumPanFrame = 0
+  artistPanFrame = 0
+  songPanFrame = 0
+  spatialResizeFrame = 0
+  pendingAlbumPan = null
+  pendingArtistPan = null
+  pendingSongPan = null
+  albumPlanetDragging.value = false
+  artistPlanetDragging.value = false
+  songPlanetDragging.value = false
+  resetSpatialDragState(albumDragState)
+  resetSpatialDragState(artistDragState)
+  resetSpatialDragState(songDragState)
   spatialResizeObserver?.disconnect()
   window.removeEventListener('keydown', handlePlanetKeydown)
-  window.removeEventListener('resize', syncSpatialViewportSizes)
+  window.removeEventListener('resize', scheduleSpatialViewportSync)
+}
+
+const activateSpatialLifecycle = () => {
+  if (spatialLifecycleActive) return
+  spatialLifecycleActive = true
+  if (!spatialResizeObserver && typeof ResizeObserver != 'undefined') {
+    spatialResizeObserver = new ResizeObserver(scheduleSpatialViewportSync)
+  }
+  window.addEventListener('keydown', handlePlanetKeydown)
+  if (!spatialResizeObserver) window.addEventListener('resize', scheduleSpatialViewportSync)
+  void observeSpatialStages()
+  if (normalizedView.value == 'albums') scheduleResolveGroupCovers('albums', albumCoverGroups.value, albumCovers)
+  else if (normalizedView.value == 'artists') scheduleResolveGroupCovers('artists', artistCoverGroups.value, artistCovers)
+}
+
+onMounted(() => {
+  void init()
+  activateSpatialLifecycle()
+})
+
+onActivated(activateSpatialLifecycle)
+onDeactivated(deactivateSpatialLifecycle)
+
+onBeforeUnmount(() => {
+  deactivateSpatialLifecycle()
+  if (groupWarmupTimer) clearTimeout(groupWarmupTimer)
+  if (albumDetailCloseTimer) clearTimeout(albumDetailCloseTimer)
 })
 
 watch(tracks, () => {
@@ -1284,6 +1400,7 @@ watch(albumViewStyle, () => {
 })
 
 watch(artistViewStyle, () => {
+  closeAlbumDetail()
   visibleArtistCount.value = Math.min(GRID_BATCH_SIZE, artists.value.length)
   artistPlanetPan.value = { x: 0, y: 0 }
   void observeSpatialStages()
@@ -1294,7 +1411,7 @@ watch(albums, groups => {
   visibleAlbumCount.value = Math.min(GRID_BATCH_SIZE, groups.length)
   activeAlbumIndex.value = Math.min(activeAlbumIndex.value, Math.max(groups.length - 1, 0))
   albumPlanetPan.value = { x: 0, y: 0 }
-  if (selectedAlbum.value && !groups.some(group => group.key == selectedAlbum.value?.key)) closeAlbumDetail()
+  if (selectedGroupType.value == 'albums' && selectedAlbum.value && !groups.some(group => group.key == selectedAlbum.value?.key)) closeAlbumDetail()
   void observeSpatialStages()
   if (normalizedView.value == 'albums') void ensureVisibleGroups('albums')
 }, { immediate: true })
@@ -1303,19 +1420,21 @@ watch(artists, groups => {
   visibleArtistCount.value = Math.min(GRID_BATCH_SIZE, groups.length)
   activeArtistIndex.value = Math.min(activeArtistIndex.value, Math.max(groups.length - 1, 0))
   artistPlanetPan.value = { x: 0, y: 0 }
+  if (selectedGroupType.value == 'artists' && selectedAlbum.value && !groups.some(group => group.key == selectedAlbum.value?.key)) closeAlbumDetail()
   void observeSpatialStages()
   if (normalizedView.value == 'artists') void ensureVisibleGroups('artists')
 }, { immediate: true })
 
-watch([normalizedView, albumCoverGroups], ([view, groups]) => {
+watch([normalizedView, albumCoverGroupSignature], ([view]) => {
   if (view != 'albums') return
-  if (selectedAlbum.value && selectedAlbumDetailStyle.value == 'planet') return
-  scheduleResolveGroupCovers('albums', groups, albumCovers)
+  if (selectedGroupType.value == 'albums' && selectedAlbum.value && selectedAlbumDetailStyle.value == 'planet') return
+  scheduleResolveGroupCovers('albums', albumCoverGroups.value, albumCovers)
 }, { immediate: true })
 
-watch([normalizedView, artistCoverGroups], ([view, groups]) => {
+watch([normalizedView, artistCoverGroupSignature], ([view]) => {
   if (view != 'artists') return
-  scheduleResolveGroupCovers('artists', groups, artistCovers)
+  if (selectedGroupType.value == 'artists' && selectedAlbum.value && selectedAlbumDetailStyle.value == 'planet') return
+  scheduleResolveGroupCovers('artists', artistCoverGroups.value, artistCovers)
 }, { immediate: true })
 
 const openDetail = (type: 'albums' | 'artists', key: string) => {
@@ -1549,7 +1668,6 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
   opacity: var(--spatial-opacity);
   transform-origin: center;
   transition: opacity .16s ease;
-  will-change: transform, opacity;
   contain: layout style;
 
   &:focus-visible {
@@ -1591,7 +1709,6 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
   box-sizing: border-box;
   background: color-mix(in srgb, var(--shell-card-strong, rgba(255, 255, 255, .9)) 94%, transparent);
   box-shadow: 0 15px 38px rgba(24, 36, 54, .15);
-  backdrop-filter: blur(16px) saturate(135%);
   transform-origin: center;
   transition:
     opacity .3s ease,
@@ -1689,6 +1806,7 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
   .planetAlbum,
   .songPlanet {
     transition: none;
+    will-change: transform;
   }
 
   .spatialCardBody {

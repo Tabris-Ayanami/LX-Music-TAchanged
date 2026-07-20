@@ -9,7 +9,7 @@ const router = createRouter({
     {
       path: '/search',
       name: 'Search',
-      component: require('./views/Search/index.vue').default,
+      component: async() => import(/* webpackChunkName: "view-search" */ './views/Search/index.vue'),
       meta: {
         name: 'Search',
       },
@@ -17,7 +17,7 @@ const router = createRouter({
     {
       path: '/songList/list',
       name: 'SongList',
-      component: require('./views/songList/List/index.vue').default,
+      component: async() => import(/* webpackChunkName: "view-song-list" */ './views/songList/List/index.vue'),
       meta: {
         name: 'SongList',
       },
@@ -25,7 +25,7 @@ const router = createRouter({
     {
       path: '/songList/detail',
       name: 'SongListDetail',
-      component: require('./views/songList/Detail/index.vue').default,
+      component: async() => import(/* webpackChunkName: "view-song-list-detail" */ './views/songList/Detail/index.vue'),
       meta: {
         name: 'SongList',
       },
@@ -33,7 +33,7 @@ const router = createRouter({
     {
       path: '/leaderboard',
       name: 'Leaderboard',
-      component: require('./views/Leaderboard/index.vue').default,
+      component: async() => import(/* webpackChunkName: "view-leaderboard" */ './views/Leaderboard/index.vue'),
       meta: {
         name: 'Leaderboard',
       },
@@ -41,7 +41,7 @@ const router = createRouter({
     {
       path: '/list',
       name: 'List',
-      component: require('./views/List/index.vue').default,
+      component: async() => import(/* webpackChunkName: "view-list" */ './views/List/index.vue'),
       meta: {
         name: 'List',
       },
@@ -49,7 +49,7 @@ const router = createRouter({
     {
       path: '/local',
       name: 'LocalMusic',
-      component: require('./views/LocalMusic/index.vue').default,
+      component: async() => import(/* webpackChunkName: "view-local-music" */ './views/LocalMusic/index.vue'),
       meta: {
         name: 'LocalMusic',
       },
@@ -57,7 +57,7 @@ const router = createRouter({
     {
       path: '/local/detail',
       name: 'LocalMusicDetail',
-      component: require('./views/LocalMusic/Detail.vue').default,
+      component: async() => import(/* webpackChunkName: "view-local-music-detail" */ './views/LocalMusic/Detail.vue'),
       meta: {
         name: 'LocalMusic',
       },
@@ -65,7 +65,7 @@ const router = createRouter({
     {
       path: '/download',
       name: 'Download',
-      component: require('./views/Download/index.vue').default,
+      component: async() => import(/* webpackChunkName: "view-download" */ './views/Download/index.vue'),
       meta: {
         name: 'Download',
       },
@@ -73,7 +73,7 @@ const router = createRouter({
     {
       path: '/setting',
       name: 'Setting',
-      component: require('./views/Setting/index.vue').default,
+      component: async() => import(/* webpackChunkName: "view-setting" */ './views/Setting/index.vue'),
       meta: {
         name: 'Setting',
       },

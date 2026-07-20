@@ -323,6 +323,10 @@
       <g id="icon-window-maximize-2" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <rect x="5.5" y="5.5" width="13" height="13" rx="2.2" />
       </g>
+      <g id="icon-window-restore-2" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8.5 7V6.2A2.2 2.2 0 0 1 10.7 4h7.1A2.2 2.2 0 0 1 20 6.2v7.1a2.2 2.2 0 0 1-2.2 2.2H17" />
+        <rect x="4" y="8.5" width="11.5" height="11.5" rx="2.2" />
+      </g>
       <g id="icon-download-modern" stroke="currentColor" fill="none" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 5.2v8.8" />
         <path d="m8.4 10.8 3.6 3.7 3.6-3.7" />

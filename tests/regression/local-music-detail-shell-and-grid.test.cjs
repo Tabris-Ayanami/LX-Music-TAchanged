@@ -190,8 +190,8 @@ test('RG-049: local albums can use the persisted hierarchical planet view', () =
   )
   assert.match(
     localIndexSource,
-    /selectedAlbum\.value && selectedAlbumDetailStyle\.value == 'planet'\) return \[\][\s\S]*Number\(b\.inViewport\) - Number\(a\.inViewport\)/m,
-    'The hidden album canvas should release its cards while the active viewport prioritizes on-screen entries',
+    /selectedAlbum\.value && selectedAlbumDetailStyle\.value == 'planet' && !planetDetailClosing\.value\) return \[\][\s\S]*Number\(b\.inViewport\) - Number\(a\.inViewport\)/m,
+    'The hidden album canvas should release its cards until the return transition needs it underneath the portal',
   )
   assert.match(
     localIndexSource,
@@ -227,5 +227,43 @@ test('RG-049: local albums can use the persisted hierarchical planet view', () =
     localIndexSource,
     /returningAlbumKey|returningAlbumTimer|returningPlanet|planet-cover-drop|planet-arrive/m,
     'Closing the portal should restore the album canvas without a delayed cover rebound',
+  )
+})
+
+test('RG-050: album and artist secondary pages follow their independent view style', () => {
+  assert.match(
+    localIndexSource,
+    /@click\.stop="openDetail\('albums', album\.key\)"[\s\S]*@click="openDetail\('artists', artist\.key\)"/m,
+    'Album and artist waterfall cards should open the same readable list-detail route',
+  )
+  assert.match(
+    localIndexSource,
+    /handleAlbumSlideClick[\s\S]*openCarouselGroup\('albums', album\.key\)[\s\S]*handleArtistSlideClick[\s\S]*openCarouselGroup\('artists', artist\.key\)/m,
+    'The centered album and artist carousel cards should open the shared animated carousel detail',
+  )
+  assert.match(
+    localIndexSource,
+    /handlePlanetAlbumClick[\s\S]*openPlanetGroup\('albums', album, event\)[\s\S]*handlePlanetArtistClick[\s\S]*openPlanetGroup\('artists', artist, event\)/m,
+    'Album and artist planets should drill into the same song-planet portal instead of the waterfall route',
+  )
+  assert.match(
+    localIndexSource,
+    /selectedGroupType == 'albums'[\s\S]*\$style\.albumDetailPanel[\s\S]*selectedGroupType == 'artists'[\s\S]*\$style\.albumDetailPanel/m,
+    'Both content types should reuse the same carousel cover and track-panel presentation',
+  )
+  assert.match(
+    localIndexSource,
+    /selectedGroupType\.value == 'albums'[\s\S]*selectedAlbumDetailStyle\.value == 'planet' && !planetDetailClosing\.value\) return \[\][\s\S]*selectedGroupType\.value == 'artists'[\s\S]*selectedAlbumDetailStyle\.value == 'planet' && !planetDetailClosing\.value\) return \[\]/m,
+    'Whichever planet canvas opens a detail should release its hidden cards while retaining the fifty-card viewport cap',
+  )
+  assert.match(
+    localIndexSource,
+    /const closePlanetAlbum[\s\S]*planetDetailClosing\.value = true[\s\S]*albumDetailVisible\.value = false[\s\S]*clearSelectedAlbum[\s\S]*planetDetailClosing\.value = false/m,
+    'Planet return should mount the parent canvas below the portal before collapsing and removing the detail layer',
+  )
+  assert.match(
+    localDetailSource,
+    /<MusicList[\s\S]*detailType\.value == 'artists'[\s\S]*buildLocalArtistGroups\(tracks\.value\)[\s\S]*buildLocalAlbumGroups\(tracks\.value\)/m,
+    'Waterfall detail should remain one shared album/artist list implementation',
   )
 })
