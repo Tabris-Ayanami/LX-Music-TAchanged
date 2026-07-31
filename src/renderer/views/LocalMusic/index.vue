@@ -536,6 +536,7 @@ let artistResolveTimer: ReturnType<typeof setTimeout> | null = null
 let groupWarmupTimer: ReturnType<typeof setTimeout> | null = null
 let albumDetailCloseTimer: ReturnType<typeof setTimeout> | null = null
 let planetOpenFrame = 0
+let listUpdateListenerActive = false
 
 const resolveLocalView = (view: unknown): LocalView => {
   if (view == 'tracks') return 'tracks'
@@ -814,8 +815,29 @@ const searchPlaceholder = computed(() => {
 
 const refreshTracks = async() => {
   if (!localListId.value) return
-  tracks.value = await getListMusics(localListId.value) as LX.Music.MusicInfoLocal[]
+  const nextTracks = await getListMusics(localListId.value) as LX.Music.MusicInfoLocal[]
+  // The shared list cache is mutated in place. Keep the shallow ref lightweight,
+  // but replace its array snapshot so search and grouping computations refresh.
+  tracks.value = [...nextTracks]
   setCachedLocalTracks(tracks.value)
+}
+
+const handleListUpdate = (ids: string[]) => {
+  const targetListId = localListId.value || LOCAL_MUSIC_LIST_ID
+  if (!ids.includes(targetListId)) return
+  void refreshTracks()
+}
+
+const activateListUpdateListener = () => {
+  if (listUpdateListenerActive) return
+  listUpdateListenerActive = true
+  window.app_event.on('myListUpdate', handleListUpdate)
+}
+
+const deactivateListUpdateListener = () => {
+  if (!listUpdateListenerActive) return
+  listUpdateListenerActive = false
+  window.app_event.off('myListUpdate', handleListUpdate)
 }
 
 const warmupDefaultGroups = () => {
@@ -1359,13 +1381,20 @@ const activateSpatialLifecycle = () => {
 
 onMounted(() => {
   void init()
+  activateListUpdateListener()
   activateSpatialLifecycle()
 })
 
 onActivated(activateSpatialLifecycle)
+onActivated(() => {
+  activateListUpdateListener()
+  if (localListId.value) void refreshTracks()
+})
 onDeactivated(deactivateSpatialLifecycle)
+onDeactivated(deactivateListUpdateListener)
 
 onBeforeUnmount(() => {
+  deactivateListUpdateListener()
   deactivateSpatialLifecycle()
   if (groupWarmupTimer) clearTimeout(groupWarmupTimer)
   if (albumDetailCloseTimer) clearTimeout(albumDetailCloseTimer)
