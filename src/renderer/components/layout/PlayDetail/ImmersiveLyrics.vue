@@ -171,6 +171,9 @@ let lyricRequestId = 0
 let hideTimer = 0
 let mvRequestId = 0
 let mvSyncTimer = 0
+let mvLoadQueued = false
+let biliSearchKey = ''
+let biliSearchPromise = null
 
 const effect = computed(() => appSetting['playDetail.immersiveEffect'] ?? 'classic')
 const background = computed(() => appSetting['playDetail.immersiveBackground'] ?? 'aura')
@@ -206,7 +209,16 @@ const searchBiliTrack = async() => {
   const identity = trackIdentity.value
   const query = [identity.title, identity.artist].filter(Boolean).join(' ')
   if (!query) return null
-  const result = await biliSearch({ keyword: query, page: 1, limit: 8 })
+  const searchKey = `${query}\u0000${Number(playProgress.maxPlayTime || 0)}`
+  if (searchKey != biliSearchKey || !biliSearchPromise) {
+    biliSearchKey = searchKey
+    biliSearchPromise = biliSearch({ keyword: query, page: 1, limit: 8 })
+      .catch(error => {
+        if (biliSearchKey == searchKey) biliSearchPromise = null
+        throw error
+      })
+  }
+  const result = await biliSearchPromise
   const normalizedTitle = normalizeMatchText(identity.title)
   const normalizedArtist = normalizeMatchText(identity.artist)
   const targetDuration = Number(playProgress.maxPlayTime || 0)
@@ -255,13 +267,16 @@ const syncMvPlayback = async() => {
 
 const loadMv = async() => {
   const requestId = ++mvRequestId
-  mvStatus.value = 'loading'
-  mvError.value = ''
-  const track = await resolveMvTrack().catch(() => null)
   if (background.value != 'mv') {
+    mvUrl.value = ''
+    activeMvKey.value = ''
     mvStatus.value = 'idle'
     return
   }
+  mvStatus.value = 'loading'
+  mvError.value = ''
+  const track = await resolveMvTrack().catch(() => null)
+  if (requestId != mvRequestId || background.value != 'mv') return
   if (!track) {
     mvUrl.value = ''
     activeMvKey.value = ''
@@ -300,6 +315,15 @@ const loadMv = async() => {
   }
 }
 
+const scheduleMvLoad = () => {
+  if (mvLoadQueued) return
+  mvLoadQueued = true
+  void nextTick(() => {
+    mvLoadQueued = false
+    void loadMv()
+  })
+}
+
 const selectMvCandidate = candidate => {
   mvOverride.value = {
     bvid: candidate.bvid,
@@ -310,7 +334,7 @@ const selectMvCandidate = candidate => {
   }
   mvStatus.value = 'loading'
   mvError.value = ''
-  void loadMv()
+  scheduleMvLoad()
 }
 
 const selectLyricCandidate = candidate => {
@@ -411,11 +435,13 @@ const parseWordLines = source => {
 
 const timedLines = computed(() => parseWordLines(musicInfo.lxlrc))
 
+const wordSegmenter = typeof Intl.Segmenter == 'function'
+  ? new Intl.Segmenter(undefined, { granularity: 'word' })
+  : null
 const splitFallbackText = text => {
   if (!text) return []
-  if (typeof Intl?.Segmenter == 'function') {
-    const segmenter = new Intl.Segmenter(undefined, { granularity: 'word' })
-    return [...segmenter.segment(text)].map(item => item.segment).filter(Boolean)
+  if (wordSegmenter) {
+    return [...wordSegmenter.segment(text)].map(item => item.segment).filter(Boolean)
   }
   return text.match(/[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]|\s+|[^\s\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]+/g) ?? [text]
 }
@@ -546,27 +572,40 @@ const handleKeydown = event => {
   closeButton.value?.click()
 }
 
+const stopMvSync = () => {
+  if (!mvSyncTimer) return
+  window.clearInterval(mvSyncTimer)
+  mvSyncTimer = 0
+}
+
+const updateMvSync = () => {
+  stopMvSync()
+  if (background.value != 'mv' || !isPlay.value || !mvUrl.value) return
+  mvSyncTimer = window.setInterval(() => {
+    void syncMvPlayback()
+  }, 800)
+}
+
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown, true)
-  mvSyncTimer = window.setInterval(() => {
-    if (background.value == 'mv') void syncMvPlayback()
-  }, 800)
+  updateMvSync()
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleKeydown, true)
   window.clearTimeout(hideTimer)
-  window.clearInterval(mvSyncTimer)
+  stopMvSync()
   mvRequestId += 1
+  lyricRequestId += 1
 })
 
-watch(() => [background.value, biliTrackKey.value], () => {
-  void loadMv()
+watch(() => [background.value, biliTrackKey.value, musicInfo.id], () => {
+  scheduleMvLoad()
 }, { immediate: true })
 
 watch(() => appSetting['playDetail.immersiveMvSource'], () => {
   mvOverride.value = null
-  void loadMv()
+  scheduleMvLoad()
 })
 
 watch(() => appSetting['playDetail.immersiveLyricSource'], () => {
@@ -577,11 +616,11 @@ watch(() => musicInfo.id, () => {
   mvOverride.value = null
   originalLyricTrackId = ''
   originalLyric.value = null
-  void loadMv()
   void applyLyricSource()
 })
 
-watch(isPlay, () => {
+watch(() => [isPlay.value, background.value, mvUrl.value], () => {
+  updateMvSync()
   void syncMvPlayback()
 })
 </script>

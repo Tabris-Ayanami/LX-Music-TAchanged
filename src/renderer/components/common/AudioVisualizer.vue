@@ -56,6 +56,11 @@ export default {
     let ambientLow = 0
     let ambientMid = 0
     let ambientHigh = 0
+    let waveX = new Float32Array(0)
+    let waveY = new Float32Array(0)
+    let waveEnvelope = new Float32Array(0)
+    let waveFillGradient
+    let barsGradient
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
     // const theme = useRefGetter('theme')
@@ -81,46 +86,52 @@ export default {
       const centerY = HEIGHT * 0.52
       const amplitude = HEIGHT * 0.44
       const pointCount = Math.min(dataArray.length, Math.max(180, Math.round(WIDTH / 3)))
-      const points = new Array(pointCount)
+      if (waveX.length != pointCount) {
+        waveX = new Float32Array(pointCount)
+        waveY = new Float32Array(pointCount)
+        waveEnvelope = new Float32Array(pointCount)
+        for (let i = 0; i < pointCount; i++) {
+          waveX[i] = WIDTH * i / Math.max(1, pointCount - 1)
+          waveEnvelope[i] = Math.sin(Math.PI * i / Math.max(1, pointCount - 1))
+        }
+      }
 
       for (let i = 0; i < pointCount; i++) {
         const sourceIndex = Math.floor(i * (dataArray.length - 1) / Math.max(1, pointCount - 1))
         const normalized = Math.max(-1, Math.min(1, (dataArray[sourceIndex] - 128) / 12))
-        const edgeEnvelope = Math.sin(Math.PI * i / Math.max(1, pointCount - 1))
-        points[i] = {
-          x: WIDTH * i / Math.max(1, pointCount - 1),
-          y: centerY + normalized * amplitude * (0.18 + edgeEnvelope * 0.82),
-        }
+        waveY[i] = centerY + normalized * amplitude * (0.18 + waveEnvelope[i] * 0.82)
       }
 
-      const fillGradient = ctx.createLinearGradient(0, 0, 0, HEIGHT)
-      fillGradient.addColorStop(0, 'rgba(255, 255, 255, .08)')
-      fillGradient.addColorStop(0.5, themeColor)
-      fillGradient.addColorStop(1, 'rgba(8, 10, 16, .02)')
+      if (!waveFillGradient) {
+        waveFillGradient = ctx.createLinearGradient(0, 0, 0, HEIGHT)
+        waveFillGradient.addColorStop(0, 'rgba(255, 255, 255, .08)')
+        waveFillGradient.addColorStop(0.5, themeColor)
+        waveFillGradient.addColorStop(1, 'rgba(8, 10, 16, .02)')
+      }
 
       ctx.beginPath()
-      ctx.moveTo(points[0].x, points[0].y)
-      for (let i = 1; i < points.length - 1; i++) {
-        const midpointX = (points[i].x + points[i + 1].x) / 2
-        const midpointY = (points[i].y + points[i + 1].y) / 2
-        ctx.quadraticCurveTo(points[i].x, points[i].y, midpointX, midpointY)
+      ctx.moveTo(waveX[0], waveY[0])
+      for (let i = 1; i < pointCount - 1; i++) {
+        const midpointX = (waveX[i] + waveX[i + 1]) / 2
+        const midpointY = (waveY[i] + waveY[i + 1]) / 2
+        ctx.quadraticCurveTo(waveX[i], waveY[i], midpointX, midpointY)
       }
-      ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y)
+      ctx.lineTo(waveX[pointCount - 1], waveY[pointCount - 1])
       ctx.lineTo(WIDTH, HEIGHT)
       ctx.lineTo(0, HEIGHT)
       ctx.closePath()
       ctx.globalAlpha = 0.24
-      ctx.fillStyle = fillGradient
+      ctx.fillStyle = waveFillGradient
       ctx.fill()
 
       ctx.beginPath()
-      ctx.moveTo(points[0].x, points[0].y)
-      for (let i = 1; i < points.length - 1; i++) {
-        const midpointX = (points[i].x + points[i + 1].x) / 2
-        const midpointY = (points[i].y + points[i + 1].y) / 2
-        ctx.quadraticCurveTo(points[i].x, points[i].y, midpointX, midpointY)
+      ctx.moveTo(waveX[0], waveY[0])
+      for (let i = 1; i < pointCount - 1; i++) {
+        const midpointX = (waveX[i] + waveX[i + 1]) / 2
+        const midpointY = (waveY[i] + waveY[i + 1]) / 2
+        ctx.quadraticCurveTo(waveX[i], waveY[i], midpointX, midpointY)
       }
-      ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y)
+      ctx.lineTo(waveX[pointCount - 1], waveY[pointCount - 1])
       ctx.globalAlpha = 0.96
       ctx.lineWidth = Math.max(2.25, HEIGHT / 42)
       ctx.lineJoin = 'round'
@@ -145,12 +156,14 @@ export default {
       const barWidth = Math.max(2, (WIDTH - gap * (barCount - 1)) / barCount)
       const maxBarHeight = HEIGHT * (props.variant == 'bottom' ? 0.78 : 0.4)
       const usableBins = Math.max(1, Math.min(bufferLength, Math.round(bufferLength * 0.42)))
-      const gradient = ctx.createLinearGradient(0, HEIGHT, 0, HEIGHT - maxBarHeight)
-      gradient.addColorStop(0, themeColor)
-      gradient.addColorStop(0.72, themeColor)
-      gradient.addColorStop(1, 'rgba(255, 255, 255, .96)')
+      if (!barsGradient) {
+        barsGradient = ctx.createLinearGradient(0, HEIGHT, 0, HEIGHT - maxBarHeight)
+        barsGradient.addColorStop(0, themeColor)
+        barsGradient.addColorStop(0.72, themeColor)
+        barsGradient.addColorStop(1, 'rgba(255, 255, 255, .96)')
+      }
 
-      ctx.fillStyle = gradient
+      ctx.fillStyle = barsGradient
       ctx.shadowColor = themeColor
       ctx.shadowBlur = Math.max(5, HEIGHT / 18)
       for (let i = 0; i < barCount; i++) {
@@ -264,7 +277,7 @@ export default {
       if (animationFrameId) return
       // analyser.fftSize = 256
       bufferLength = props.mode == 'wave' ? analyser.fftSize : analyser.frequencyBinCount
-      dataArray = new Uint8Array(bufferLength)
+      if (!dataArray || dataArray.length != bufferLength) dataArray = new Uint8Array(bufferLength)
       renderFrame()
     }
     const handlePlay = () => {
@@ -297,6 +310,11 @@ export default {
       WIDTH = canvas.width
       HEIGHT = canvas.height
       themeColor = resolveThemeColor()
+      waveX = new Float32Array(0)
+      waveY = new Float32Array(0)
+      waveEnvelope = new Float32Array(0)
+      waveFillGradient = null
+      barsGradient = null
     }
 
     onBeforeUnmount(() => {

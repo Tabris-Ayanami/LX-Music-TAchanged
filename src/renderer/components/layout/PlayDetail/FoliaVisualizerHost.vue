@@ -108,7 +108,6 @@ watch(
   () => {
     void nextTick(render)
   },
-  { deep: true },
 )
 
 onMounted(() => {

@@ -1,5 +1,6 @@
 import http from 'node:http'
 import { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 import { biliHeaders } from './request'
 
 interface TokenInfo {
@@ -46,6 +47,15 @@ const startServer = async() => {
   if (startServerPromise) return startServerPromise
 
   const createdServer = http.createServer(async(req, res) => {
+    const controller = new AbortController()
+    const abortUpstream = () => {
+      controller.abort()
+    }
+    const abortIncompleteResponse = () => {
+      if (!res.writableEnded) controller.abort()
+    }
+    req.once('aborted', abortUpstream)
+    res.once('close', abortIncompleteResponse)
     try {
       const requestUrl = new URL(req.url ?? '/', `http://${req.headers.host ?? '127.0.0.1'}`)
       if (
@@ -67,7 +77,7 @@ const startServer = async() => {
       const isMedia = requestUrl.pathname === '/bili/audio' || requestUrl.pathname === '/bili/video'
       const isVideo = requestUrl.pathname === '/bili/video'
       const headers = await biliHeaders(isMedia && req.headers.range ? { Range: req.headers.range } : undefined)
-      const upstream = await fetch(info.url, { headers })
+      const upstream = await fetch(info.url, { headers, signal: controller.signal })
       const responseHeaders: Record<string, string> = {
         'Content-Type': upstream.headers.get('content-type') ?? info.contentType ?? (isVideo ? 'video/mp4' : isMedia ? 'audio/mp4' : 'image/jpeg'),
         'Cache-Control': isMedia ? 'no-store' : 'public, max-age=86400',
@@ -83,9 +93,14 @@ const startServer = async() => {
         res.end()
         return
       }
-      Readable.fromWeb(upstream.body as any).pipe(res)
+      await pipeline(Readable.fromWeb(upstream.body as any), res)
     } catch (err: any) {
-      writeError(res, 502, err.message || 'B站音频代理失败')
+      if (!res.headersSent && !res.destroyed) {
+        writeError(res, 502, err.message || 'B站音频代理失败')
+      }
+    } finally {
+      req.off('aborted', abortUpstream)
+      res.off('close', abortIncompleteResponse)
     }
   })
   server = createdServer

@@ -1,6 +1,6 @@
 {
   "name": "lx-music-desktop",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "一个免费的音乐查找助手",
   "main": "./dist/main.js",
   "scripts": {
@@ -61,8 +61,8 @@
     "build:renderer": "cross-env NODE_ENV=production webpack --config build-config/renderer/webpack.config.prod.js --progress",
     "build:renderer-lyric": "cross-env NODE_ENV=production webpack --config build-config/renderer-lyric/webpack.config.prod.js --progress",
     "build:renderer-scripts": "cross-env NODE_ENV=production webpack --config build-config/renderer-scripts/webpack.config.prod.js --progress",
-    "lint": "eslint --ext .ts,.js,.vue -f node_modules/eslint-formatter-friendly src",
-    "lint:fix": "eslint --ext .ts,.js,.vue -f node_modules/eslint-formatter-friendly --fix src",
+    "lint": "eslint --ignore-pattern src/renderer/vendor/folia/** --ext .ts,.tsx,.js,.vue -f node_modules/eslint-formatter-friendly src",
+    "lint:fix": "eslint --ignore-pattern src/renderer/vendor/folia/** --ext .ts,.tsx,.js,.vue -f node_modules/eslint-formatter-friendly --fix src",
     "typecheck": "npx tsc --noEmit -p src/common/tsconfig.json && npx tsc --noEmit -p src/main/tsconfig.json && npx tsc --noEmit -p src/renderer/tsconfig.json",
     "test:unit": "node scripts/quality/run-node-regression-tests.cjs",
     "test:bili": "node scripts/quality/test-bili-source.cjs",

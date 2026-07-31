@@ -107,6 +107,10 @@ const loading = ref(false)
 const candidates = ref([])
 const lyricLoading = ref(false)
 const lyricCandidates = ref([])
+let searchCacheKey = ''
+let searchPromise = null
+const candidatesResultKey = ref('')
+const lyricResultKey = ref('')
 const mvSources = [
   { id: 'auto', name: window.i18n.t('setting__play_detail_immersive_source_auto'), description: '优先当前来源，再自动匹配' },
   { id: 'current', name: window.i18n.t('setting__play_detail_immersive_source_current'), description: '仅使用当前歌曲的 MV' },
@@ -119,31 +123,57 @@ const lyricSources = [
   { id: 'netease', name: window.i18n.t('setting__play_detail_immersive_source_netease'), description: '网易云歌词与逐字歌词' },
   { id: 'lrclib', name: window.i18n.t('setting__play_detail_immersive_source_lrclib'), description: 'LRCLIB 同步歌词' },
 ]
+const getSearchKey = () => [props.title, props.artist].map(value => String(value ?? '').trim()).join('\u0000')
+const getLyricKey = () => [
+  getSearchKey(),
+  Number(props.duration || 0),
+  props.biliTrack?.bvid ?? '',
+  props.biliTrack?.cid ?? props.biliTrack?.page ?? '',
+].join('\u0000')
+const getSearchResults = () => {
+  const key = getSearchKey()
+  if (!String(props.title ?? '').trim()) return Promise.resolve([])
+  if (key != searchCacheKey || !searchPromise) {
+    searchCacheKey = key
+    const keyword = [props.title, props.artist].filter(Boolean).join(' ')
+    searchPromise = biliSearch({ keyword, page: 1, limit: 8 })
+      .then(result => result.list ?? [])
+      .catch(error => {
+        if (searchCacheKey == key) searchPromise = null
+        throw error
+      })
+  }
+  return searchPromise
+}
 const searchCandidates = async() => {
   if (!props.title) return
+  const requestKey = getSearchKey()
+  if (candidatesResultKey.value == requestKey) return
   loading.value = true
   try {
-    const result = await biliSearch({ keyword: [props.title, props.artist].filter(Boolean).join(' '), page: 1, limit: 8 })
-    candidates.value = await Promise.all((result.list ?? []).map(async(candidate) => ({
+    const list = await getSearchResults()
+    const nextCandidates = await Promise.all(list.map(async(candidate) => ({
       ...candidate,
       cover: await getBiliPic(candidate).catch(() => candidate.cover),
     })))
+    if (requestKey != getSearchKey()) return
+    candidates.value = nextCandidates
+    candidatesResultKey.value = requestKey
   } catch {
-    candidates.value = []
+    if (requestKey == getSearchKey()) candidates.value = []
   } finally {
-    loading.value = false
+    if (requestKey == getSearchKey()) loading.value = false
   }
 }
 const searchLyricCandidates = async() => {
   if (!props.title) return
+  const requestKey = getLyricKey()
+  if (lyricResultKey.value == requestKey) return
   lyricLoading.value = true
   try {
-    let biliCandidate = props.biliTrack ?? candidates.value[0] ?? null
-    if (!biliCandidate) {
-      const biliResult = await biliSearch({ keyword: [props.title, props.artist].filter(Boolean).join(' '), page: 1, limit: 5 })
-      biliCandidate = biliResult.list?.[0] ?? null
-    }
-    lyricCandidates.value = await getBiliLyricSourceCandidates({
+    const list = await getSearchResults()
+    const biliCandidate = props.biliTrack ?? list[0] ?? null
+    const nextCandidates = await getBiliLyricSourceCandidates({
       source: 'auto',
       bvid: biliCandidate?.bvid,
       cid: biliCandidate?.cid,
@@ -152,10 +182,13 @@ const searchLyricCandidates = async() => {
       artist: props.artist,
       duration: props.duration || null,
     })
+    if (requestKey != getLyricKey()) return
+    lyricCandidates.value = nextCandidates
+    lyricResultKey.value = requestKey
   } catch {
-    lyricCandidates.value = []
+    if (requestKey == getLyricKey()) lyricCandidates.value = []
   } finally {
-    lyricLoading.value = false
+    if (requestKey == getLyricKey()) lyricLoading.value = false
   }
 }
 const selectMvSource = id => {
@@ -182,8 +215,19 @@ const selectLyricCandidate = candidate => {
   emit('select-lyric', candidate)
   close()
 }
-watch(() => props.show, value => {
-  if (!value) return
+watch(() => [
+  props.show,
+  props.title,
+  props.artist,
+  props.duration,
+  props.biliTrack?.bvid,
+  props.biliTrack?.cid,
+  props.biliTrack?.page,
+], ([show]) => {
+  if (!show) return
+  const key = getSearchKey()
+  if (candidatesResultKey.value != key) candidates.value = []
+  if (lyricResultKey.value != getLyricKey()) lyricCandidates.value = []
   void searchCandidates()
   void searchLyricCandidates()
 })

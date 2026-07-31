@@ -64,7 +64,7 @@ exports.html = {
 }
 
 exports.typescript = {
-  files: ['*.ts'],
+  files: ['*.ts', '*.tsx'],
   rules: typescriptRule,
   parser: '@typescript-eslint/parser',
   extends: [

@@ -106,18 +106,18 @@ class FoliaErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryStat
     console.error('[Folia] visualizer render failed', error)
   }
 
+  // React 19 includes Promise in ReactNode, but class render methods must stay synchronous.
+  // eslint-disable-next-line @typescript-eslint/promise-function-async
   render() {
     if (this.state.failed) return this.props.fallback
     return this.props.children
   }
 }
 
-const average = (values: Uint8Array, start: number, end: number) => {
-  const safeStart = Math.max(0, Math.min(values.length - 1, Math.floor(start)))
-  const safeEnd = Math.max(safeStart + 1, Math.min(values.length, Math.ceil(end)))
-  let total = 0
-  for (let index = safeStart; index < safeEnd; index++) total += values[index]
-  return total / (safeEnd - safeStart)
+const average = (prefix: Uint32Array, valueCount: number, start: number, end: number) => {
+  const safeStart = Math.max(0, Math.min(valueCount - 1, Math.floor(start)))
+  const safeEnd = Math.max(safeStart + 1, Math.min(valueCount, Math.ceil(end)))
+  return (prefix[safeEnd] - prefix[safeStart]) / (safeEnd - safeStart)
 }
 
 const FoliaFallback = ({ line, theme }: { line?: Line, theme: Theme }) => (
@@ -156,6 +156,9 @@ const FoliaVisualizer = (props: FoliaVisualizerProps) => {
   useEffect(() => {
     let frameId = 0
     let frequencyData = new Uint8Array(0)
+    let frequencyPrefix = new Uint32Array(0)
+    let spectrumBuffers = [new Uint8Array(0), new Uint8Array(0)]
+    let spectrumWriteIndex = 0
     let spectrumFrame = 0
 
     const renderFrame = () => {
@@ -164,26 +167,40 @@ const FoliaVisualizer = (props: FoliaVisualizerProps) => {
       if (analyser) {
         if (frequencyData.length !== analyser.frequencyBinCount) {
           frequencyData = new Uint8Array(analyser.frequencyBinCount)
+          frequencyPrefix = new Uint32Array(analyser.frequencyBinCount + 1)
+          spectrumBuffers = [
+            new Uint8Array(analyser.frequencyBinCount),
+            new Uint8Array(analyser.frequencyBinCount),
+          ]
         }
         analyser.getByteFrequencyData(frequencyData)
+        frequencyPrefix[0] = 0
+        for (let index = 0; index < frequencyData.length; index++) {
+          frequencyPrefix[index + 1] = frequencyPrefix[index] + frequencyData[index]
+        }
         const audioContext = getAudioContext()
         const hzPerBin = (audioContext?.sampleRate ?? 44100) / analyser.fftSize
         const bin = (hz: number) => hz / hzPerBin
-        bass.set(average(frequencyData, bin(20), bin(150)))
-        lowMid.set(average(frequencyData, bin(150), bin(400)))
-        mid.set(average(frequencyData, bin(400), bin(1200)))
-        vocal.set(average(frequencyData, bin(1000), bin(3500)))
-        treble.set(average(frequencyData, bin(3500), bin(12000)))
-        audioPower.set(average(frequencyData, bin(20), bin(12000)))
-        // Spectrum consumers do not need a fresh allocation at display refresh
-        // rate. Updating at ~20 fps keeps the visual fluid and reduces GC churn.
-        if (++spectrumFrame % 3 === 0) spectrum.set(frequencyData.slice())
+        bass.set(average(frequencyPrefix, frequencyData.length, bin(20), bin(150)))
+        lowMid.set(average(frequencyPrefix, frequencyData.length, bin(150), bin(400)))
+        mid.set(average(frequencyPrefix, frequencyData.length, bin(400), bin(1200)))
+        vocal.set(average(frequencyPrefix, frequencyData.length, bin(1000), bin(3500)))
+        treble.set(average(frequencyPrefix, frequencyData.length, bin(3500), bin(12000)))
+        audioPower.set(average(frequencyPrefix, frequencyData.length, bin(20), bin(12000)))
+        if (++spectrumFrame % 3 === 0) {
+          const nextSpectrum = spectrumBuffers[spectrumWriteIndex]
+          nextSpectrum.set(frequencyData)
+          spectrum.set(nextSpectrum)
+          spectrumWriteIndex = spectrumWriteIndex ? 0 : 1
+        }
       }
       if (props.playing) frameId = window.requestAnimationFrame(renderFrame)
     }
 
     renderFrame()
-    return () => window.cancelAnimationFrame(frameId)
+    return () => {
+      window.cancelAnimationFrame(frameId)
+    }
   }, [audioPower, bass, currentTime, lowMid, mid, props.playing, spectrum, treble, vocal])
 
   const Visualizer = visualizers[props.effect] ?? visualizers.classic
