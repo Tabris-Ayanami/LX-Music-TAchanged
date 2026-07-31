@@ -17,7 +17,21 @@
     "plugins": [
       "@vue/language-plugin-pug"
     ]
-  }
+  },
+  "exclude": [
+    "vendor/folia/components/visualizer/backgrounds/**/*",
+    "vendor/folia/components/visualizer/registry.tsx",
+    "vendor/folia/components/visualizer/tuningRegistry.ts",
+    "vendor/folia/components/visualizer/VisualizerRenderer.tsx",
+    "vendor/folia/components/visualizer/VisPlayground*.tsx",
+    "vendor/folia/components/visualizer/useVisPlayground*.ts",
+    "vendor/folia/components/visualizer/FontFallbackStackControl.tsx",
+    "vendor/folia/components/visualizer/PreviewPlaceholder.ts",
+    "vendor/folia/components/visualizer/settingsPanels.tsx",
+    "vendor/folia/components/visualizer/*/entry.tsx",
+    "vendor/folia/components/visualizer/*/tuning.ts",
+    "vendor/folia/components/visualizer/**/*SettingsPanel.tsx"
+  ]
   // "include": [
 	//   "./**/*.ts",
 	//   // "./**/*.js",

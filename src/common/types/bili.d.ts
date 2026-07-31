@@ -46,11 +46,36 @@ declare namespace LX {
       duration?: number | null
     }
 
+    type LyricSource = 'auto' | 'bili' | 'netease' | 'lrclib'
+    interface LyricMatchParams {
+      source: LyricSource
+      bvid?: string
+      cid?: number | string
+      page?: number | string
+      title: string
+      artist?: string
+      duration?: number | null
+    }
+    interface LyricCandidate {
+      source: LyricSource
+      title: string
+      preview: string
+      lyrics: LX.Music.LyricInfo
+    }
+
     interface MusicUrlResult {
       type: LX.Quality
       url: string
       rawUrl: string
       expiresAt: number
+    }
+
+    interface VideoUrlResult {
+      url: string
+      rawUrl: string
+      expiresAt: number
+      width: number | null
+      height: number | null
     }
 
     interface MusicQualityInfo {

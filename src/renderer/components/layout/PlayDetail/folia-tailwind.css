@@ -1,0 +1,19 @@
+@layer theme, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source("../../../vendor/folia");
+
+.folia-visualizer-root {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  isolation: isolate;
+}
+
+.folia-visualizer-root > div {
+  width: 100%;
+  height: 100%;
+}

@@ -560,6 +560,10 @@ export const getBiliMusicUrl = async(info: LX.Bili.TrackParams, type: LX.Quality
   return rendererInvoke<{ info: LX.Bili.TrackParams, type: LX.Quality }, LX.Bili.MusicUrlResult>(BILI_RENDERER_EVENT_NAME.get_music_url, { info, type })
 }
 
+export const getBiliVideoUrl = async(info: LX.Bili.TrackParams): Promise<LX.Bili.VideoUrlResult> => {
+  return rendererInvoke<LX.Bili.TrackParams, LX.Bili.VideoUrlResult>(BILI_RENDERER_EVENT_NAME.get_video_url, info)
+}
+
 export const getBiliMusicQualitys = async(info: LX.Bili.TrackParams): Promise<LX.Bili.MusicQualityInfo> => {
   return rendererInvoke<LX.Bili.TrackParams, LX.Bili.MusicQualityInfo>(BILI_RENDERER_EVENT_NAME.get_music_qualitys, info)
 }
@@ -570,6 +574,14 @@ export const getBiliPic = async(info: LX.Bili.TrackParams): Promise<string> => {
 
 export const getBiliLyric = async(info: LX.Bili.TrackParams): Promise<LX.Music.LyricInfo> => {
   return rendererInvoke<LX.Bili.TrackParams, LX.Music.LyricInfo>(BILI_RENDERER_EVENT_NAME.get_lyric, info)
+}
+
+export const getBiliLyricSource = async(info: LX.Bili.LyricMatchParams): Promise<LX.Music.LyricInfo> => {
+  return rendererInvoke<LX.Bili.LyricMatchParams, LX.Music.LyricInfo>(BILI_RENDERER_EVENT_NAME.get_lyric_source, info)
+}
+
+export const getBiliLyricSourceCandidates = async(info: LX.Bili.LyricMatchParams): Promise<LX.Bili.LyricCandidate[]> => {
+  return rendererInvoke<LX.Bili.LyricMatchParams, LX.Bili.LyricCandidate[]>(BILI_RENDERER_EVENT_NAME.get_lyric_source_candidates, info)
 }
 
 export const getBiliComment = async(info: LX.Bili.CommentParams): Promise<LX.Bili.CommentInfo> => {

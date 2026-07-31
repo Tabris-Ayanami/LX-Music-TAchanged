@@ -1,6 +1,6 @@
-import { createImageProxyUrl, createProxyUrl } from './proxy'
+import { createImageProxyUrl, createProxyUrl, createVideoProxyUrl } from './proxy'
 import { BILI_USER_AGENT, getAccountInfo, normalizeBiliUrl, requestJson } from './request'
-import type { BiliCommentInfo, BiliCommentItem, BiliCommentParams, BiliMusicQualityInfo, BiliMusicUrlResult, BiliSearchParams, BiliSearchResult, BiliSongListDetail, BiliSongListDetailParams, BiliTrack, BiliTrackParams } from './types'
+import type { BiliCommentInfo, BiliCommentItem, BiliCommentParams, BiliLyricCandidate, BiliLyricMatchParams, BiliMusicQualityInfo, BiliMusicUrlResult, BiliSearchParams, BiliSearchResult, BiliSongListDetail, BiliSongListDetailParams, BiliTrack, BiliTrackParams, BiliVideoUrlResult } from './types'
 
 const decodeHtml = (text: unknown) => String(text ?? '')
   .replace(/&quot;/g, '"')
@@ -120,6 +120,7 @@ export const getSongListDetail = async(params: BiliSongListDetailParams): Promis
 }
 
 const getAudioUrl = (audio: any) => audio?.baseUrl || audio?.base_url || audio?.url || audio?.backupUrl?.[0] || audio?.backup_url?.[0]
+const getVideoUrlValue = getAudioUrl
 
 const getAudioQualityScore = (audio: any) => Number(audio?.bandwidth || audio?.codecid || audio?.id || 0)
 
@@ -236,6 +237,40 @@ export const getMusicUrl = async(params: BiliTrackParams, type: LX.Quality = '12
   return { type, url, rawUrl, expiresAt }
 }
 
+export const getVideoUrl = async(params: BiliTrackParams): Promise<BiliVideoUrlResult> => {
+  const playInfo = await getPlayInfo(params)
+  const videos = (playInfo?.dash?.video || []).filter(getVideoUrlValue)
+  const progressive = playInfo?.durl?.find((item: any) => getVideoUrlValue(item))
+  if (!videos.length && !progressive) throw new Error('当前 B 站视频没有可用的视频流')
+
+  // The MV is a moving background, so 720p is the best balance between detail,
+  // bandwidth and GPU decode cost. Fall back to the nearest available stream.
+  const preferred = videos.filter((video: any) => {
+    const height = Number(video.height || 0)
+    return height > 0 && height <= 720
+  })
+  const pool = preferred.length ? preferred : videos
+  const video = [...pool].sort((a: any, b: any) => {
+    // Prefer AVC when available; it is the most reliable codec for Electron
+    // builds with hardware decode disabled.
+    const codecDiff = Number(b.codecid == 7) - Number(a.codecid == 7)
+    if (codecDiff) return codecDiff
+    const heightDiff = Number(b.height || 0) - Number(a.height || 0)
+    return heightDiff || Number(b.bandwidth || 0) - Number(a.bandwidth || 0)
+  })[0] ?? progressive
+  const rawUrl = getVideoUrlValue(video)
+  if (!rawUrl) throw new Error('未找到可用的 B 站视频流')
+
+  const expiresAt = Date.now() + 110 * 60 * 1000
+  return {
+    url: await createVideoProxyUrl(rawUrl, expiresAt),
+    rawUrl,
+    expiresAt,
+    width: Number.isFinite(Number(video.width)) ? Number(video.width) : null,
+    height: Number.isFinite(Number(video.height)) ? Number(video.height) : null,
+  }
+}
+
 const dateFormat2 = (time: number): string => {
   const differ = Math.trunc((Date.now() - time) / 1000)
   if (differ < 60) return `${Math.max(differ, 0)}秒前`
@@ -320,8 +355,8 @@ const secondsToLrcTime = (seconds: number) => {
   return `${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}.${String(centisecond).padStart(2, '0')}`
 }
 
-export const getLyric = async(params: BiliTrackParams): Promise<LX.Music.LyricInfo> => {
-  const { view, page } = await getTrackViewAndPage(params)
+const getBiliSubtitleLyric = async(params: BiliTrackParams): Promise<LX.Music.LyricInfo> => {
+  const { page } = await getTrackViewAndPage(params)
   const playerInfo = await requestJson<any>('/x/player/wbi/v2', {
     bvid: params.bvid,
     cid: Number(page.cid),
@@ -345,6 +380,29 @@ export const getLyric = async(params: BiliTrackParams): Promise<LX.Music.LyricIn
     if (lyric) return { lyric }
   }
 
+  return { lyric: '' }
+}
+
+const parseNeteaseWordLyric = (source: string | undefined) => {
+  if (!source) return ''
+  return source.split(/\r\n|\r|\n/).map(line => {
+    const time = line.match(/^\[(\d+),(\d+)\]/)
+    if (!time) return line
+    const start = Number(time[1])
+    const body = line.slice(time[0].length)
+    const words = [...body.matchAll(/\((\d+),(\d+),\d+\)([^()]*)/g)]
+    if (!words.length) return line
+    const text = words.map(item => {
+      const offset = Number(item[1])
+      const duration = Number(item[2])
+      return `<${offset},${Math.max(80, duration)}>${item[3]}`
+    }).join('')
+    return `[${secondsToLrcTime(start / 1000)}]${text}`
+  }).join('\n')
+}
+
+const getExternalLyricCandidatesForTrack = async(params: BiliTrackParams) => {
+  const { view, page } = await getTrackViewAndPage(params)
   const pageDuration = Number(page.duration)
   return getExternalLyricCandidates({
     titles: [
@@ -358,6 +416,62 @@ export const getLyric = async(params: BiliTrackParams): Promise<LX.Music.LyricIn
   })
 }
 
+export const getLyric = async(params: BiliTrackParams): Promise<LX.Music.LyricInfo> => {
+  const biliLyric = await getBiliSubtitleLyric(params)
+  if (biliLyric.lyric) return biliLyric
+  return getExternalLyricCandidatesForTrack(params)
+}
+
+export const getLyricSource = async(params: BiliLyricMatchParams): Promise<LX.Music.LyricInfo> => {
+  const source = params.source ?? 'auto'
+  const identity = normalizeLyricIdentity(params.title, params.artist)
+  const externalParams = {
+    title: identity.title,
+    artist: identity.artist,
+    duration: params.duration,
+  }
+  const biliParams = params.bvid ? { ...params, bvid: params.bvid } : null
+  if (source == 'bili' && biliParams) return getBiliSubtitleLyric(biliParams)
+  if (source == 'lrclib') {
+    return { lyric: await getLrclibLyric(externalParams.title, externalParams.artist, externalParams.duration) }
+  }
+  if (source == 'netease') return getNeteaseLyric(externalParams.title, externalParams.artist, externalParams.duration)
+  if (source == 'auto' && biliParams) {
+    const bili = await getBiliSubtitleLyric(biliParams)
+    if (bili.lyric) return bili
+  }
+  return getExternalLyric(externalParams)
+}
+
+export const getLyricSourceCandidates = async(params: BiliLyricMatchParams): Promise<BiliLyricCandidate[]> => {
+  const identity = normalizeLyricIdentity(params.title, params.artist)
+  const tasks: Array<Promise<BiliLyricCandidate[]>> = [
+    getNeteaseLyricCandidates(identity.title, identity.artist, params.duration, 5).then(items => items.map(item => ({
+      source: 'netease' as const,
+      title: `网易云 · ${item.title}${item.artist ? ` — ${item.artist}` : ''}`,
+      preview: toLyricPreview(item.lyrics.lyric),
+      lyrics: item.lyrics,
+    }))).catch(() => []),
+    getLrclibLyricCandidates(identity.title, identity.artist, params.duration, 4).then(items => items.map(item => ({
+      source: 'lrclib' as const,
+      title: `LRCLIB · ${item.title}${item.artist ? ` — ${item.artist}` : ''}`,
+      preview: toLyricPreview(item.lyrics.lyric),
+      lyrics: item.lyrics,
+    }))).catch(() => []),
+  ]
+  if (params.bvid) {
+    tasks.unshift(getBiliSubtitleLyric({ ...params, bvid: params.bvid }).then(lyrics => lyrics.lyric
+      ? [{
+          source: 'bili' as const,
+          title: `Bilibili · ${identity.title}`,
+          preview: toLyricPreview(lyrics.lyric),
+          lyrics,
+        }]
+      : []).catch(() => []))
+  }
+  return (await Promise.all(tasks)).flat()
+}
+
 export { getAccountInfo }
 
 const stripSongDecorations = (text: string) => text
@@ -367,6 +481,61 @@ const stripSongDecorations = (text: string) => text
   .replace(/[｜|].*$/g, ' ')
   .replace(/\s+/g, ' ')
   .trim()
+
+const normalizeLyricIdentity = (title: string, artist?: string) => {
+  const rawTitle = stripSongDecorations(title)
+  const rawArtist = stripSongDecorations(artist ?? '')
+  let cleanTitle = rawTitle
+  let parsedArtist = ''
+  const bracketMatch = cleanTitle.match(/[《「『](.+?)[》」』]/u)
+  if (bracketMatch) {
+    const prefix = cleanTitle.slice(0, bracketMatch.index ?? 0)
+    const separatorMatch = prefix.match(/(.+?)\s*[-—–:：]\s*$/u)
+    if (separatorMatch) parsedArtist = stripSongDecorations(separatorMatch[1])
+    cleanTitle = bracketMatch[1].trim()
+  } else {
+    const separatorMatch = cleanTitle.match(/^(.{1,40}?)\s*[-—–:：]\s*(.+)$/u)
+    if (separatorMatch) {
+      parsedArtist = stripSongDecorations(separatorMatch[1])
+      cleanTitle = separatorMatch[2].trim()
+    }
+  }
+  cleanTitle = cleanTitle
+    .replace(/\s+(?:MV|PV|音乐视频|官方(?:音乐)?视频|完整版|字幕版|中字|4K|8K|1080P)\b.*$/iu, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  const uploaderLike = !rawArtist ||
+    /^(?:cuber[_\s-]?w|user\d+|official|官方|音乐频道|音乐无限)$/iu.test(rawArtist) ||
+    /[_-]/u.test(rawArtist)
+  return {
+    title: cleanTitle || rawTitle,
+    artist: uploaderLike && parsedArtist ? parsedArtist : rawArtist,
+  }
+}
+
+const normalizeMatchText = (text: unknown) => stripSongDecorations(String(text ?? ''))
+  .toLocaleLowerCase()
+  .replace(/[^\p{L}\p{N}]+/gu, '')
+
+const scoreMatchText = (target: string, candidate: string) => {
+  if (!target || !candidate) return 0
+  if (target == candidate) return 100
+  if (candidate.includes(target)) return 78
+  if (target.includes(candidate)) return 52
+  return 0
+}
+
+const getNeteaseArtistText = (song: any) => {
+  const artists = Array.isArray(song?.artists) ? song.artists : Array.isArray(song?.ar) ? song.ar : []
+  return artists.map((item: any) => item?.name).filter(Boolean).join(' ')
+}
+
+const toLyricPreview = (lyric: string) => lyric
+  .split(/\r\n|\r|\n/)
+  .map(line => line.replace(/^(?:\[[^\]]*])+/g, '').replace(/<\d+,\d+>/g, '').trim())
+  .filter(Boolean)
+  .slice(0, 3)
+  .join(' / ')
 
 const durationMatched = (target: number | null | undefined, candidateSeconds?: number, candidateMs?: number) => {
   if (!target) return true
@@ -386,7 +555,12 @@ const fetchJson = async<T>(url: string, headers?: Record<string, string>) => {
   return response.json() as Promise<T>
 }
 
-const getLrclibLyric = async(title: string, artist: string, duration: number | null | undefined) => {
+const getLrclibLyricCandidates = async(
+  title: string,
+  artist: string,
+  duration: number | null | undefined,
+  limit = 4,
+) => {
   const url = new URL('https://lrclib.net/api/search')
   url.searchParams.set('q', [title, artist].filter(Boolean).join(' '))
   const list = await fetchJson<Array<{
@@ -396,40 +570,91 @@ const getLrclibLyric = async(title: string, artist: string, duration: number | n
     artistName?: string
     duration?: number
   }>>(url.toString())
-  const item = list.find(song => song.syncedLyrics && durationMatched(duration, song.duration)) ?? list.find(song => song.syncedLyrics)
-  return item?.syncedLyrics?.trim() ?? ''
+  const normalizedTitle = normalizeMatchText(title)
+  const normalizedArtist = normalizeMatchText(artist)
+  const scored = list
+    .filter(song => song.syncedLyrics)
+    .map(song => {
+      const titleScore = scoreMatchText(normalizedTitle, normalizeMatchText(song.trackName))
+      const artistScore = scoreMatchText(normalizedArtist, normalizeMatchText(song.artistName))
+      const durationScore = durationMatched(duration, song.duration) ? 12 : 0
+      return { song, titleScore, artistScore, score: titleScore * 2 + artistScore + durationScore }
+    })
+    .sort((a, b) => b.score - a.score)
+  return scored
+    .filter(({ titleScore, artistScore }) => titleScore >= 78 && (!normalizedArtist || artistScore >= 45))
+    .slice(0, limit)
+    .map(({ song }) => ({
+      title: String(song.trackName ?? title),
+      artist: String(song.artistName ?? ''),
+      lyrics: { lyric: song.syncedLyrics?.trim() ?? '' },
+    }))
 }
 
-const getNeteaseLyric = async(title: string, artist: string, duration: number | null | undefined) => {
-  const searchUrl = new URL('https://interface.music.163.com/api/search/get')
-  searchUrl.searchParams.set('s', [title, artist].filter(Boolean).join(' '))
-  searchUrl.searchParams.set('type', '1')
-  searchUrl.searchParams.set('limit', '8')
-  searchUrl.searchParams.set('offset', '0')
-  const searchData = await fetchJson<any>(searchUrl.toString(), {
-    Referer: 'https://music.163.com/',
-    Origin: 'https://music.163.com',
-  })
-  const songs = searchData?.result?.songs || []
-  const song = songs.find((item: any) => durationMatched(duration, undefined, item.duration)) || songs[0]
-  if (!song?.id) return { lyric: '' }
+const getLrclibLyric = async(title: string, artist: string, duration: number | null | undefined) => {
+  return (await getLrclibLyricCandidates(title, artist, duration, 1))[0]?.lyrics.lyric ?? ''
+}
 
+const getNeteaseSongLyric = async(song: any): Promise<LX.Music.LyricInfo> => {
+  if (!song?.id) return { lyric: '' }
   const lyricUrl = new URL('https://interface.music.163.com/api/song/lyric')
   lyricUrl.searchParams.set('id', String(song.id))
   lyricUrl.searchParams.set('tv', '-1')
   lyricUrl.searchParams.set('lv', '-1')
   lyricUrl.searchParams.set('rv', '-1')
   lyricUrl.searchParams.set('kv', '-1')
+  lyricUrl.searchParams.set('yv', '-1')
   lyricUrl.searchParams.set('_nmclfl', '1')
   const lyricData = await fetchJson<any>(lyricUrl.toString(), {
     Referer: 'https://music.163.com/',
     Origin: 'https://music.163.com',
   })
-
   return {
     lyric: lyricData?.lrc?.lyric?.trim() || lyricData?.klyric?.lyric?.trim() || '',
+    lxlyric: parseNeteaseWordLyric(lyricData?.yrc?.lyric),
     tlyric: lyricData?.tlyric?.lyric?.trim() || undefined,
   }
+}
+
+const getNeteaseLyricCandidates = async(
+  title: string,
+  artist: string,
+  duration: number | null | undefined,
+  limit = 5,
+) => {
+  const searchUrl = new URL('https://interface.music.163.com/api/search/get')
+  searchUrl.searchParams.set('s', [title, artist].filter(Boolean).join(' '))
+  searchUrl.searchParams.set('type', '1')
+  searchUrl.searchParams.set('limit', '20')
+  searchUrl.searchParams.set('offset', '0')
+  const searchData = await fetchJson<any>(searchUrl.toString(), {
+    Referer: 'https://music.163.com/',
+    Origin: 'https://music.163.com',
+  })
+  const songs = searchData?.result?.songs || []
+  const normalizedTitle = normalizeMatchText(title)
+  const normalizedArtist = normalizeMatchText(artist)
+  const scoredSongs = songs.map((item: any) => {
+    const titleScore = scoreMatchText(normalizedTitle, normalizeMatchText(item.name))
+    const artistScore = scoreMatchText(normalizedArtist, normalizeMatchText(getNeteaseArtistText(item)))
+    const durationScore = durationMatched(duration, undefined, item.duration) ? 12 : 0
+    return { item, titleScore, artistScore, score: titleScore * 2 + artistScore + durationScore }
+  }).sort((a: any, b: any) => b.score - a.score)
+  const matched = scoredSongs
+    .filter(({ titleScore, artistScore }: any) =>
+      titleScore >= 78 && (!normalizedArtist || artistScore >= 45),
+    )
+    .slice(0, limit)
+  const results = await Promise.all(matched.map(async({ item }: any) => ({
+    title: String(item.name ?? title),
+    artist: getNeteaseArtistText(item),
+    lyrics: await getNeteaseSongLyric(item).catch(() => ({ lyric: '' })),
+  })))
+  return results.filter(item => item.lyrics.lyric)
+}
+
+const getNeteaseLyric = async(title: string, artist: string, duration: number | null | undefined) => {
+  return (await getNeteaseLyricCandidates(title, artist, duration, 1))[0]?.lyrics ?? { lyric: '' }
 }
 
 const getExternalLyric = async({ title, artist, duration }: {

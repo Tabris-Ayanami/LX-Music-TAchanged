@@ -48,7 +48,11 @@ const startServer = async() => {
   const createdServer = http.createServer(async(req, res) => {
     try {
       const requestUrl = new URL(req.url ?? '/', `http://${req.headers.host ?? '127.0.0.1'}`)
-      if (requestUrl.pathname !== '/bili/audio' && requestUrl.pathname !== '/bili/image') {
+      if (
+        requestUrl.pathname !== '/bili/audio' &&
+        requestUrl.pathname !== '/bili/video' &&
+        requestUrl.pathname !== '/bili/image'
+      ) {
         writeError(res, 404, 'not found')
         return
       }
@@ -60,12 +64,13 @@ const startServer = async() => {
         return
       }
 
-      const isAudio = requestUrl.pathname === '/bili/audio'
-      const headers = await biliHeaders(isAudio && req.headers.range ? { Range: req.headers.range } : undefined)
+      const isMedia = requestUrl.pathname === '/bili/audio' || requestUrl.pathname === '/bili/video'
+      const isVideo = requestUrl.pathname === '/bili/video'
+      const headers = await biliHeaders(isMedia && req.headers.range ? { Range: req.headers.range } : undefined)
       const upstream = await fetch(info.url, { headers })
       const responseHeaders: Record<string, string> = {
-        'Content-Type': upstream.headers.get('content-type') ?? info.contentType ?? (isAudio ? 'audio/mp4' : 'image/jpeg'),
-        'Cache-Control': isAudio ? 'no-store' : 'public, max-age=86400',
+        'Content-Type': upstream.headers.get('content-type') ?? info.contentType ?? (isVideo ? 'video/mp4' : isMedia ? 'audio/mp4' : 'image/jpeg'),
+        'Cache-Control': isMedia ? 'no-store' : 'public, max-age=86400',
       }
       const contentLength = upstream.headers.get('content-length')
       const contentRange = upstream.headers.get('content-range')
@@ -109,6 +114,12 @@ export const createProxyUrl = async(url: string, expiresAt: number) => {
   const serverPort = await startServer()
   const token = addToken({ url, expiresAt, contentType: 'audio/mp4' })
   return `http://127.0.0.1:${serverPort}/bili/audio?token=${encodeURIComponent(token)}`
+}
+
+export const createVideoProxyUrl = async(url: string, expiresAt: number) => {
+  const serverPort = await startServer()
+  const token = addToken({ url, expiresAt, contentType: 'video/mp4' })
+  return `http://127.0.0.1:${serverPort}/bili/video?token=${encodeURIComponent(token)}`
 }
 
 export const createImageProxyUrl = async(url: string) => {

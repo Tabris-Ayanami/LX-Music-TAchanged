@@ -334,6 +334,65 @@ declare global {
        */
       'playDetail.isDelayScroll': boolean
 
+      /**
+       * 沉浸模式歌词效果
+       */
+      'playDetail.immersiveEffect': 'classic' | 'cadenza' | 'partita' | 'fume' | 'cappella' | 'tilt' | 'claddagh' | 'diorama' | 'monet' | 'pendolo'
+
+      /**
+       * 沉浸模式播放时显示音频频谱
+       */
+      'playDetail.immersiveAudioVisualization': boolean
+
+      /**
+       * 沉浸模式音频可视化区域高度
+       */
+      'playDetail.immersiveAudioVisualizationHeight': number
+
+      /**
+       * 沉浸模式音频可视化样式
+       */
+      'playDetail.immersiveAudioVisualizationStyle': 'wave' | 'bars' | 'ambient'
+
+      /**
+       * 沉浸模式 MV 匹配来源
+       */
+      'playDetail.immersiveMvSource': 'auto' | 'current' | 'bili'
+
+      /**
+       * 沉浸模式歌词匹配来源
+       */
+      'playDetail.immersiveLyricSource': 'auto' | 'current' | 'bili' | 'netease' | 'lrclib'
+
+      /**
+       * 沉浸模式背景类型
+       */
+      'playDetail.immersiveBackground': 'aura' | 'blur' | 'mv'
+
+      /**
+       * 沉浸模式模糊背景程度
+       */
+      'playDetail.immersiveBackgroundBlur': number
+
+      /**
+       * 沉浸模式底部控件自动隐藏延时（秒）
+       */
+      'playDetail.immersiveControlHideDelay': number
+      /**
+       * 播放详情页背景类型
+       */
+      'playDetail.background': 'aura' | 'blur'
+
+      /**
+       * 播放详情页专辑图背景模糊度
+       */
+      'playDetail.backgroundBlur': number
+
+      /**
+       * 播放详情页布局样式
+       */
+      'playDetail.layoutStyle': 'classic' | 'record' | 'pixel'
+
 
       /**
        * 是否启用桌面歌词

@@ -1,8 +1,10 @@
 // const autoprefixer = require('autoprefixer')
 const pxtorem = require('postcss-pxtorem')
+const tailwindcss = require('@tailwindcss/postcss')
 
 module.exports = {
   plugins: [
+    tailwindcss(),
     pxtorem({
       rootValue: 16,
       unitPrecision: 5,

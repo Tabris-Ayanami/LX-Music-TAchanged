@@ -1,0 +1,24 @@
+LX Music Desktop with Folia visualizers
+=======================================
+
+This combined work is distributed under the GNU Affero General Public License,
+version 3 only. See LICENSE.
+
+LX Music Desktop
+----------------
+
+The original LX Music Desktop code is Copyright (c) lyswhut and contributors
+and was made available under the Apache License 2.0. A copy of that license is
+preserved in LICENSE-APACHE-2.0.
+
+Folia visualizer subsystem
+--------------------------
+
+The lyric visualizer source under src/renderer/vendor/folia is adapted from:
+
+  chthollyphile/folia-major
+  https://github.com/chthollyphile/folia-major
+  upstream commit b3d70e93a10bf975113cf5ff033b472f2ffd5688
+
+That source is licensed under the GNU Affero General Public License v3.0.
+Its license and adaptation notes are also preserved beside the vendored source.

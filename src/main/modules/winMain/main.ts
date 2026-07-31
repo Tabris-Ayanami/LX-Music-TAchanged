@@ -110,7 +110,10 @@ export const createWindow = () => {
       nodeIntegration: true,
       sandbox: false,
       enableWebSQL: false,
-      webgl: false,
+      // The immersive Diorama lyric style is rendered by Three.js. Keep WebGL
+      // available even when hardware acceleration is disabled: Chromium can
+      // still fall back to its software renderer in that mode.
+      webgl: true,
       spellcheck: false, // 禁用拼写检查器
     },
   }

@@ -1,7 +1,7 @@
 <template>
   <div :class="$style.footer">
-    <div :class="$style.headerRow">
-      <div :class="$style.metaBlock">
+    <div :class="[$style.headerRow, 'playDetailHeaderRow']">
+      <div :class="[$style.metaBlock, 'playDetailMetaBlock']">
         <h2 :class="$style.title">{{ playTitle }}</h2>
         <div v-if="musicArtistLine" :class="$style.metaSubline">{{ musicArtistLine }}</div>
       </div>
@@ -31,7 +31,7 @@
       </material-popup-btn>
     </div>
 
-    <div :class="$style.progressTrack">
+    <div :class="[$style.progressTrack, 'playDetailProgressTrack']">
       <common-progress-bar
         :class-name="$style.progress"
         :progress="progress"
@@ -40,12 +40,12 @@
       />
     </div>
 
-    <div :class="$style.timeRow">
+    <div :class="[$style.timeRow, 'playDetailTimeRow']">
       <span>{{ nowPlayTimeStr }}</span>
       <span>{{ remainingTimeStr }}</span>
     </div>
 
-    <div :class="$style.transportRow">
+    <div :class="[$style.transportRow, 'playDetailTransportRow']">
         <button type="button" :class="[$style.iconBtn, $style.modeBtn, { [$style.activeIcon]: isTogglePlayActive }]" :aria-label="currentTogglePlayLabel" @click.stop="toggleNextPlayMode()">
           <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" :viewBox="currentTogglePlayIcon.viewBox" space="preserve">
           <use :xlink:href="currentTogglePlayIcon.id" />
@@ -76,7 +76,7 @@
       </button>
     </div>
 
-    <div :class="$style.volumeRow">
+    <div :class="[$style.volumeRow, 'playDetailVolumeRow']">
       <button type="button" :class="[$style.iconBtn, $style.volumeBtn]" :aria-label="isMute ? 'Unmute' : 'Mute'" @click.stop="saveVolumeIsMute(!isMute)">
         <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" space="preserve">
           <use xlink:href="#icon-sound-modern" />
@@ -93,62 +93,13 @@
       <span :class="$style.volumeValue">{{ Math.round(volume * 100) }}</span>
     </div>
 
-    <material-modal
-      :show="soundEffectVisible"
-      bg-close="bg-close"
-      teleport="#root"
-      :close-btn="false"
-      :hide-header="true"
-      overlay-filter-mode="on"
-      host-effect-mode="blur"
-      :content-class="$style.soundModalFrame"
-      min-width="0"
-      width="min(1080px, calc(100vw - 48px))"
-      max-width="calc(100vw - 48px)"
-      max-height="calc(100vh - 40px)"
-      @close="soundEffectVisible = false"
-    >
-      <div :class="$style.soundModal">
-        <LiquidGlassLayer
-          variant="island"
-          :active="true"
-          :blur-amount="1.6"
-          :saturation="184"
-          :displacement-scale="20"
-          :over-light="true"
-        />
-        <div :class="$style.soundHeader">
-          <strong>{{ $t('player__sound_effect') }}</strong>
-          <button type="button" :class="$style.soundCloseBtn" :aria-label="$t('close')" @click="soundEffectVisible = false">
-            <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" space="preserve">
-              <use xlink:href="#icon-close" />
-            </svg>
-          </button>
-        </div>
-        <div :class="$style.soundColumns">
-          <div :class="['scroll', $style.soundColumn]">
-            <AudioConvolution />
-            <PitchShifter />
-            <AudioPanner />
-          </div>
-          <div :class="['scroll', $style.soundColumn]">
-            <BiquadFilter />
-          </div>
-        </div>
-        <p v-if="showSoundTip" :class="$style.soundTip">{{ $t('player__sound_effect_features_tip') }}</p>
-      </div>
-    </material-modal>
+    <ImmersiveSoundPanel v-model:show="soundEffectVisible" />
   </div>
 </template>
 
 <script setup>
 import { formatPlayTime2 } from '@common/utils/common'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from '@common/utils/vueTools'
-import AudioConvolution from '@renderer/components/common/SoundEffectBtn/AudioConvolution.vue'
-import AudioPanner from '@renderer/components/common/SoundEffectBtn/AudioPanner.vue'
-import BiquadFilter from '@renderer/components/common/SoundEffectBtn/BiquadFilter.vue'
-import LiquidGlassLayer from '@renderer/components/common/liquidGlass/LiquidGlassLayer.vue'
-import PitchShifter from '@renderer/components/common/SoundEffectBtn/PitchShifter.vue'
+import { computed, onBeforeUnmount, onMounted, ref } from '@common/utils/vueTools'
 import { playNext, playPrev, togglePlay } from '@renderer/core/player'
 import { playbackRate } from '@renderer/store/player/playbackRate'
 import { playProgress } from '@renderer/store/player/playProgress'
@@ -156,6 +107,7 @@ import { isPlay, playMusicInfo } from '@renderer/store/player/state'
 import { isMute, volume } from '@renderer/store/player/volume'
 import { appSetting, saveVolumeIsMute, setTogglePlayMode, updateSetting } from '@renderer/store/setting'
 import usePlayProgress from '@renderer/utils/compositions/usePlayProgress'
+import ImmersiveSoundPanel from './ImmersiveSoundPanel.vue'
 
 const {
   nowPlayTimeStr,
@@ -165,7 +117,6 @@ const {
 } = usePlayProgress()
 
 const soundEffectVisible = ref(false)
-const showSoundTip = ref(false)
 const popupThemeStyle = ref({})
 let popupThemeObserver = null
 
@@ -183,10 +134,6 @@ const updatePopupThemeStyle = () => {
     '--popup-accent': popupAccent,
   }
 }
-
-watch(soundEffectVisible, visible => {
-  if (visible) showSoundTip.value = appSetting['player.mediaDeviceId'] != 'default'
-})
 
 onMounted(() => {
   updatePopupThemeStyle()
@@ -380,29 +327,29 @@ const isTogglePlayActive = computed(() => currentTogglePlayMode.value != 'none')
 }
 
 .popupFrame {
-  border-radius: 20px;
-  background: rgba(251, 253, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  box-shadow: 0 22px 48px rgba(20, 29, 46, 0.16);
-  backdrop-filter: blur(28px) saturate(148%);
-  -webkit-backdrop-filter: blur(28px) saturate(148%);
-  filter: none;
+  border-radius: 18px !important;
+  background: rgba(15, 19, 29, .96) !important;
+  border: 1px solid rgba(255, 255, 255, .18) !important;
+  box-shadow: 0 22px 48px rgba(0, 0, 0, .42) !important;
+  backdrop-filter: blur(24px) saturate(132%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(132%) !important;
+  filter: none !important;
 }
 
 .popupFrameList {
-  padding: 0;
+  padding: 0 !important;
 }
 
 .popupPanel {
   --popup-accent: var(--shell-accent, #4da7d0);
   --color-primary: var(--popup-accent);
   --color-primary-font: color-mix(in srgb, var(--popup-accent) 88%, white 12%);
-  --color-font-label: rgba(84, 97, 118, 0.7);
+  --color-font-label: rgba(255, 255, 255, 0.66);
   --color-button-font: color-mix(in srgb, var(--popup-accent) 84%, white 16%);
   --color-button-background: color-mix(in srgb, var(--popup-accent) 14%, transparent);
   --color-button-background-hover: color-mix(in srgb, var(--popup-accent) 20%, transparent);
   --color-button-background-active: color-mix(in srgb, var(--popup-accent) 26%, transparent);
-  --slider-track-color: color-mix(in srgb, var(--popup-accent) 18%, white 82%);
+  --slider-track-color: rgba(255, 255, 255, 0.16);
   --slider-fill-color: color-mix(in srgb, var(--popup-accent) 74%, white 26%);
   width: min(258px, calc(100vw - 32px));
   display: flex;
@@ -412,7 +359,7 @@ const isTogglePlayActive = computed(() => currentTogglePlayMode.value != 'none')
   border-radius: 20px;
   background: transparent;
   border: none;
-  color: rgba(31, 38, 49, 0.94);
+  color: rgba(248, 250, 255, .96);
   box-shadow: none;
 }
 
@@ -424,7 +371,7 @@ const isTogglePlayActive = computed(() => currentTogglePlayMode.value != 'none')
   span {
     font-size: 18px;
     font-weight: 800;
-    color: rgba(31, 38, 49, 0.94);
+    color: rgba(248, 250, 255, .96);
   }
 }
 
@@ -435,12 +382,15 @@ const isTogglePlayActive = computed(() => currentTogglePlayMode.value != 'none')
   gap: 10px;
 
   :global(.base-checkbox-label) {
-    color: rgba(45, 55, 67, 0.9);
+    color: rgba(238, 243, 251, .9);
     font-size: 15px;
     font-weight: 700;
   }
 
   :global(.base-btn) {
+    --color-button-font: rgba(245, 248, 255, .94);
+    --color-button-background: rgba(255, 255, 255, .1);
+    --color-button-background-hover: rgba(255, 255, 255, .16);
     border-radius: 10px;
     align-self: flex-end;
   }
@@ -598,7 +548,7 @@ const isTogglePlayActive = computed(() => currentTogglePlayMode.value != 'none')
   box-shadow: 0 24px 56px rgba(20, 29, 46, 0.14);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  color: rgba(31, 38, 49, 0.94);
+  color: rgba(255, 255, 255, 0.92);
   overflow: hidden;
   isolation: isolate;
 }
@@ -616,7 +566,7 @@ const isTogglePlayActive = computed(() => currentTogglePlayMode.value != 'none')
     font-size: 18px;
     font-weight: 800;
     letter-spacing: -.02em;
-    color: rgba(31, 38, 49, 0.94);
+    color: rgba(255, 255, 255, 0.96);
   }
 }
 

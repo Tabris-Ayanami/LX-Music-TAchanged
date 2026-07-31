@@ -40,10 +40,12 @@ dd
       span(:class="$style.optionBody")
         strong {{ item.label }}
         small {{ item.description }}
+SettingPlayDetail(:embedded="true")
 </template>
 
 <script setup lang="ts">
 import SettingBasic from './SettingBasic.vue'
+import SettingPlayDetail from './SettingPlayDetail.vue'
 import { appSetting, updateSetting } from '@renderer/store/setting'
 
 interface ViewStyleOption<T> {
@@ -121,9 +123,9 @@ const artistViewStyles: Array<ViewStyleOption<LX.AppSetting['localMusic.artistVi
   }
 
   &.active {
-    border-color: color-mix(in srgb, var(--color-primary) 66%, transparent);
+    border: 2px solid var(--color-primary);
     background: color-mix(in srgb, var(--color-primary) 10%, var(--shell-control, var(--color-button-background)));
-    box-shadow: 0 10px 24px color-mix(in srgb, var(--color-primary) 10%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 28%, transparent);
   }
 }
 

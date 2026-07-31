@@ -1,11 +1,15 @@
 <template lang="pug">
 transition(@before-enter="handleBeforeEnter" @enter="handleEnter" @after-enter="handleAfterEnter" @before-leave="handleBeforeLeave" @leave="handleLeave" @after-leave="handleAfterLeave")
-  div(v-if="isShowPlayerDetail" :class="[$style.container, { fullscreen: isFullscreen }]" :style="detailStyle" @contextmenu="handleContextMenu")
-    FluidBackground(:class="$style.bg" :cover="musicInfo.pic" :colors="detailColors" :active="visibled")
+  div(v-show="isShowPlayerDetail" :class="[$style.container, $style[`layout-${layoutStyle}`], { fullscreen: isFullscreen, [$style.isPlaying]: isPlay }]" :style="detailStyle" @contextmenu="handleContextMenu")
+    FluidBackground(v-if="layoutStyle != 'pixel' && backgroundType == 'aura'" :class="$style.bg" :cover="musicInfo.pic" :colors="detailColors" :active="visibled")
+    div(v-else-if="layoutStyle != 'pixel'" :class="$style.bgBlur" :style="blurBackgroundStyle" aria-hidden="true")
     div(:class="$style.bgTint")
     div(:class="$style.bgGlow")
-    ControlBtnsRightHeader
-    div(:class="[$style.main, {[$style.showComment]: isShowPlayComment}]")
+    ControlBtnsRightHeader(v-if="!isImmersive")
+    div(v-if="layoutStyle == 'pixel' && !isImmersive" :class="$style.pixelTitleBar" :title="[musicInfo.name, musicInfo.singer].filter(Boolean).join(' · ')")
+      strong {{ musicInfo.name }}
+      span(v-if="musicInfo.singer") {{ musicInfo.singer }}
+    div(v-show="!isImmersive" :class="[$style.main, {[$style.showComment]: isShowPlayComment}]")
       section.left(:class="$style.left")
         div(:class="$style.leftInner")
           button(type="button" :class="$style.artworkWrap" data-play-detail-artwork="true" aria-label="Close play detail" @click.stop="hide")
@@ -14,28 +18,38 @@ transition(@before-enter="handleBeforeEnter" @enter="handleEnter" @after-enter="
               svg(version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" space="preserve")
                 use(xlink:href="#icon-album")
           div(:class="$style.controlsWrap")
-            play-bar(v-if="visibled")
+            play-bar(v-if="visibled && layoutStyle != 'pixel'")
 
       transition(enter-active-class="animated fadeIn" leave-active-class="animated fadeOut")
         LyricPlayer(v-if="visibled")
       music-comment(v-if="visibled" :class="$style.comment" :show="isShowPlayComment" :music-info="playMusicInfo.musicInfo" @close="hideComment")
-    div(v-if="visibled" :class="$style.bottomLeftDock")
+      div(v-if="layoutStyle == 'pixel'" :class="$style.pixelEcho" :style="pixelEchoStyle" aria-hidden="true")
+    div(v-if="visibled && layoutStyle == 'pixel' && !isImmersive" :class="$style.pixelControlZone" @touchstart="showPixelControls")
+      play-bar(:class="[$style.pixelPlayBar, { [$style.pixelControlsVisible]: pixelControlsVisible }]")
+    div(v-if="visibled && !isImmersive && layoutStyle != 'pixel'" :class="$style.bottomLeftDock")
       PlayQueueBtn(:class="$style.queueDock" placement="left" variant="detail")
-    div(v-if="visibled" :class="$style.bottomRightDock")
+    div(v-if="visibled && !isImmersive" :class="$style.bottomRightDock")
+      PlayQueueBtn(v-if="layoutStyle == 'pixel'" :class="$style.queueDock" placement="left" variant="detail")
       button(type="button" :class="[$style.windowDockBtn, { [$style.windowDockBtnActive]: isShowPlayComment }]" :aria-label="$t('comment__show')" @click.stop="toggleComment")
         svg(version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" space="preserve")
           use(xlink:href="#icon-comment-modern")
+      button(type="button" :class="$style.immersiveDockBtn" :aria-label="$t('player__immersive_mode')" :title="$t('player__immersive_mode')" @click.stop="showImmersive")
+        svg(version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" space="preserve")
+          path(d="M5 4.5h4M4.5 5v4M19 4.5h-4M19.5 5v4M5 19.5h4M4.5 19v-4M19 19.5h-4M19.5 19v-4")
+    transition(enter-active-class="animated fadeIn" leave-active-class="animated fadeOut")
+      ImmersiveLyrics(v-if="visibled && isImmersive" @close="hideImmersive")
     transition(enter-active-class="animated-slow fadeIn" leave-active-class="animated-slow fadeOut")
-      common-audio-visualizer(v-if="appSetting['common.isShowAnimation'] && appSetting['player.audioVisualization'] && visibled")
+      common-audio-visualizer(v-if="appSetting['common.isShowAnimation'] && appSetting['player.audioVisualization'] && visibled && !isImmersive")
 </template>
 
 
 <script>
-import { computed, ref, watch } from '@common/utils/vueTools'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from '@common/utils/vueTools'
 import { isFullscreen } from '@renderer/store'
 import {
   isShowPlayerDetail,
   isShowPlayComment,
+  isPlay,
   musicInfo,
   playMusicInfo,
 } from '@renderer/store/player/state'
@@ -50,6 +64,7 @@ import FluidBackground from './FluidBackground.vue'
 import MusicComment from './components/MusicComment/index.vue'
 import PlayQueueBtn from './components/PlayQueueBtn.vue'
 import ControlBtnsRightHeader from './ControlBtnsRightHeader.vue'
+import ImmersiveLyrics from './ImmersiveLyrics.vue'
 import { registerAutoHideMounse, unregisterAutoHideMounse } from './autoHideMounse'
 import { appSetting } from '@renderer/store/setting'
 import { closeWindow, maxWindow, minWindow, setFullScreen } from '@renderer/utils/ipc'
@@ -323,10 +338,26 @@ const createShellElement = snapshot => {
 
 const createCoverElement = snapshot => {
   if (!snapshot.coverRect) return null
-  const cover = snapshot.coverSrc ? document.createElement('img') : document.createElement('div')
+  const sourceImage = snapshot.coverImage
+  let cover
+  if (sourceImage?.complete && sourceImage.naturalWidth) {
+    const canvas = document.createElement('canvas')
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2)
+    canvas.width = Math.max(1, Math.round(snapshot.coverRect.width * pixelRatio))
+    canvas.height = Math.max(1, Math.round(snapshot.coverRect.height * pixelRatio))
+    canvas.getContext('2d')?.drawImage(sourceImage, 0, 0, canvas.width, canvas.height)
+    cover = canvas
+  } else {
+    cover = snapshot.coverSrc ? sourceImage?.cloneNode(true) ?? document.createElement('img') : document.createElement('div')
+  }
   if (snapshot.coverSrc) {
-    cover.src = snapshot.coverSrc
-    cover.alt = ''
+    if (cover instanceof HTMLImageElement) {
+      cover.src = snapshot.coverSrc
+      cover.alt = ''
+      cover.draggable = false
+    } else {
+      cover.setAttribute('aria-hidden', 'true')
+    }
   } else {
     setStyles(cover, {
       background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04)), color-mix(in srgb, var(--color-primary-alpha-600) 45%, rgba(12, 16, 22, 0.82))',
@@ -537,6 +568,7 @@ export default {
   name: 'CorePlayDetail',
   components: {
     ControlBtnsRightHeader,
+    ImmersiveLyrics,
     LyricPlayer,
     PlayBar,
     FluidBackground,
@@ -545,10 +577,13 @@ export default {
   },
   setup() {
     const visibled = ref(false)
+    const isImmersive = ref(false)
+    const pixelControlsVisible = ref(false)
     const detailColors = ref(DEFAULT_DETAIL_COLORS)
 
     let clickTime = 0
     let colorTaskId = 0
+    let pixelControlTimer = null
 
     const hide = () => {
       setShowPlayerDetail(false)
@@ -568,6 +603,27 @@ export default {
     const toggleComment = () => {
       setShowPlayComment(!isShowPlayComment.value)
     }
+    const showImmersive = () => {
+      hideComment()
+      isImmersive.value = true
+    }
+    const hideImmersive = () => {
+      isImmersive.value = false
+    }
+    const handleDetailKeydown = event => {
+      if (event.key != 'Escape' || isImmersive.value || !isShowPlayerDetail.value) return
+      event.preventDefault()
+      event.stopPropagation()
+      hide()
+    }
+    const showPixelControls = () => {
+      pixelControlsVisible.value = true
+      if (pixelControlTimer != null) window.clearTimeout(pixelControlTimer)
+      pixelControlTimer = window.setTimeout(() => {
+        pixelControlsVisible.value = false
+        pixelControlTimer = null
+      }, 2400)
+    }
 
     const handleAfterEnter = () => {
       if (isFullscreen.value) registerAutoHideMounse()
@@ -577,6 +633,12 @@ export default {
     const handleAfterLeave = () => {
       setShowPlayLrcSelectContentLrc(false)
       hideComment(false)
+      hideImmersive()
+      pixelControlsVisible.value = false
+      if (pixelControlTimer != null) {
+        window.clearTimeout(pixelControlTimer)
+        pixelControlTimer = null
+      }
       visibled.value = false
 
       unregisterAutoHideMounse()
@@ -611,11 +673,29 @@ export default {
       detailColors.value = colors
     }, { immediate: true })
 
+    onMounted(() => {
+      document.addEventListener('keydown', handleDetailKeydown, true)
+    })
+
+    onBeforeUnmount(() => {
+      document.removeEventListener('keydown', handleDetailKeydown, true)
+      if (pixelControlTimer != null) window.clearTimeout(pixelControlTimer)
+    })
+
     const detailStyle = computed(() => ({
       '--detail-color-base': detailColors.value.base,
       '--detail-color-warm': detailColors.value.warm,
       '--detail-color-deep': detailColors.value.deep,
       '--detail-color-light': detailColors.value.light,
+    }))
+    const backgroundType = computed(() => appSetting['playDetail.background'] ?? 'aura')
+    const layoutStyle = computed(() => appSetting['playDetail.layoutStyle'] ?? 'classic')
+    const blurBackgroundStyle = computed(() => ({
+      backgroundImage: musicInfo.pic ? `url("${String(musicInfo.pic).replace(/"/g, '\\"')}")` : undefined,
+      '--detail-background-blur': `${appSetting['playDetail.backgroundBlur'] ?? 24}px`,
+    }))
+    const pixelEchoStyle = computed(() => ({
+      backgroundImage: musicInfo.pic ? `url("${String(musicInfo.pic).replace(/"/g, '\\"')}")` : undefined,
     }))
 
     return {
@@ -625,9 +705,19 @@ export default {
       playMusicInfo,
       isShowPlayerDetail,
       isShowPlayComment,
+      isPlay,
+      isImmersive,
+      backgroundType,
+      layoutStyle,
+      blurBackgroundStyle,
+      pixelEchoStyle,
+      pixelControlsVisible,
       musicInfo,
       hide,
       toggleComment,
+      showImmersive,
+      hideImmersive,
+      showPixelControls,
       handleContextMenu,
       hideComment,
       handleBeforeEnter,
@@ -710,6 +800,17 @@ export default {
   opacity: 1;
   z-index: 1;
 }
+.bgBlur {
+  position: absolute;
+  inset: -7%;
+  z-index: 1;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  filter: blur(var(--detail-background-blur, 24px)) saturate(1.08);
+  transform: scale(1.08);
+  opacity: .82;
+}
 .bgTint,
 .bgGlow {
   position: absolute;
@@ -777,10 +878,11 @@ export default {
 }
 .artworkWrap {
   position: relative;
-  width: 100%;
+  width: min(100%, 49vh, calc(var(--detail-left-column-width) - 44px));
   max-width: 100%;
   aspect-ratio: 1 / 1;
-  max-height: min(49vh, calc(var(--detail-left-column-width) - 44px));
+  max-height: none;
+  justify-self: center;
   margin: 0;
   flex: none;
   padding: 0;
@@ -820,6 +922,280 @@ export default {
     height: 26%;
   }
 }
+
+.layout-record {
+  .leftInner {
+    margin-left: clamp(10px, 1.6vw, 24px);
+    transform: translate3d(18px, 12px, 0);
+  }
+
+  .artworkWrap {
+    padding: clamp(18px, 2.8vw, 38px);
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 50% 48%, rgba(255, 255, 255, .14) 0 6%, transparent 6.5%),
+      radial-gradient(circle, #141720 0 57%, #6a4e3b 58% 61%, #1a1d28 62% 76%, #0c0e14 77%);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, .42), inset 0 0 0 1px rgba(255, 255, 255, .14);
+  }
+
+  .img {
+    position: relative;
+    z-index: 1;
+    border-radius: 50%;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, .36);
+    animation: record-spin 18s linear infinite;
+    animation-play-state: paused;
+  }
+}
+
+.layout-record.isPlaying .img {
+  animation-play-state: running;
+}
+
+.layout-pixel {
+  // Album artwork is square. Keeping the left canvas tied to the viewport
+  // height prevents a second background strip from appearing below the image.
+  --pixel-artwork-size: min(64vw, 100vh);
+
+  .main {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: block;
+    padding: 0;
+    overflow: hidden;
+
+    &::after {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      content: '';
+      pointer-events: none;
+      background:
+        linear-gradient(
+          90deg,
+          transparent 0%,
+          rgba(var(--detail-color-deep), .04) 36%,
+          rgba(var(--detail-color-deep), .24) 49%,
+          rgba(var(--detail-color-deep), .66) 66%,
+          rgba(7, 9, 15, .9) 100%
+        ),
+        linear-gradient(
+          180deg,
+          rgba(7, 9, 15, .3) 0%,
+          transparent 14%,
+          transparent 76%,
+          rgba(7, 9, 15, .42) 100%
+        );
+    }
+  }
+
+  .left {
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: 1;
+    width: var(--pixel-artwork-size);
+    height: 100%;
+    max-width: none;
+    min-width: 0;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      #000 0%,
+      #000 70%,
+      rgba(0, 0, 0, .86) 83%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      90deg,
+      #000 0%,
+      #000 70%,
+      rgba(0, 0, 0, .86) 83%,
+      transparent 100%
+    );
+
+    &::after {
+      position: absolute;
+      inset: 0 0 0 auto;
+      width: 34%;
+      content: '';
+      pointer-events: none;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(var(--detail-color-deep), .08) 38%,
+        rgba(var(--detail-color-deep), .58) 100%
+      );
+    }
+  }
+
+  .leftInner {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    transform: none;
+  }
+
+  .artworkWrap {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    aspect-ratio: auto;
+    border-radius: 0;
+  }
+
+  .img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-width: 100%;
+    min-height: 100%;
+    border-radius: 0;
+    box-shadow: none;
+    object-fit: cover;
+    object-position: center;
+    transform: scale(1.012);
+  }
+
+  .main > :global(.right) {
+    --play-detail-seek-push: -12px;
+    position: absolute;
+    inset: 30px 0 0 calc(var(--pixel-artwork-size) - clamp(88px, 7vw, 132px));
+    z-index: 2;
+    padding: clamp(18px, 2.4vh, 34px) clamp(74px, 7vw, 118px) 0 clamp(28px, 3vw, 56px);
+    background: transparent;
+  }
+
+  .bg,
+  .bgBlur {
+    opacity: .12;
+  }
+
+  .bgTint {
+    background: linear-gradient(90deg, transparent 0 34%, rgba(7, 9, 15, .2) 62%, rgba(7, 9, 15, .48));
+  }
+}
+
+.pixelTitleBar {
+  position: absolute;
+  top: 0;
+  left: 200px;
+  right: 200px;
+  z-index: 5;
+  height: 30px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, .8);
+  font-size: 12px;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, .42);
+  pointer-events: none;
+  -webkit-app-region: drag;
+
+  strong,
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong {
+    max-width: 45%;
+    color: rgba(255, 255, 255, .92);
+    font-weight: 650;
+  }
+
+  span {
+    max-width: 32%;
+    color: rgba(255, 255, 255, .58);
+
+    &::before {
+      margin-right: 8px;
+      content: '·';
+    }
+  }
+}
+
+.pixelControlZone {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 8;
+  height: 112px;
+  pointer-events: auto;
+}
+
+.pixelPlayBar {
+  position: absolute !important;
+  inset: auto 0 0;
+  min-height: 94px;
+  padding: 0 clamp(20px, 3vw, 48px) 16px;
+  display: block !important;
+  opacity: 0;
+  transform: translateY(14px);
+  pointer-events: none;
+  transition: opacity .22s ease, transform .22s ease;
+}
+
+.pixelControlZone:hover .pixelPlayBar,
+.pixelControlsVisible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.pixelPlayBar :global(.playDetailHeaderRow) {
+  position: absolute;
+  right: clamp(20px, 3vw, 48px);
+  bottom: 24px;
+  z-index: 12;
+  width: auto;
+  pointer-events: auto;
+}
+
+.pixelPlayBar :global(.playDetailMetaBlock) {
+  display: none;
+}
+
+.pixelPlayBar :global(.playDetailHeaderRow .popupAnchor),
+.pixelPlayBar :global(.playDetailHeaderRow .moreBtn) {
+  pointer-events: auto;
+}
+
+.pixelPlayBar :global(.playDetailTimeRow) {
+  position: absolute;
+  left: clamp(20px, 3vw, 48px);
+  bottom: 28px;
+}
+
+.pixelPlayBar :global(.playDetailTransportRow) {
+  min-height: 64px;
+  margin: 0 auto;
+}
+
+.pixelPlayBar :global(.playDetailVolumeRow) {
+  position: absolute;
+  left: clamp(82px, 9vw, 170px);
+  bottom: 27px;
+  width: min(180px, 18vw);
+}
+
+.pixelPlayBar :global(.playDetailProgressTrack) {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding-top: 0;
+}
+
 .controlsWrap {
   width: 100%;
   max-width: 100%;
@@ -843,6 +1219,98 @@ export default {
 
 .bottomRightDock {
   right: clamp(34px, 3vw, 46px);
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+
+  .immersiveDockBtn { order: 1; }
+  .windowDockBtn { order: 2; }
+}
+
+.layout-pixel .bottomRightDock {
+  top: clamp(54px, 7vh, 82px);
+  right: clamp(18px, 2.4vw, 34px);
+  bottom: auto;
+  z-index: 12;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+
+  .immersiveDockBtn,
+  .windowDockBtn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(8, 11, 18, .08);
+
+    &:hover {
+      background: rgba(255, 255, 255, .1);
+    }
+  }
+
+  .queueDock {
+    order: 1;
+    width: 44px;
+    height: 44px;
+    justify-content: center;
+    color: rgba(255, 255, 255, .78);
+
+    :global(button) {
+      width: 44px;
+      height: 44px;
+    }
+  }
+
+  .windowDockBtn { order: 2; }
+  .immersiveDockBtn { order: 3; }
+}
+
+.pixelEcho {
+  position: absolute;
+  inset: 0 0 0 34%;
+  z-index: 0;
+  background-position: right center;
+  background-repeat: no-repeat;
+  background-size: 3000% 100%;
+  filter: blur(42px) saturate(1.22);
+  opacity: .82;
+  transform: scale(1.08);
+}
+
+.immersiveDockBtn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, .78);
+  background: transparent;
+  cursor: pointer;
+  transition: color @transition-fast, transform @transition-fast;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.65;
+    stroke-linecap: round;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, .22));
+  }
+
+  &:hover {
+    color: #fff;
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(var(--detail-color-light), .9);
+    outline-offset: 3px;
+  }
 }
 
 .windowDockBtn {
@@ -893,6 +1361,10 @@ export default {
   z-index: 2;
   pointer-events: none;
   transition: opacity @transition-fast;
+}
+
+@keyframes record-spin {
+  to { transform: rotate(360deg); }
 }
 
 @media (max-width: 1100px) {

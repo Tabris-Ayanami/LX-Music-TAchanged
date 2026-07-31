@@ -5,6 +5,7 @@
     "target": "ESNext",
     "allowJs": true,
     "module": "ESNext",
+    "jsx": "react-jsx",
     "moduleResolution": "Node",
     "resolveJsonModule": true,
     "outDir": "./dist",

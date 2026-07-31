@@ -96,7 +96,7 @@ test('RG-050: lyric seek control is a themed time capsule with a fading left tra
   )
   assert.match(
     lyricSource,
-    /--seek-control-push: clamp\(12px, 1\.6vw, 28px\)[\s\S]*--seek-capsule-width: 56px[\s\S]*width: calc\(100% \+ var\(--seek-control-push\)\);[\s\S]*\.line \{[\s\S]*right: calc\(var\(--seek-capsule-width\) - 1px\);[\s\S]*height: 1px;[\s\S]*\.skipBtn \{[\s\S]*right: 0;[\s\S]*height: 28px/m,
+    /--seek-control-push: var\(--play-detail-seek-push, clamp\(12px, 1\.6vw, 28px\)\);[\s\S]*--seek-capsule-width: 56px[\s\S]*width: calc\(100% \+ var\(--seek-control-push\)\);[\s\S]*\.line \{[\s\S]*right: calc\(var\(--seek-capsule-width\) - 1px\);[\s\S]*height: 1px;[\s\S]*\.skipBtn \{[\s\S]*right: 0;[\s\S]*height: 28px/m,
     'The compact capsule should sit in the right gutter while its tail stays a thin line',
   )
   assert.match(

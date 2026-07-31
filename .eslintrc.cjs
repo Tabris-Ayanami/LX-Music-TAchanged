@@ -16,5 +16,6 @@ module.exports = {
     '*.min.js',
     'dist',
     'build',
+    'src/renderer/vendor/folia',
   ],
 }

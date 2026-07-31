@@ -1,12 +1,12 @@
 <template>
-  <div :class="$style.content">
+  <div :class="[$style.content, $style[variant]]">
     <canvas ref="dom_canvas" :class="$style.canvas" />
   </div>
 </template>
 
 <script>
 import { ref, onBeforeUnmount, onMounted } from '@common/utils/vueTools'
-import { getAnalyser } from '@renderer/plugins/player'
+import { getAnalyser, getAudioContext } from '@renderer/plugins/player'
 import { isPlay } from '@renderer/store/player/state'
 // import { appSetting } from '@renderer/store/setting'
 
@@ -27,105 +27,258 @@ import { isPlay } from '@renderer/store/player/state'
 //   happy_new_year: 'rgba(192,57,43,.1)',
 // }
 
-const getBarWidth = canvasWidth => {
-  let barWidth = (canvasWidth / 128) * 2.5
-  const width = canvasWidth / 86
-  const diffWidth = barWidth - width
-  // console.log(barWidth - width)
-  // if (barWidth - width > 20) newBarWidth = 20
-  // barWidth = newBarWidth
-  return diffWidth > 32
-    ? canvasWidth / 128 // 4k屏、超宽屏直接显示所有频谱条
-    : diffWidth > 12 ? width : barWidth
-}
 export default {
-  setup() {
+  props: {
+    variant: {
+      type: String,
+      default: 'full',
+    },
+    mode: {
+      type: String,
+      default: 'bars',
+    },
+  },
+  setup(props) {
     const dom_canvas = ref(null)
     const analyser = getAnalyser()
+    const audioContext = getAudioContext()
 
     let ctx
     let bufferLength = 0
     let dataArray
     let WIDTH
     let HEIGHT
-    let MAX_HEIGHT
-    let barWidth
-    let barHeight
-    let x = 0
     let isPlaying = false
     let animationFrameId
+    let mountFrameId
     let lastDrawTime = 0
-
-    let num
-    let mult
-    const maxNum = 255
-    let frequencyAvg = 0
+    let ambientEnergy = 0
+    let ambientLow = 0
+    let ambientMid = 0
+    let ambientHigh = 0
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
     // const theme = useRefGetter('theme')
     // const setting = useRefGetter('setting')
-    let themeColor = getComputedStyle(document.documentElement).getPropertyValue('--color-primary-light-200-alpha-800')
+    const resolveThemeColor = () => {
+      const documentStyle = getComputedStyle(document.documentElement)
+      const candidates = [
+        documentStyle.getPropertyValue('--color-theme').trim(),
+        documentStyle.getPropertyValue('--color-primary').trim(),
+        documentStyle.getPropertyValue('--color-primary-light-200-alpha-800').trim(),
+      ]
+      return candidates.find(color => color && !/nan/i.test(color) && CSS.supports('color', color)) ??
+        'rgba(205, 225, 255, .92)'
+    }
+    let themeColor = resolveThemeColor()
     // watch(theme, theme => {
     //   themeColor = themes[theme || 'green']
     // })
 
     // https://developer.mozilla.org/zh-CN/docs/Web/API/AnalyserNode/smoothingTimeConstant
+    const drawWave = () => {
+      analyser.getByteTimeDomainData(dataArray)
+      const centerY = HEIGHT * 0.52
+      const amplitude = HEIGHT * 0.44
+      const pointCount = Math.min(dataArray.length, Math.max(180, Math.round(WIDTH / 3)))
+      const points = new Array(pointCount)
+
+      for (let i = 0; i < pointCount; i++) {
+        const sourceIndex = Math.floor(i * (dataArray.length - 1) / Math.max(1, pointCount - 1))
+        const normalized = Math.max(-1, Math.min(1, (dataArray[sourceIndex] - 128) / 12))
+        const edgeEnvelope = Math.sin(Math.PI * i / Math.max(1, pointCount - 1))
+        points[i] = {
+          x: WIDTH * i / Math.max(1, pointCount - 1),
+          y: centerY + normalized * amplitude * (0.18 + edgeEnvelope * 0.82),
+        }
+      }
+
+      const fillGradient = ctx.createLinearGradient(0, 0, 0, HEIGHT)
+      fillGradient.addColorStop(0, 'rgba(255, 255, 255, .08)')
+      fillGradient.addColorStop(0.5, themeColor)
+      fillGradient.addColorStop(1, 'rgba(8, 10, 16, .02)')
+
+      ctx.beginPath()
+      ctx.moveTo(points[0].x, points[0].y)
+      for (let i = 1; i < points.length - 1; i++) {
+        const midpointX = (points[i].x + points[i + 1].x) / 2
+        const midpointY = (points[i].y + points[i + 1].y) / 2
+        ctx.quadraticCurveTo(points[i].x, points[i].y, midpointX, midpointY)
+      }
+      ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y)
+      ctx.lineTo(WIDTH, HEIGHT)
+      ctx.lineTo(0, HEIGHT)
+      ctx.closePath()
+      ctx.globalAlpha = 0.24
+      ctx.fillStyle = fillGradient
+      ctx.fill()
+
+      ctx.beginPath()
+      ctx.moveTo(points[0].x, points[0].y)
+      for (let i = 1; i < points.length - 1; i++) {
+        const midpointX = (points[i].x + points[i + 1].x) / 2
+        const midpointY = (points[i].y + points[i + 1].y) / 2
+        ctx.quadraticCurveTo(points[i].x, points[i].y, midpointX, midpointY)
+      }
+      ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y)
+      ctx.globalAlpha = 0.96
+      ctx.lineWidth = Math.max(2.25, HEIGHT / 42)
+      ctx.lineJoin = 'round'
+      ctx.lineCap = 'round'
+      ctx.strokeStyle = themeColor
+      ctx.shadowColor = themeColor
+      ctx.shadowBlur = Math.max(12, HEIGHT / 7)
+      ctx.stroke()
+      ctx.globalAlpha = 0.62
+      ctx.lineWidth = Math.max(1, HEIGHT / 100)
+      ctx.shadowBlur = 0
+      ctx.strokeStyle = 'rgba(255, 255, 255, .96)'
+      ctx.stroke()
+      ctx.shadowBlur = 0
+      ctx.globalAlpha = 1
+    }
+
+    const drawBars = () => {
+      analyser.getByteFrequencyData(dataArray)
+      const barCount = Math.max(28, Math.min(72, Math.round(WIDTH / 18)))
+      const gap = Math.max(2, Math.min(5, WIDTH / 420))
+      const barWidth = Math.max(2, (WIDTH - gap * (barCount - 1)) / barCount)
+      const maxBarHeight = HEIGHT * (props.variant == 'bottom' ? 0.78 : 0.4)
+      const usableBins = Math.max(1, Math.min(bufferLength, Math.round(bufferLength * 0.42)))
+      const gradient = ctx.createLinearGradient(0, HEIGHT, 0, HEIGHT - maxBarHeight)
+      gradient.addColorStop(0, themeColor)
+      gradient.addColorStop(0.72, themeColor)
+      gradient.addColorStop(1, 'rgba(255, 255, 255, .96)')
+
+      ctx.fillStyle = gradient
+      ctx.shadowColor = themeColor
+      ctx.shadowBlur = Math.max(5, HEIGHT / 18)
+      for (let i = 0; i < barCount; i++) {
+        const ratio = i / Math.max(1, barCount - 1)
+        const sourceIndex = Math.min(usableBins - 1, Math.floor(Math.pow(ratio, 1.7) * usableBins))
+        const nextIndex = Math.min(usableBins - 1, sourceIndex + 1)
+        const intensity = Math.pow((dataArray[sourceIndex] * 0.72 + dataArray[nextIndex] * 0.28) / 255, 0.78)
+        const height = Math.max(3, intensity * maxBarHeight)
+        const left = i * (barWidth + gap)
+
+        ctx.globalAlpha = 0.34 + intensity * 0.66
+        ctx.beginPath()
+        ctx.roundRect(left, HEIGHT - height, barWidth, height, Math.min(3, barWidth / 2))
+        ctx.fill()
+      }
+      ctx.shadowBlur = 0
+      ctx.globalAlpha = 1
+    }
+
+    const averageRange = (start, end) => {
+      const safeStart = Math.max(0, Math.min(dataArray.length - 1, start))
+      const safeEnd = Math.max(safeStart + 1, Math.min(dataArray.length, end))
+      let sum = 0
+      for (let i = safeStart; i < safeEnd; i++) sum += dataArray[i]
+      return sum / (safeEnd - safeStart) / 255
+    }
+
+    const addRoundedRectPath = (inset, radius) => {
+      const right = WIDTH - inset
+      const bottom = HEIGHT - inset
+      ctx.beginPath()
+      ctx.moveTo(inset + radius, inset)
+      ctx.lineTo(right - radius, inset)
+      ctx.arcTo(right, inset, right, inset + radius, radius)
+      ctx.lineTo(right, bottom - radius)
+      ctx.arcTo(right, bottom, right - radius, bottom, radius)
+      ctx.lineTo(inset + radius, bottom)
+      ctx.arcTo(inset, bottom, inset, bottom - radius, radius)
+      ctx.lineTo(inset, inset + radius)
+      ctx.arcTo(inset, inset, inset + radius, inset, radius)
+      ctx.closePath()
+    }
+
+    const drawAmbient = timestamp => {
+      analyser.getByteFrequencyData(dataArray)
+      const nextLow = averageRange(2, 22)
+      const nextMid = averageRange(22, 92)
+      const nextHigh = averageRange(92, 210)
+      ambientLow += (nextLow - ambientLow) * 0.18
+      ambientMid += (nextMid - ambientMid) * 0.14
+      ambientHigh += (nextHigh - ambientHigh) * 0.12
+      const nextEnergy = ambientLow * 0.5 + ambientMid * 0.34 + ambientHigh * 0.16
+      ambientEnergy += (nextEnergy - ambientEnergy) * 0.16
+
+      const pulse = Math.min(1, Math.pow(ambientEnergy, 0.7) * 1.24)
+      const thickness = Math.min(12, 5.5 + pulse * 6.5)
+      const inset = thickness / 2 + 1
+      const hue = (
+        (reduceMotion ? 216 : timestamp * 0.008) +
+        ambientLow * 52 +
+        ambientMid * 24 -
+        ambientHigh * 18
+      ) % 360
+      const gradient = ctx.createConicGradient(reduceMotion ? 0 : timestamp * 0.000045, WIDTH / 2, HEIGHT / 2)
+      gradient.addColorStop(0, `hsl(${hue} 92% 66%)`)
+      gradient.addColorStop(0.2, `hsl(${(hue + 62) % 360} 88% 64%)`)
+      gradient.addColorStop(0.42, `hsl(${(hue + 142) % 360} 86% 62%)`)
+      gradient.addColorStop(0.64, `hsl(${(hue + 218) % 360} 90% 66%)`)
+      gradient.addColorStop(0.84, `hsl(${(hue + 294) % 360} 90% 64%)`)
+      gradient.addColorStop(1, `hsl(${hue} 92% 66%)`)
+
+      ctx.globalCompositeOperation = 'lighter'
+      ctx.globalAlpha = 0.38 + pulse * 0.5
+      ctx.lineWidth = thickness
+      ctx.strokeStyle = gradient
+      ctx.shadowColor = `hsl(${(hue + 28) % 360} 92% 66%)`
+      ctx.shadowBlur = 7 + pulse * 9
+      addRoundedRectPath(inset, Math.min(22, Math.max(8, WIDTH * 0.012)))
+      ctx.stroke()
+
+      ctx.globalAlpha = 0.16 + pulse * 0.22
+      ctx.lineWidth = Math.max(1.5, thickness * 0.24)
+      ctx.shadowBlur = 0
+      ctx.strokeStyle = 'rgba(255, 255, 255, .9)'
+      addRoundedRectPath(inset + thickness * 0.1, Math.min(20, Math.max(7, WIDTH * 0.011)))
+      ctx.stroke()
+      ctx.globalCompositeOperation = 'source-over'
+      ctx.globalAlpha = 1
+    }
+
     const renderFrame = (timestamp = 0) => {
-      if (timestamp - lastDrawTime < 33) {
+      if (timestamp - lastDrawTime < (reduceMotion ? 100 : 33)) {
         animationFrameId = window.requestAnimationFrame(renderFrame)
         return
       }
       lastDrawTime = timestamp
-      x = 0
-      frequencyAvg = 0
-
-      analyser.getByteFrequencyData(dataArray)
 
       ctx.clearRect(0, 0, WIDTH, HEIGHT)
-      // ctx.fillRect(0, 0, WIDTH, HEIGHT)
-      ctx.fillStyle = themeColor
-
-      for (let i = 0; i < bufferLength; i++) {
-        mult = Math.floor(i / maxNum)
-        num = mult % 2 === 0 ? (i - maxNum * mult) : (maxNum - (i - maxNum * mult))
-        let spectrum = num > 90 ? 0 : dataArray[num + 20]
-        frequencyAvg += spectrum * 1.2
-      }
-      frequencyAvg /= bufferLength
-      frequencyAvg *= 1.4
-
-      frequencyAvg = frequencyAvg / maxNum
-      // ctx.scale(1, 1 + frequencyAvg)
-
-      for (let i = 0; i < bufferLength; i++) {
-        if (x > WIDTH) break
-
-        barHeight = dataArray[i]
-
-        // let r = barHeight + (25 * (i / bufferLength))
-        // let g = 250 * (i / bufferLength)
-        // let b = 50
-
-        // ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')'
-        barHeight = (barHeight * frequencyAvg + barHeight * 0.42) * MAX_HEIGHT
-        ctx.fillRect(x, HEIGHT - barHeight, barWidth, barHeight)
-
-        x += barWidth
-      }
+      if (props.mode == 'wave') drawWave()
+      else if (props.mode == 'ambient') drawAmbient(timestamp)
+      else drawBars()
 
       animationFrameId = null
-      if (isPlaying) animationFrameId = window.requestAnimationFrame(renderFrame)
+      if (isPlaying && !reduceMotion) animationFrameId = window.requestAnimationFrame(renderFrame)
     }
 
-    const handlePlay = () => {
-      if (!ctx || !dom_canvas.value || !WIDTH || !HEIGHT) return
+    const startRendering = () => {
+      if (!ctx || !dom_canvas.value) return
+      if (!WIDTH || !HEIGHT) handleResize()
+      if (!WIDTH || !HEIGHT) return
       if (animationFrameId) return
-      isPlaying = true
       // analyser.fftSize = 256
-      bufferLength = analyser.frequencyBinCount
-      // console.log(bufferLength)
-      barWidth = getBarWidth(WIDTH)
+      bufferLength = props.mode == 'wave' ? analyser.fftSize : analyser.frequencyBinCount
       dataArray = new Uint8Array(bufferLength)
       renderFrame()
+    }
+    const handlePlay = () => {
+      isPlaying = true
+      if (!ctx || !dom_canvas.value || !WIDTH || !HEIGHT) return
+      if (audioContext.state == 'suspended') {
+        void audioContext.resume()
+          .catch(() => {})
+          .finally(() => {
+            if (isPlaying) startRendering()
+          })
+        return
+      }
+      startRendering()
     }
     const handlePause = () => {
       if (animationFrameId) window.cancelAnimationFrame(animationFrameId)
@@ -137,17 +290,19 @@ export default {
     const handleResize = () => {
       const canvas = dom_canvas.value
       if (!canvas) return
-      canvas.width = canvas.clientWidth
-      canvas.height = canvas.clientHeight
+      const width = canvas.clientWidth || canvas.parentElement?.clientWidth || window.innerWidth
+      const height = canvas.clientHeight || canvas.parentElement?.clientHeight || 112
+      canvas.width = width
+      canvas.height = height
       WIDTH = canvas.width
       HEIGHT = canvas.height
-      MAX_HEIGHT = Math.round(HEIGHT * 0.4 / 255 * 10000) / 10000
-      // console.log(MAX_HEIGHT)
-      barWidth = getBarWidth(WIDTH)
+      themeColor = resolveThemeColor()
     }
 
     onBeforeUnmount(() => {
       handlePause()
+      if (mountFrameId) window.cancelAnimationFrame(mountFrameId)
+      mountFrameId = null
       window.app_event.off('play', handlePlay)
       window.app_event.off('pause', handlePause)
       window.app_event.off('error', handlePause)
@@ -158,17 +313,16 @@ export default {
       const canvas = dom_canvas.value
       if (!canvas) return
       ctx = canvas.getContext('2d')
-      canvas.width = canvas.clientWidth
-      canvas.height = canvas.clientHeight
-      WIDTH = canvas.width
-      HEIGHT = canvas.height
-      MAX_HEIGHT = Math.round(HEIGHT * 0.4 / 255 * 10000) / 10000
-      // console.log(MAX_HEIGHT)
+      handleResize()
       window.app_event.on('play', handlePlay)
       window.app_event.on('pause', handlePause)
       window.app_event.on('error', handlePause)
       window.addEventListener('resize', handleResize)
-      if (isPlay.value) handlePlay()
+      mountFrameId = window.requestAnimationFrame(() => {
+        mountFrameId = null
+        handleResize()
+        if (isPlay.value) handlePlay()
+      })
     })
 
     return {
@@ -192,5 +346,20 @@ export default {
   width: 100%;
   height: 100%;
   // opacity: 0.1;
+}
+
+.bottom {
+  top: auto;
+  bottom: 0;
+  height: var(--immersive-visualizer-height, var(--immersive-control-height, 112px));
+  z-index: 2;
+  opacity: .96;
+  background: linear-gradient(180deg, transparent, rgba(6, 8, 14, .16));
+}
+
+.ambient {
+  inset: 0;
+  z-index: 2;
+  opacity: .92;
 }
 </style>

@@ -66,6 +66,7 @@ export const capturePlayDetailOrigin = (element) => {
     coverRadius: getRadiusValue(coverElement),
     coverTransform: getTransformValue(coverMotionElement),
     coverSrc: coverImage?.getAttribute('src') ?? '',
+    coverImage,
     ...getShellVisualState(element),
     time: Date.now(),
   }
@@ -89,6 +90,7 @@ export const getPlayDetailOrigin = (preferLive = false) => {
     coverRadius: getRadiusValue(coverElement),
     coverTransform: getTransformValue(coverMotionElement),
     coverSrc: coverImage?.getAttribute('src') ?? '',
+    coverImage,
     ...getShellVisualState(floatingIslandElement),
   }
 }

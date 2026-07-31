@@ -55,7 +55,6 @@ import { useRoute } from '@common/utils/vueRouter'
 import SettingBasic from './components/SettingBasic.vue'
 import SettingAppearance from './components/SettingAppearance.vue'
 import SettingPlay from './components/SettingPlay.vue'
-import SettingPlayDetail from './components/SettingPlayDetail.vue'
 import SettingDesktopLyric from './components/SettingDesktopLyric.vue'
 import SettingSearch from './components/SettingSearch.vue'
 import SettingList from './components/SettingList.vue'
@@ -78,7 +77,6 @@ export default {
     SettingBasic,
     SettingAppearance,
     SettingPlay,
-    SettingPlayDetail,
     SettingDesktopLyric,
     SettingSearch,
     SettingList,
@@ -106,7 +104,6 @@ export default {
         { id: 'SettingBasic', title: t('setting__basic') },
         { id: 'SettingAppearance', title: '外观设置' },
         { id: 'SettingPlay', title: t('setting__play') },
-        { id: 'SettingPlayDetail', title: t('setting__play_detail') },
         { id: 'SettingDesktopLyric', title: t('setting__desktop_lyric') },
         { id: 'SettingSearch', title: t('setting__search') },
         { id: 'SettingList', title: t('setting__list') },
@@ -125,8 +122,9 @@ export default {
       ]
     })
 
-    const avtiveComponentName = ref(route.query.name && tocList.value.some(t => t.id == route.query.name)
-      ? route.query.name
+    const requestedComponentName = route.query.name == 'SettingPlayDetail' ? 'SettingAppearance' : route.query.name
+    const avtiveComponentName = ref(requestedComponentName && tocList.value.some(t => t.id == requestedComponentName)
+      ? requestedComponentName
       : tocList.value[0].id)
 
     const toggleTab = id => {

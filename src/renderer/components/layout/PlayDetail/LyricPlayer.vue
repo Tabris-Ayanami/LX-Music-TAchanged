@@ -90,8 +90,10 @@ export default {
 
     const dom_lrc_select_content = useSelectAllLrc()
 
+    let fullscreenScrollTimer = null
     watch(isFullscreen, () => {
-      setTimeout(handleScrollLrc, 400)
+      window.clearTimeout(fullscreenScrollTimer)
+      fullscreenScrollTimer = window.setTimeout(handleScrollLrc, 400)
     })
 
     const lyricMenuVisible = ref(false)
@@ -153,6 +155,7 @@ export default {
       window.app_event.on('lyricUpdated', updateMusicInfo)
     })
     onBeforeUnmount(() => {
+      window.clearTimeout(fullscreenScrollTimer)
       window.app_event.off('musicToggled', updateMusicInfo)
       window.app_event.off('lyricUpdated', updateMusicInfo)
     })
@@ -307,7 +310,7 @@ export default {
 }
 
 .skip {
-  --seek-control-push: clamp(12px, 1.6vw, 28px);
+  --seek-control-push: var(--play-detail-seek-push, clamp(12px, 1.6vw, 28px));
   --seek-capsule-width: 56px;
   --seek-capsule-bg: rgba(255, 255, 255, .96);
   --seek-capsule-color: rgba(12, 14, 18, .96);

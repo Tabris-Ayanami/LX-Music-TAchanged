@@ -44,11 +44,36 @@ export interface BiliTrackParams {
   duration?: number | null
 }
 
+export type BiliLyricSource = 'auto' | 'bili' | 'netease' | 'lrclib'
+export interface BiliLyricMatchParams {
+  source: BiliLyricSource
+  bvid?: string
+  cid?: number | string
+  page?: number | string
+  title: string
+  artist?: string
+  duration?: number | null
+}
+export interface BiliLyricCandidate {
+  source: BiliLyricSource
+  title: string
+  preview: string
+  lyrics: LX.Music.LyricInfo
+}
+
 export interface BiliMusicUrlResult {
   type: LX.Quality
   url: string
   rawUrl: string
   expiresAt: number
+}
+
+export interface BiliVideoUrlResult {
+  url: string
+  rawUrl: string
+  expiresAt: number
+  width: number | null
+  height: number | null
 }
 
 export interface BiliMusicQualityInfo {

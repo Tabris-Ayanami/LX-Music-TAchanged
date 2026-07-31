@@ -1,8 +1,8 @@
 import { mainHandle } from '@common/mainIpc'
 import { BILI_RENDERER_EVENT_NAME } from '@common/ipcNames'
 import { clearBiliCookie, setBiliCookie } from './request'
-import { getAccountInfo, getComment, getLyric, getMusicQualitys, getMusicUrl, getPic, getSongListDetail, search } from './api'
-import type { BiliAccountInfo, BiliCommentInfo, BiliCommentParams, BiliMusicQualityInfo, BiliMusicUrlResult, BiliSearchParams, BiliSearchResult, BiliSongListDetail, BiliSongListDetailParams, BiliTrackParams } from './types'
+import { getAccountInfo, getComment, getLyric, getLyricSource, getLyricSourceCandidates, getMusicQualitys, getMusicUrl, getPic, getSongListDetail, getVideoUrl, search } from './api'
+import type { BiliAccountInfo, BiliCommentInfo, BiliCommentParams, BiliMusicQualityInfo, BiliMusicUrlResult, BiliSearchParams, BiliSearchResult, BiliSongListDetail, BiliSongListDetailParams, BiliTrackParams, BiliVideoUrlResult } from './types'
 import { injectAuthCookie } from './cookie'
 
 export default () => {
@@ -28,11 +28,20 @@ export default () => {
   mainHandle<{ info: BiliTrackParams, type: LX.Quality }, BiliMusicUrlResult>(BILI_RENDERER_EVENT_NAME.get_music_url, async({ params }) => {
     return getMusicUrl(params.info, params.type)
   })
+  mainHandle<BiliTrackParams, BiliVideoUrlResult>(BILI_RENDERER_EVENT_NAME.get_video_url, async({ params }) => {
+    return getVideoUrl(params)
+  })
   mainHandle<BiliTrackParams, string>(BILI_RENDERER_EVENT_NAME.get_pic, async({ params }) => {
     return getPic(params)
   })
   mainHandle<BiliTrackParams, LX.Music.LyricInfo>(BILI_RENDERER_EVENT_NAME.get_lyric, async({ params }) => {
     return getLyric(params)
+  })
+  mainHandle<LX.Bili.LyricMatchParams, LX.Music.LyricInfo>(BILI_RENDERER_EVENT_NAME.get_lyric_source, async({ params }) => {
+    return getLyricSource(params)
+  })
+  mainHandle<LX.Bili.LyricMatchParams, LX.Bili.LyricCandidate[]>(BILI_RENDERER_EVENT_NAME.get_lyric_source_candidates, async({ params }) => {
+    return getLyricSourceCandidates(params)
   })
   mainHandle<BiliCommentParams, BiliCommentInfo>(BILI_RENDERER_EVENT_NAME.get_comment, async({ params }) => {
     return getComment(params)
