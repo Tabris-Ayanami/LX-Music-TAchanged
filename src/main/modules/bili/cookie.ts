@@ -66,12 +66,15 @@ const getBiliTicket = async() => {
   if (!response.ok) throw new Error(`获取 B站 bili_ticket 失败：${response.status}`)
   const body = await response.json() as GenWebTicketResponse
   if (body.code !== 0 || !body.data?.ticket) throw new Error('获取 B站 bili_ticket 失败')
-  return body.data.ticket
+  return {
+    ticket: body.data.ticket,
+    ttl: body.data.ttl ?? 259200,
+  }
 }
 
 const injectBiliTicketCookie = async() => {
-  const ticket = await getBiliTicket()
-  const expirationDate = Math.floor(Date.now() / 1000 + 259260)
+  const { ticket, ttl } = await getBiliTicket()
+  const expirationDate = Math.floor(Date.now() / 1000 + Math.max(60, ttl))
   await setCookie({
     name: 'bili_ticket',
     value: ticket,
@@ -98,6 +101,23 @@ const injectBuvidCookie = async() => {
   })
 }
 
+let biliTicketRefreshPromise: Promise<void> | null = null
+let buvidRefreshPromise: Promise<void> | null = null
+
+const refreshBiliTicketCookie = async() => {
+  biliTicketRefreshPromise ??= injectBiliTicketCookie().finally(() => {
+    biliTicketRefreshPromise = null
+  })
+  return biliTicketRefreshPromise
+}
+
+const refreshBuvidCookie = async() => {
+  buvidRefreshPromise ??= injectBuvidCookie().finally(() => {
+    buvidRefreshPromise = null
+  })
+  return buvidRefreshPromise
+}
+
 let cookieAutoRefreshRegistered = false
 
 const setupCookieAutoRefresh = () => {
@@ -106,13 +126,13 @@ const setupCookieAutoRefresh = () => {
   session.defaultSession.cookies.on('changed', (_event, cookie, cause, removed) => {
     if (!removed || (cause !== 'expired' && cause !== 'expired-overwrite')) return
     if (cookie.name === 'buvid4' || cookie.name === 'buvid3') {
-      void injectBuvidCookie().catch(err => {
+      void refreshBuvidCookie().catch(err => {
         console.warn('[bili] refresh buvid failed', err)
       })
       return
     }
     if (cookie.name === 'bili_ticket' || cookie.name === 'bili_ticket_expires') {
-      void injectBiliTicketCookie().catch(err => {
+      void refreshBiliTicketCookie().catch(err => {
         console.warn('[bili] refresh bili_ticket failed', err)
       })
     }
@@ -121,7 +141,15 @@ const setupCookieAutoRefresh = () => {
 
 export const injectAuthCookie = async() => {
   setupCookieAutoRefresh()
-  const results = await Promise.allSettled([injectBiliTicketCookie(), injectBuvidCookie()])
+  const cookies = await session.defaultSession.cookies.get({ url: 'https://bilibili.com' })
+  const cookieMap = new Map(cookies.map(cookie => [cookie.name, cookie]))
+  const ticketExpires = Number(cookieMap.get('bili_ticket_expires')?.value ?? 0)
+  const shouldRefreshTicket = !cookieMap.has('bili_ticket') || ticketExpires < Date.now() / 1000 + 5 * 60
+  const hasBuvidPair = cookieMap.has('buvid3') && cookieMap.has('buvid4')
+  const tasks: Array<Promise<void>> = []
+  if (shouldRefreshTicket) tasks.push(refreshBiliTicketCookie())
+  if (!hasBuvidPair) tasks.push(refreshBuvidCookie())
+  const results = await Promise.allSettled(tasks)
   for (const result of results) {
     if (result.status === 'rejected') console.warn('[bili] inject cookie failed', result.reason)
   }

@@ -1,12 +1,14 @@
 import { mainHandle } from '@common/mainIpc'
 import { BILI_RENDERER_EVENT_NAME } from '@common/ipcNames'
-import { clearBiliCookie, setBiliCookie } from './request'
+import { clearBiliCookie, restoreStoredBiliCookie, setBiliCookie } from './request'
 import { getAccountInfo, getComment, getLyric, getLyricSource, getLyricSourceCandidates, getMusicQualitys, getMusicUrl, getPic, getSongListDetail, getVideoUrl, search } from './api'
 import type { BiliAccountInfo, BiliCommentInfo, BiliCommentParams, BiliMusicQualityInfo, BiliMusicUrlResult, BiliSearchParams, BiliSearchResult, BiliSongListDetail, BiliSongListDetailParams, BiliTrackParams, BiliVideoUrlResult } from './types'
 import { injectAuthCookie } from './cookie'
 
 export default () => {
-  void injectAuthCookie()
+  void restoreStoredBiliCookie().then(injectAuthCookie).catch(err => {
+    console.warn('[bili] initialize cookie failed', err)
+  })
 
   mainHandle<BiliAccountInfo>(BILI_RENDERER_EVENT_NAME.account_get, async() => {
     return getAccountInfo()

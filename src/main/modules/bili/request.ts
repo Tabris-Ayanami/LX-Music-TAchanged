@@ -5,6 +5,8 @@ const API_BASE_URL = 'https://api.bilibili.com'
 const ORIGIN = 'https://www.bilibili.com'
 export const BILI_REFERER = `${ORIGIN}/`
 export const BILI_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
+const BILI_COOKIE_PERSIST_SECONDS = 30 * 24 * 60 * 60
+const SESSION_COOKIE_OVERRIDES = new Set(['bili_ticket', 'bili_ticket_expires'])
 
 interface WbiKeys {
   imgKey: string
@@ -22,33 +24,57 @@ const normalizeUrl = (url: string) => {
 
 const getStoredCookie = () => global.lx.appSetting['account.bili.cookie']?.trim() || ''
 
+const parseCookieString = (cookieString: string) => {
+  const cookies = new Map<string, string>()
+  for (const pair of cookieString.split(';')) {
+    const eqIndex = pair.indexOf('=')
+    if (eqIndex < 1) continue
+    const name = pair.slice(0, eqIndex).trim()
+    const value = pair.slice(eqIndex + 1).trim()
+    if (name) cookies.set(name, value)
+  }
+  return cookies
+}
+
+const setPersistentSessionCookie = async(name: string, value: string) => {
+  await session.defaultSession.cookies.set({
+    url: 'https://bilibili.com/',
+    domain: '.bilibili.com',
+    path: '/',
+    name,
+    value,
+    secure: true,
+    sameSite: 'no_restriction',
+    expirationDate: Math.floor(Date.now() / 1000) + BILI_COOKIE_PERSIST_SECONDS,
+  })
+}
+
+export const restoreStoredBiliCookie = async() => {
+  const cookies = parseCookieString(getStoredCookie())
+  const results = await Promise.allSettled(Array.from(cookies, async([name, value]) => {
+    await setPersistentSessionCookie(name, value)
+  }))
+  await session.defaultSession.cookies.flushStore()
+  for (const result of results) {
+    if (result.status === 'rejected') console.warn('[bili] restore stored cookie failed', result.reason)
+  }
+}
+
 export const getCookieString = async() => {
   const sessionCookies = await session.defaultSession.cookies.get({ url: 'https://bilibili.com' })
-  const fromSession = sessionCookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ')
-  const stored = getStoredCookie()
-  return [stored, fromSession].filter(Boolean).join('; ')
+  const cookies = parseCookieString(getStoredCookie())
+  for (const cookie of sessionCookies) {
+    if (!cookies.has(cookie.name) || SESSION_COOKIE_OVERRIDES.has(cookie.name)) cookies.set(cookie.name, cookie.value)
+  }
+  return Array.from(cookies, ([name, value]) => `${name}=${value}`).join('; ')
 }
 
 export const setBiliCookie = async(cookieString: string) => {
   const cookie = cookieString.trim()
   global.lx.event_app.update_config({ 'account.bili.cookie': cookie })
 
-  const pairs = cookie.split(';').map(item => item.trim()).filter(Boolean)
-  for (const pair of pairs) {
-    const eqIndex = pair.indexOf('=')
-    if (eqIndex < 1) continue
-    const name = pair.slice(0, eqIndex).trim()
-    const value = pair.slice(eqIndex + 1).trim()
-    if (!name) continue
-    await session.defaultSession.cookies.set({
-      url: 'https://bilibili.com/',
-      domain: '.bilibili.com',
-      path: '/',
-      name,
-      value,
-      secure: true,
-      sameSite: 'no_restriction',
-    })
+  for (const [name, value] of parseCookieString(cookie)) {
+    await setPersistentSessionCookie(name, value)
   }
   await session.defaultSession.cookies.flushStore()
 }
