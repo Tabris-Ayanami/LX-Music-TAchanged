@@ -24,7 +24,7 @@
           @keyup.arrow-up.prevent="handleKeyUp"
           @contextmenu="handleContextMenu"
         >
-        <transition enter-active-class="animated zoomIn" leave-active-class="animated zoomOut">
+        <transition name="motion-pop">
           <button v-show="text" type="button" @click="handleClearList">
             <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" height="100%" viewBox="0 0 24 24" space="preserve">
               <use xlink:href="#icon-window-close" />
@@ -240,7 +240,7 @@ export default {
   left: 0;
   width: 100%;
   border-radius: 24px;
-  transition: box-shadow .32s cubic-bezier(0.16, 1, 0.3, 1), border-color .2s ease-out, transform .32s cubic-bezier(0.16, 1, 0.3, 1), border-radius .32s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: box-shadow var(--motion-duration-normal) var(--motion-ease-out), border-color var(--motion-duration-fast) var(--motion-ease-out), transform var(--motion-duration-normal) var(--motion-ease-out), border-radius var(--motion-duration-normal) var(--motion-ease-out);
   display: flex;
   flex-flow: column nowrap;
   background: transparent;
@@ -347,7 +347,7 @@ export default {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     font-size: 13px;
-    transition: height .34s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: height var(--motion-duration-slow) var(--motion-ease-out);
     height: 0;
     overflow: hidden;
     isolation: isolate;
@@ -369,7 +369,7 @@ export default {
       opacity: 0;
       transform: scaleY(.92);
       transform-origin: top center;
-      transition: opacity .28s ease, transform .34s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: opacity var(--motion-duration-normal) var(--motion-ease-out), transform var(--motion-duration-slow) var(--motion-ease-out);
       pointer-events: none;
     }
 
@@ -381,7 +381,7 @@ export default {
       list-style: none;
       opacity: 0;
       transform: translateY(-10px);
-      transition: opacity .22s ease, transform .28s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: opacity var(--motion-duration-normal) var(--motion-ease-out), transform var(--motion-duration-slow) var(--motion-ease-out);
     }
 
     li {
@@ -416,6 +416,40 @@ export default {
       opacity: 1;
       transform: translateY(0);
       transition-delay: .04s;
+    }
+  }
+}
+
+:global(.themeShellDark) {
+  .search {
+    box-shadow: 0 12px 28px rgba(0, 0, 0, .28), 0 3px 9px rgba(0, 0, 0, .2);
+
+    &.active,
+    &.expanded {
+      border-color: var(--shell-control-border);
+      box-shadow:
+        0 16px 36px rgba(0, 0, 0, .34),
+        0 6px 16px rgba(0, 0, 0, .2),
+        0 0 0 2px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 10%, transparent);
+    }
+
+    .list {
+      border-top-color: var(--shell-divider);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+
+      &::before {
+        background:
+          linear-gradient(180deg, rgba(34, 40, 51, .96), rgba(23, 28, 37, .96)),
+          linear-gradient(130deg, color-mix(in srgb, var(--shell-accent, var(--color-primary)) 9%, transparent), transparent);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, .075),
+          0 24px 52px rgba(0, 0, 0, .34);
+      }
+
+      li.select,
+      li:hover {
+        background-color: var(--shell-list-hover);
+      }
     }
   }
 }

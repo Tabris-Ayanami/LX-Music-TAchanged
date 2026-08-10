@@ -1,6 +1,6 @@
 <template>
   <div :class="$style.container">
-    <transition enter-active-class="animated-fast fadeIn" leave-active-class="animated fadeOut">
+    <transition name="motion-fade">
       <div v-show="!isShowThemeList" :class="$style.btns" @mousedown="handleLyricMouseDown" @touchstart="handleLyricTouchStart">
         <button :class="$style.btn" :title="$t('desktop_lyric__close')" @click="handleClose">
           <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" height="20px" viewBox="0 0 24 24" space="preserve">

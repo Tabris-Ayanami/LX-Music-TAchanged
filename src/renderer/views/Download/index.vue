@@ -282,17 +282,17 @@ export default {
 
   :global(.list-item) {
     &:hover {
-      background-color: color-mix(in srgb, var(--color-primary) 34%, rgba(255, 255, 255, 0.94)) !important;
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 48%, rgba(255, 255, 255, 0.62)) !important;
+      background-color: var(--shell-list-hover, var(--color-list-hover-background)) !important;
+      box-shadow: inset 0 0 0 1px var(--shell-control-border) !important;
     }
     &.selected {
-      background-color: color-mix(in srgb, var(--color-primary) 34%, rgba(255, 255, 255, 0.94)) !important;
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 48%, rgba(255, 255, 255, 0.62)) !important;
+      background-color: var(--shell-list-hover, var(--color-list-hover-background)) !important;
+      box-shadow: inset 0 0 0 1px var(--shell-control-border) !important;
     }
     &.active {
-      color: var(--color-button-font);
-      background-color: color-mix(in srgb, var(--color-primary) 44%, rgba(255, 255, 255, 0.92)) !important;
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 56%, rgba(255, 255, 255, 0.58)) !important;
+      color: var(--shell-text, var(--color-button-font));
+      background-color: var(--shell-list-active, var(--color-list-active-background)) !important;
+      box-shadow: inset 0 0 0 1px var(--shell-control-border) !important;
     }
   }
 }
@@ -345,8 +345,9 @@ export default {
   align-items: center;
 
   p {
-    font-size: 24px;
-    color: var(--color-font-label);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--shell-muted, var(--color-font-label));
   }
 }
 

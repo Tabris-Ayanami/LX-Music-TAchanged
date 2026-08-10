@@ -94,6 +94,7 @@ export default {
   }
   &:active {
     opacity: 1;
+    transform: scale(.92);
   }
 }
 

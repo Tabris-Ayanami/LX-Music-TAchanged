@@ -196,4 +196,79 @@ const useDistortion = computed(() => isShowAnimation.value && mergedActive.value
       linear-gradient(130deg, rgba(255,255,255,.38), rgba(237,245,255,.22) 48%, rgba(42,56,76,.12));
   }
 }
+
+:global(.themeShellDark) {
+  .tint {
+    background:
+      radial-gradient(110% 90% at 16% 0%, rgba(255, 255, 255, .12), rgba(255, 255, 255, 0) 56%),
+      linear-gradient(135deg, rgba(255, 255, 255, .075), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 7%, rgba(255, 255, 255, .025)) 52%, rgba(0, 0, 0, .16));
+    opacity: .78;
+  }
+
+  .edge {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .16),
+      inset 0 -1px 0 rgba(0, 0, 0, .32),
+      inset 1px 0 0 rgba(255, 255, 255, .07),
+      inset -1px 0 0 rgba(255, 255, 255, .04),
+      0 18px 42px rgba(0, 0, 0, .25);
+    opacity: .9;
+  }
+
+  .gloss {
+    background:
+      linear-gradient(100deg, rgba(255,255,255,.09), rgba(255,255,255,0) 28% 72%, rgba(255,255,255,.05)),
+      radial-gradient(circle at 50% 0%, rgba(255,255,255,.16), rgba(255,255,255,.025) 42%, rgba(255,255,255,0) 72%);
+    opacity: .44;
+  }
+
+  .hoverGlow {
+    background: radial-gradient(circle at 50% 0%, rgba(255,255,255,.16), rgba(255,255,255,0) 58%);
+  }
+
+  .pressGlow {
+    background: radial-gradient(circle at 50% 0%, rgba(255,255,255,.22), rgba(255,255,255,0) 78%);
+  }
+
+  .noHighlight {
+    .tint {
+      background: linear-gradient(135deg, rgba(255,255,255,.065), rgba(255,255,255,.018) 52%, rgba(0,0,0,.12));
+    }
+
+    .edge {
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .1),
+        inset 0 -1px 0 rgba(0, 0, 0, .24),
+        0 14px 30px rgba(0, 0, 0, .22);
+    }
+  }
+
+  .variant_search {
+    .tint {
+      background:
+        radial-gradient(115% 92% at 16% 0%, rgba(255, 255, 255, .14), rgba(255, 255, 255, 0) 58%),
+        linear-gradient(135deg, rgba(255,255,255,.085), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 9%, rgba(255,255,255,.025)) 62%, rgba(0,0,0,.14));
+    }
+
+    .edge {
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .18),
+        inset 0 -1px 0 rgba(0, 0, 0, .3),
+        0 16px 34px rgba(0, 0, 0, .24);
+    }
+  }
+
+  .variant_capsule .tint {
+    background:
+      radial-gradient(115% 84% at 14% 0%, rgba(255, 255, 255, .1), rgba(255, 255, 255, 0) 56%),
+      linear-gradient(136deg, rgba(255,255,255,.06), rgba(255,255,255,.018));
+  }
+
+  .variant_island .tint {
+    background:
+      radial-gradient(80% 120% at 12% 18%, rgba(255,255,255,.1), rgba(255,255,255,0) 54%),
+      radial-gradient(90% 110% at 88% 24%, rgba(255,255,255,.06), rgba(255,255,255,0) 50%),
+      linear-gradient(130deg, rgba(255,255,255,.08), rgba(255,255,255,.035) 48%, rgba(0,0,0,.12));
+  }
+}
 </style>

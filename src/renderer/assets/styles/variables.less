@@ -14,11 +14,16 @@
 
 
 // Radius
-@radius-progress-border: 5px;
-@radius-border: 4px;
+@radius-progress-border: 999px;
+@radius-border: 8px;
 
-@transition-slow: .6s ease;
-@transition-normal: .4s ease;
-@transition-fast: .3s ease;
+// A compact, shared motion rhythm for the desktop shell. Component-level
+// transitions should extend these values instead of introducing near-matches.
+@ease-out: cubic-bezier(.23, 1, .32, 1);
+@ease-in-out: cubic-bezier(.77, 0, .175, 1);
+@ease-drawer: cubic-bezier(.32, .72, 0, 1);
+@transition-slow: .28s @ease-in-out;
+@transition-normal: .22s @ease-out;
+@transition-fast: .16s @ease-out;
 
-@form-radius: 3px;
+@form-radius: 8px;

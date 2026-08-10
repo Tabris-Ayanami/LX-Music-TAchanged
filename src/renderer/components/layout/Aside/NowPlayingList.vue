@@ -240,8 +240,8 @@ onBeforeUnmount(() => {
   --sidebar-queue-rail: var(--sidebar-icon-lane, 44px);
   --sidebar-queue-cover: 36px;
   --sidebar-queue-radius: 10px;
-  --sidebar-motion-duration: .46s;
-  --sidebar-motion-curve: cubic-bezier(.2, 0, 0, 1);
+  --sidebar-motion-duration: .28s;
+  --sidebar-motion-curve: var(--motion-ease-drawer);
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
@@ -261,7 +261,7 @@ onBeforeUnmount(() => {
   font-size: 9px;
   letter-spacing: .16em;
   text-transform: uppercase;
-  color: rgba(86, 100, 120, 0.56);
+  color: var(--shell-muted, rgba(86, 100, 120, 0.68));
   overflow: hidden;
   transition: height var(--sidebar-motion-duration) var(--sidebar-motion-curve), margin var(--sidebar-motion-duration) var(--sidebar-motion-curve), opacity .28s ease;
 }
@@ -330,9 +330,9 @@ onBeforeUnmount(() => {
     opacity: 0;
     transform: scale(.96);
     transition:
-      opacity 220ms ease,
-      transform 260ms cubic-bezier(.2, .9, .22, 1.12),
-      box-shadow 220ms ease;
+      opacity var(--motion-duration-normal) var(--motion-ease-out),
+      transform var(--motion-duration-normal) var(--motion-ease-out),
+      box-shadow var(--motion-duration-normal) var(--motion-ease-out);
     pointer-events: none;
   }
 
@@ -370,7 +370,7 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
   border-radius: 8px;
   overflow: hidden;
-  background: color-mix(in srgb, var(--color-primary) 18%, rgba(255, 255, 255, 0.72));
+  background: var(--shell-control, color-mix(in srgb, var(--color-primary) 18%, rgba(255, 255, 255, 0.72)));
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -435,19 +435,18 @@ onBeforeUnmount(() => {
 }
 
 .collapsed {
-  margin-top: 20px;
-  padding-top: 12px;
-  border-top: 1px solid color-mix(in srgb, var(--shell-text, #182236) 10%, transparent);
+  margin-top: 18px;
+  padding-top: 0;
   opacity: 1;
 
   .title {
-    height: 0;
+    height: 14px;
     margin: 0;
     opacity: 0;
   }
 
   .list {
-    margin-top: -5px;
+    margin-top: 6px;
     padding-right: 0;
     gap: 7px;
   }

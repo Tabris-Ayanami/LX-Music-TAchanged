@@ -3,7 +3,8 @@
     :class="[$style.immersive, $style[`effect-${effect}`], { [$style.controlsVisible]: controlsVisible }]"
     :style="immersiveStyle"
     :aria-label="$t('player__immersive_mode')"
-    @mousemove="handlePointerMove"
+    @pointermove="handlePointerMove"
+    @pointerleave="scheduleHideControls"
     @touchstart="showControls"
   >
     <div :class="$style.windowDragRegion" aria-hidden="true" />
@@ -60,7 +61,7 @@
       aria-hidden="true"
     />
 
-    <footer :class="$style.controlsDock" @mouseenter="showControls" @mouseleave="scheduleHideControls">
+    <footer :class="$style.controlsDock" @pointerenter="showControls" @pointerleave="scheduleHideControls">
       <button
         type="button"
         :class="$style.progressTrack"
@@ -589,6 +590,7 @@ const updateMvSync = () => {
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown, true)
   updateMvSync()
+  showControls()
 })
 
 onBeforeUnmount(() => {
@@ -622,6 +624,10 @@ watch(() => musicInfo.id, () => {
 watch(() => [isPlay.value, background.value, mvUrl.value], () => {
   updateMvSync()
   void syncMvPlayback()
+})
+
+watch(controlHideDelay, () => {
+  if (controlsVisible.value) scheduleHideControls()
 })
 </script>
 
@@ -859,7 +865,6 @@ watch(() => [isPlay.value, background.value, mvUrl.value], () => {
   align-items: center;
   column-gap: clamp(5px, .65vw, 13px);
   row-gap: clamp(8px, 1.2vh, 16px);
-  animation: line-breathe 7s ease-in-out infinite;
 }
 
 .word {
@@ -996,7 +1001,10 @@ watch(() => [isPlay.value, background.value, mvUrl.value], () => {
 
 .controlsDock {
   position: absolute;
-  inset: auto 0 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
   min-height: var(--immersive-control-height);
   padding: 8px clamp(16px, 2.8vw, 44px) 16px;
   transform: translateY(12px);
@@ -1007,13 +1015,16 @@ watch(() => [isPlay.value, background.value, mvUrl.value], () => {
   -webkit-backdrop-filter: none;
   opacity: 0;
   pointer-events: none;
-  transition: opacity .22s ease, transform .22s ease;
+  transition:
+    opacity var(--motion-duration-exit) var(--motion-ease-out),
+    transform var(--motion-duration-exit) var(--motion-ease-out);
 }
 
 .controlsVisible .controlsDock {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
+  transition-duration: var(--motion-duration-fast);
 }
 
 .progressTrack {
@@ -1056,6 +1067,8 @@ watch(() => [isPlay.value, background.value, mvUrl.value], () => {
 }
 
 .controlRow {
+  position: relative;
+  width: 100%;
   min-height: 52px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -1066,6 +1079,7 @@ watch(() => [isPlay.value, background.value, mvUrl.value], () => {
 
 .leftActions {
   grid-column: 1;
+  justify-self: start;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -1134,6 +1148,7 @@ watch(() => [isPlay.value, background.value, mvUrl.value], () => {
 
 .transport {
   grid-column: 2;
+  justify-self: center;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1184,6 +1199,7 @@ watch(() => [isPlay.value, background.value, mvUrl.value], () => {
 
 .trackInfo {
   grid-column: 3;
+  justify-self: end;
   min-width: 0;
   display: flex;
   justify-content: flex-end;
@@ -1476,12 +1492,6 @@ watch(() => [isPlay.value, background.value, mvUrl.value], () => {
     color: rgba(255, 237, 190, .95);
     filter: blur(6px);
   }
-}
-
-@keyframes line-breathe {
-  0%, 100% { transform: translateY(0) scale(1); }
-  35% { transform: translateY(-7px) scale(1.006); }
-  72% { transform: translateY(4px) scale(.997); }
 }
 
 @keyframes orb-drift-one {

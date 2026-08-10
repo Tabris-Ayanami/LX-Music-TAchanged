@@ -821,6 +821,25 @@ export default {
   height: 3px;
 }
 
+:global(.themeShellDark) {
+  .iconBtn,
+  .compactToggleBtn,
+  .utilityBtn {
+    --floating-btn-fill: linear-gradient(180deg, rgba(255, 255, 255, .11), rgba(255, 255, 255, .045));
+    --floating-btn-shadow: 0 12px 24px rgba(0, 0, 0, .28), 0 4px 10px rgba(0, 0, 0, .2), inset 0 1px 0 rgba(255, 255, 255, .12), inset 0 -1px 0 rgba(0, 0, 0, .18);
+
+    &::before {
+      background: linear-gradient(180deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, 0));
+      opacity: .42;
+    }
+
+    &:hover:not(.playing) {
+      background: linear-gradient(180deg, rgba(255, 255, 255, .17), rgba(255, 255, 255, .07));
+      box-shadow: 0 16px 30px rgba(0, 0, 0, .34), inset 0 1px 0 rgba(255, 255, 255, .15);
+    }
+  }
+}
+
 @keyframes floatingIslandCoverSpin {
   from {
     transform: rotate(0deg);

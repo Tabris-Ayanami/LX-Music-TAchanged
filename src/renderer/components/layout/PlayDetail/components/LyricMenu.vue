@@ -213,17 +213,17 @@ export default {
   font-size: 12px;
   position: absolute;
   opacity: 0;
-  transform: scale(0);
-  transform-origin: 0 0 0;
-  transition: .14s ease;
+  transform: scale(.96);
+  transform-origin: 0 0;
+  transition: var(--motion-duration-fast) var(--motion-ease-out);
   transition-property: transform, opacity;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: var(--radius-popover, 10px);
+  border: 1px solid var(--shell-control-border, rgba(255, 255, 255, 0.42));
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--color-primary) 16%, rgba(255, 255, 255, 0.995)),
-      color-mix(in srgb, var(--color-primary) 24%, rgba(255, 255, 255, 0.99))
+      color-mix(in srgb, var(--shell-card-strong, rgba(255, 255, 255, .98)) 94%, white 6%),
+      color-mix(in srgb, var(--shell-card-strong, rgba(255, 255, 255, .96)) 92%, var(--color-primary) 8%)
     );
   box-shadow:
     0 22px 52px rgba(17, 24, 39, 0.2),
@@ -243,7 +243,7 @@ export default {
 .title {
   flex: auto;
   padding: 10px 0 10px 10px;
-  color: var(--color-font-label);
+  color: var(--shell-muted, var(--color-font-label));
   white-space: nowrap;
   min-width: 120px;
 }
@@ -265,18 +265,21 @@ export default {
   // color: @color-btn;
   padding: 0 10px;
   outline: none;
-  transition: @transition-normal;
+  color: var(--shell-text, var(--color-font));
+  transition: @transition-fast;
   transition-property: background-color, opacity;
   box-sizing: border-box;
   .mixin-ellipsis-1();
   background-color: transparent;
   border: none;
 
-  &:hover {
-    background-color: color-mix(in srgb, var(--color-primary) 18%, rgba(255, 255, 255, 0.34));
+  &:hover,
+  &:focus-visible {
+    background-color: var(--shell-list-hover, var(--color-list-hover-background));
+    outline: none !important;
   }
   &:active {
-    background-color: color-mix(in srgb, var(--color-primary) 26%, rgba(255, 255, 255, 0.42));
+    background-color: var(--shell-list-active, var(--color-list-active-background));
   }
   &.active {
     background-color: transparent;

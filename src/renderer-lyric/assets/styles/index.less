@@ -9,6 +9,9 @@ html {
 }
 
 :root {
+  --motion-ease-out: cubic-bezier(.23, 1, .32, 1);
+  --motion-duration-exit: 120ms;
+  --motion-duration-fast: 160ms;
   --color-lyric-unplay: rgba(255, 255, 255, 1);
   --color-lyric-played: rgba(7, 197, 86, 1);
   --color-lyric-shadow: rgba(0, 0, 0, 0.14);
@@ -60,4 +63,28 @@ strong {
 svg {
   transition: @transition-theme;
   transition-property: fill;
+}
+
+:where(button, [tabindex]):focus-visible {
+  outline: 2px solid currentColor !important;
+  outline-offset: 2px;
+}
+
+.motion-fade-enter-active {
+  transition: opacity var(--motion-duration-fast) var(--motion-ease-out);
+}
+.motion-fade-leave-active {
+  transition: opacity var(--motion-duration-exit) var(--motion-ease-out);
+}
+.motion-fade-enter-from,
+.motion-fade-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition-delay: 0ms !important;
+    transition-duration: 80ms !important;
+  }
 }

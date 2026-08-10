@@ -2,7 +2,7 @@
   <transition name="tips-fade" @after-leave="afterLeave">
     <div
       v-show="visible" ref="dom_tips" :style="{ left: position.left + 'px' , top: position.top + 'px', transform, maxWidth, }"
-      :class="$style.tips" role="presentation"
+      :class="$style.tips" role="tooltip"
     >
       {{ message }}
     </div>
@@ -82,25 +82,27 @@ export default {
   // transform: scale(1);
   line-height: 1.2;
   word-wrap: break-word;
-  padding: 4px 5px;
+  padding: 6px 8px;
   z-index: 10001;
   font-size: 12px;
   // max-width: 80%;
-  color: var(--color-font);
-  border-radius: 3px;
-  background: var(--color-content-background);
+  color: var(--shell-text, var(--color-font));
+  border: 1px solid var(--shell-elevated-border, var(--shell-control-border));
+  border-radius: 6px;
+  background: var(--shell-popover, var(--color-content-background));
   overflow: hidden;
   pointer-events: none;
   // text-align: justify;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .24), inset 0 1px 0 var(--shell-edge-light);
+  backdrop-filter: blur(18px) saturate(130%);
   white-space: pre-wrap;
   box-sizing: border-box;
 }
 
 :global(.tips-fade-enter-active), :global(.tips-fade-leave-active) {
-  transition: opacity .2s;
+  transition: opacity var(--motion-duration-exit) var(--motion-ease-out);
 }
-:global(.tips-fade-enter), :global(.tips-fade-leave-to) {
+:global(.tips-fade-enter-from), :global(.tips-fade-leave-to) {
   opacity: 0;
 }
 

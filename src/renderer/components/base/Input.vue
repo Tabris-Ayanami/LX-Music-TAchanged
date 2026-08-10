@@ -93,14 +93,14 @@ export default {
 
 .input {
   display: inline-block;
-  border: none;
+  border: 1px solid var(--shell-control-border, transparent);
   border-radius: @form-radius;
   padding: 7px 8px;
-  color: var(--color-button-font);
+  color: var(--shell-text, var(--color-button-font));
   outline: none;
-  transition: background-color 0.2s ease;
-  background-color: var(--color-primary-background);
-  font-size: 13.3px;
+  transition: background-color @transition-fast, border-color @transition-fast, box-shadow @transition-fast;
+  background-color: var(--shell-control, var(--color-primary-background));
+  font-size: 13px;
 
   &::-webkit-outer-spin-button,
   &::-webkit-inner-spin-button {
@@ -112,8 +112,13 @@ export default {
     opacity: .4;
   }
 
-  &:hover, &:focus {
-    background-color: var(--color-primary-background-hover);
+  &:hover {
+    background-color: var(--shell-button-bg-hover, var(--color-primary-background-hover));
+  }
+  &:focus {
+    border-color: color-mix(in srgb, var(--color-primary) 58%, var(--shell-control-border, transparent));
+    background-color: var(--shell-button-bg-hover, var(--color-primary-background-hover));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 14%, transparent);
   }
   &:active {
     background-color: var(--color-primary-background-active);

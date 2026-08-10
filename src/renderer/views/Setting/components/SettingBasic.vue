@@ -486,21 +486,26 @@ export default {
     flex-flow: column nowrap;
     align-items: center;
     cursor: pointer;
-    transition: .3s ease;
-    transition-property: color, opacity, box-shadow;
+    transition: color @transition-fast, background-color @transition-fast, border-color @transition-fast, box-shadow @transition-fast, transform @transition-fast;
     width: 92px;
     padding: 10px 10px 6px;
     border-radius: 16px;
-    background: rgba(255, 255, 255, 0.48);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    background: var(--shell-card, rgba(255, 255, 255, 0.48));
+    border: 1px solid var(--shell-card-border, rgba(255, 255, 255, 0.5));
 
     &:hover {
-      opacity: .7;
+      background: var(--shell-card-strong, rgba(255, 255, 255, .7));
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: scale(.98);
     }
 
     &.active {
       color: var(--color-primary-font-active);
       opacity: 1;
+      border-color: var(--shell-control-border, var(--color-primary));
       box-shadow: 0 12px 30px color-mix(in srgb, var(--color-primary) 16%, transparent);
 
       .bg {
@@ -519,7 +524,7 @@ export default {
       margin-bottom: 8px;
       border: 2px solid transparent;
       padding: 3px;
-      transition: border-color .3s ease;
+      transition: border-color @transition-fast, transform @transition-fast;
       border-radius: 12px;
 
       &:after {
@@ -583,7 +588,7 @@ export default {
   justify-content: center;
 
   .bg:after {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(226, 232, 244, 0.9));
+    background: linear-gradient(135deg, var(--shell-button-bg-hover, rgba(255, 255, 255, 0.88)), var(--shell-control, rgba(226, 232, 244, 0.9)));
   }
 
   .label {
@@ -599,8 +604,8 @@ export default {
     border-color: rgba(121, 136, 164, 0.34);
 
     &:after {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(226, 232, 244, 0.82));
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.62);
+      background: linear-gradient(135deg, var(--shell-button-bg-hover, rgba(255, 255, 255, 0.72)), var(--shell-control, rgba(226, 232, 244, 0.82)));
+      box-shadow: inset 0 1px 0 var(--shell-edge-light, rgba(255, 255, 255, 0.62));
     }
   }
 }
@@ -612,7 +617,7 @@ export default {
   cursor: pointer;
 
   .desc {
-    color: var(--color-500);
+    color: var(--shell-muted, var(--color-font-label));
     font-size: 12px;
     margin-left: 5px;
   }

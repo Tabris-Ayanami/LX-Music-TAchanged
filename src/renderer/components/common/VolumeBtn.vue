@@ -2,7 +2,7 @@
   <div :class="[$style.volumeShell, { [$style.dragging]: isDragging }]" @wheel.prevent="handleWheel">
     <div :class="$style.sliderPane" @mousedown.stop="handleSliderDown">
       <div :class="$style.sliderTrack" data-volume-track>
-        <div :class="$style.sliderFill" :style="{ height: `${displayVolume * 100}%` }" />
+        <div :class="$style.sliderFill" :style="{ transform: `scaleY(${displayVolume})` }" />
       </div>
     </div>
     <button
@@ -123,12 +123,13 @@ onBeforeUnmount(() => {
     0 0 0 1px rgba(255, 255, 255, .2) inset;
   backdrop-filter: blur(22px) saturate(178%);
   -webkit-backdrop-filter: blur(22px) saturate(178%);
-  transition: height .38s cubic-bezier(.2, .82, .18, 1), border-radius .38s cubic-bezier(.2, .82, .18, 1), box-shadow .28s ease;
+  transition: height 140ms var(--motion-ease-out), border-radius 140ms var(--motion-ease-out), box-shadow 140ms var(--motion-ease-out);
 
   &:hover,
   &.dragging {
     height: 142px;
     border-radius: 999px;
+    transition-duration: 220ms;
     box-shadow:
       0 24px 42px rgba(28, 41, 68, .2),
       0 10px 16px rgba(28, 41, 68, .14),
@@ -147,13 +148,14 @@ onBeforeUnmount(() => {
   justify-content: center;
   opacity: 0;
   transform: translateY(8px);
-  transition: opacity .26s ease, transform .38s cubic-bezier(.2, .82, .18, 1);
+  transition: opacity 120ms var(--motion-ease-out), transform 140ms var(--motion-ease-out);
   cursor: pointer;
 
   .volumeShell:hover &,
   .dragging & {
     opacity: 1;
     transform: translateY(0);
+    transition-duration: 180ms;
   }
 }
 
@@ -170,10 +172,12 @@ onBeforeUnmount(() => {
 
 .sliderFill {
   width: 100%;
+  height: 100%;
   border-radius: inherit;
   background: linear-gradient(180deg, color-mix(in srgb, var(--color-primary) 72%, white 28%), var(--color-primary));
   box-shadow: 0 0 12px color-mix(in srgb, var(--color-primary) 46%, transparent);
-  transition: height .12s ease;
+  transform-origin: 50% 100%;
+  transition: transform 100ms linear;
 }
 
 .btn {
@@ -194,6 +198,7 @@ onBeforeUnmount(() => {
   color: var(--shell-text, var(--color-button-font));
   cursor: pointer;
   line-height: 0;
+  transition: transform @transition-fast, color @transition-fast;
 
   svg {
     width: 17px;
@@ -206,6 +211,10 @@ onBeforeUnmount(() => {
 
   &:hover svg {
     opacity: 1;
+  }
+
+  &:active {
+    transform: scale(.92);
   }
 }
 

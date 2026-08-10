@@ -599,6 +599,8 @@
   "setting__play_detail_immersive_audio_visualization": "沉浸模式音频可视化",
   "setting__play_detail_immersive_audio_visualization_tip": "播放时显示随音乐变化的可视化效果",
   "setting__play_detail_immersive_control_hide_delay": "底部控件自动隐藏：{value} 秒",
+  "setting__play_detail_immersive_control_hide_delay_decrease": "缩短自动隐藏时间",
+  "setting__play_detail_immersive_control_hide_delay_increase": "延长自动隐藏时间",
   "setting__play_detail_immersive_control_hide_delay_tip": "鼠标停止在底部区域后，经过设定时间自动恢复纯歌词画面",
   "setting__play_detail_immersive_audio_visualization_style": "显示类型",
   "setting__play_detail_immersive_audio_visualization_family_wave": "音浪",

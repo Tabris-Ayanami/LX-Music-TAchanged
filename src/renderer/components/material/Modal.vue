@@ -1,9 +1,21 @@
 <template>
   <teleport :to="teleport">
     <div v-if="showModal" ref="dom_container" :class="$style.container">
-      <transition enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
+      <transition
+        :enter-active-class="$style.backdropEnterActive"
+        :leave-active-class="$style.backdropLeaveActive"
+        :enter-from-class="$style.backdropHidden"
+        :leave-to-class="$style.backdropHidden"
+      >
         <div v-show="showContent" :class="[$style.modal, {[$style.filter]: filter}]" @click="bgClose && close()">
-          <transition :enter-active-class="inClass" :leave-active-class="outClass" @after-enter="$emit('after-enter', $event)" @after-leave="handleAfterLeave">
+          <transition
+            :enter-active-class="$style.contentEnterActive"
+            :leave-active-class="$style.contentLeaveActive"
+            :enter-from-class="$style.contentHidden"
+            :leave-to-class="$style.contentHidden"
+            @after-enter="$emit('after-enter', $event)"
+            @after-leave="handleAfterLeave"
+          >
             <div v-show="showContent" :class="[$style.content, contentClass]" :style="contentStyle" @click.stop>
               <header v-if="!hideHeader" :class="$style.header">
                 <button v-if="closeBtn" type="button" @click="close">
@@ -85,83 +97,11 @@ export default {
   emits: ['after-enter', 'after-leave', 'close'],
   data() {
     return {
-      animates: [
-        [['jackInTheBox', 'flipInX', 'flipInY', 'lightSpeedIn'], ['flipOutX', 'flipOutY', 'lightSpeedOut']],
-        // [['jackInTheBox', 'lightSpeedIn'], ['lightSpeedOut']],
-        [['rotateInDownLeft', 'rotateInDownRight', 'rotateInUpLeft', 'rotateInUpRight'], ['rotateOutDownLeft', 'rotateOutDownRight', 'rotateOutUpLeft', 'rotateOutUpRight']],
-        [['jackInTheBox', 'zoomInDown', 'zoomInUp'], ['zoomOutDown', 'zoomOutUp']],
-        [['slideInDown', 'slideInLeft', 'slideInRight', 'slideInUp'], ['slideOutDown', 'slideOutLeft', 'slideOutRight', 'slideOutUp']],
-
-        // ['flipInX', 'flipOutX'],
-        // ['flipInY', 'flipOutY'],
-        // ['lightSpeedIn', 'lightSpeedOut'],
-        // ['rotateInDownLeft', 'rotateOutDownLeft'],
-        // ['rotateInDownRight', 'rotateOutDownRight'],
-        // ['rotateInUpLeft', 'rotateOutUpLeft'],
-        // ['rotateInUpRight', 'rotateOutUpRight'],
-        // // ['rollIn', 'rollOut'],
-        // // ['zoomIn', 'zoomOut'],
-        // ['zoomInDown', 'zoomOutDown'],
-        // // ['zoomInLeft', 'zoomOutLeft'],
-        // // ['zoomInRight', 'zoomOutRight'],
-        // ['zoomInUp', 'zoomOutUp'],
-        // ['slideInDown', 'slideOutDown'],
-        // ['slideInLeft', 'slideOutLeft'],
-        // ['slideInRight', 'slideOutRight'],
-        // ['slideInUp', 'slideOutUp'],
-        // // ['jackInTheBox', 'hinge'],
-      ],
-      // animateIn: [
-      //   'flipInX',
-      //   'flipInY',
-      //   // 'fadeIn',
-      //   // 'bounceIn',
-      //   'lightSpeedIn',
-      //   'rotateInDownLeft',
-      //   'rotateInDownRight',
-      //   'rotateInUpLeft',
-      //   'rotateInUpRight',
-      //   'rollIn',
-      //   'zoomIn',
-      //   'zoomInDown',
-      //   'zoomInLeft',
-      //   'zoomInRight',
-      //   'zoomInUp',
-      //   'slideInDown',
-      //   'slideInLeft',
-      //   'slideInRight',
-      //   'slideInUp',
-      //   'jackInTheBox',
-      // ],
-      // animateOut: [
-      //   'flipOutX',
-      //   'flipOutY',
-      //   // 'fadeOut',
-      //   // 'bounceOut',
-      //   'lightSpeedOut',
-      //   'rotateOutDownLeft',
-      //   'rotateOutDownRight',
-      //   'rotateOutUpLeft',
-      //   'rotateOutUpRight',
-      //   'rollOut',
-      //   'zoomOut',
-      //   'zoomOutDown',
-      //   'zoomOutLeft',
-      //   'zoomOutRight',
-      //   'zoomOutUp',
-      //   'slideOutDown',
-      //   'slideOutLeft',
-      //   'slideOutRight',
-      //   'slideOutUp',
-      //   'hinge',
-      // ],
-      inClass: 'animated jackInTheBox',
-      outClass: 'animated slideOutRight',
+      modalStartScale: '.975',
       showModal: false,
       showContent: false,
       modalCount: false,
       isAddedClass: false,
-      // ai: 0,
     }
   },
   computed: {
@@ -172,6 +112,7 @@ export default {
         width: this.width,
         height: this.height,
         maxHeight: this.maxHeight,
+        '--modal-start-scale': this.modalStartScale,
       }
     },
     filter() {
@@ -225,14 +166,9 @@ export default {
     },
     setRandomAnimation() {
       if (appSetting['common.randomAnimate']) {
-        const [animIn, animOut] = this.animates[getRandom(0, this.animates.length)]
-        // const [animIn, animOut] = this.animates[this.ai]
-        // if (++this.ai >= this.animates.length) this.ai = 0
-        // console.log(animIn, animOut)
-        // this.inClass = 'animated ' + animIn
-        // this.outClass = 'animated ' + animOut
-        this.inClass = 'animated ' + animIn[getRandom(0, animIn.length)]
-        this.outClass = 'animated ' + animOut[getRandom(0, animOut.length)]
+        this.modalStartScale = ['.965', '.975', '.985'][getRandom(0, 3)]
+      } else {
+        this.modalStartScale = '.975'
       }
     },
     close() {
@@ -270,10 +206,12 @@ export default {
   display: grid;
   align-items: center;
   justify-items: center;
+  background: rgba(8, 12, 20, .28);
   // will-change: transform;
 
   &.filter {
-    backdrop-filter: grayscale(70%);
+    backdrop-filter: blur(5px) saturate(88%);
+    -webkit-backdrop-filter: blur(5px) saturate(88%);
   }
 
   // &:before {
@@ -290,9 +228,9 @@ export default {
 
 .content {
   position: relative;
-  border-radius: 4px;
-  border: none;
-  box-shadow: 0 20px 42px rgba(20, 29, 46, .16), 0 8px 18px rgba(20, 29, 46, .08), inset 0 1px 0 rgba(255, 255, 255, .34);
+  border-radius: var(--radius-surface, 14px);
+  border: 1px solid var(--shell-elevated-border, var(--shell-control-border));
+  box-shadow: var(--shell-elevated-shadow);
   overflow: hidden;
   // max-height: 80%;
   // max-width: 76%;
@@ -302,30 +240,53 @@ export default {
   flex-flow: column nowrap;
   z-index: 100;
   background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-primary) 16%, rgba(255, 255, 255, 0.995)),
-      color-mix(in srgb, var(--color-primary) 24%, rgba(255, 255, 255, 0.99))
-    );
+    linear-gradient(180deg, var(--shell-edge-light), transparent 18%),
+    var(--shell-modal, var(--shell-card-strong, rgba(255, 255, 255, .98)));
   isolation: isolate;
+}
+
+.backdropEnterActive {
+  transition: opacity 220ms var(--motion-ease-out);
+}
+.backdropLeaveActive {
+  transition: opacity 140ms var(--motion-ease-out);
+}
+.backdropHidden {
+  opacity: 0;
+}
+
+.contentEnterActive {
+  transform-origin: center;
+  transition: opacity 220ms var(--motion-ease-out), transform 220ms var(--motion-ease-out);
+}
+.contentLeaveActive {
+  transform-origin: center;
+  transition: opacity 140ms var(--motion-ease-out), transform 140ms var(--motion-ease-out);
+}
+.contentHidden {
+  opacity: 0;
+  transform: scale(var(--modal-start-scale, .975));
 }
 
 .header {
   flex: none;
-  background-color: var(--color-primary-light-100-alpha-100);
+  background-color: color-mix(in srgb, var(--shell-surface-soft, rgba(255, 255, 255, .72)) 92%, var(--color-primary) 8%);
+  border-bottom: 1px solid var(--shell-divider, rgba(0, 0, 0, .06));
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  height: 18px;
+  height: 30px;
 
   button {
     border: none;
     cursor: pointer;
-    padding: 4px 7px;
+    width: 30px;
+    height: 30px;
+    padding: 7px;
     background-color: transparent;
-    color: var(--color-primary-dark-500-alpha-500);
+    color: var(--shell-muted, var(--color-font-label));
     outline: none;
-    transition: background-color 0.2s ease;
+    transition: transform @transition-fast, background-color @transition-fast, color @transition-fast;
     line-height: 0;
 
     svg {
@@ -333,10 +294,12 @@ export default {
     }
 
     &:hover {
-      background-color: var(--color-primary-dark-100-alpha-600);
+      color: var(--shell-text, var(--color-font));
+      background-color: var(--shell-button-bg-hover, var(--color-button-background-hover));
     }
     &:active {
-      background-color: var(--color-primary-dark-200-alpha-600);
+      transform: scale(.92);
+      background-color: var(--shell-list-active, var(--color-button-background-active));
     }
   }
 }

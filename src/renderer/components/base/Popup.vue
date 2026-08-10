@@ -137,25 +137,27 @@ onBeforeUnmount(() => {
 @import '@renderer/assets/styles/layout.less';
 
 .popup {
+  --popup-surface: var(--shell-popover, var(--shell-card-strong, rgba(248, 250, 255, .96)));
   position: absolute;
   // top: -100%;
   // width: 645px;
   // left: 8px;
   // margin-top: 12px;
   max-width: 98%;
-  border-radius: 4px;
-  border: 1px solid rgba(77, 175, 124, 0.14);
+  border-radius: var(--radius-popover, 10px);
+  border: 1px solid var(--shell-elevated-border, var(--shell-control-border));
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(248, 250, 255, 0.94));
+    linear-gradient(180deg, var(--shell-edge-light), transparent 28%),
+    var(--popup-surface);
   opacity: 0;
-  transform: scale(.8);
+  transform: scale(.96);
   transform-origin: 50% 0 0;
-  transition: .16s ease;
+  transition: var(--motion-duration-fast) var(--motion-ease-out);
   transition-property: transform, opacity;
   max-height: 250px;
   z-index: 10;
   pointer-events: none;
-  filter: drop-shadow(0px 12px 28px rgba(20, 29, 46, .14));
+  box-shadow: var(--shell-elevated-shadow);
   backdrop-filter: blur(22px) saturate(138%);
   display: flex;
 
@@ -168,7 +170,7 @@ onBeforeUnmount(() => {
     height: 0;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
-    border-bottom: 8px solid rgba(248, 250, 255, 0.96);
+    border-bottom: 8px solid var(--popup-surface);
   }
 
   &.active {
@@ -178,13 +180,12 @@ onBeforeUnmount(() => {
   }
 
   &.top {
-    filter: drop-shadow(0px 1px 3px rgba(0, 0, 0, .12));
     transform-origin: 50% 100% 0;
 
     &:before {
       top: 100%;
       border-bottom: none;
-      border-top: 8px solid rgba(248, 250, 255, 0.96);
+      border-top: 8px solid var(--popup-surface);
     }
   }
 }

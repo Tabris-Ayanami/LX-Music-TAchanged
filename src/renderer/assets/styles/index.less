@@ -7,6 +7,17 @@
 }
 
 :root {
+  --motion-ease-out: cubic-bezier(.23, 1, .32, 1);
+  --motion-ease-in-out: cubic-bezier(.77, 0, .175, 1);
+  --motion-ease-drawer: cubic-bezier(.32, .72, 0, 1);
+  --motion-duration-exit: 120ms;
+  --motion-duration-fast: 160ms;
+  --motion-duration-normal: 220ms;
+  --motion-duration-slow: 280ms;
+  --radius-control: 8px;
+  --radius-popover: 10px;
+  --radius-surface: 14px;
+  --focus-ring: color-mix(in srgb, var(--color-primary) 72%, white 28%);
   --color-primary: rgb(77, 175, 124);
   --color-primary-alpha-100: rgba(77, 175, 124, 0.90);
   --color-primary-alpha-200: rgba(77, 175, 124, 0.80);
@@ -407,6 +418,11 @@ button, input, textarea, a {
   color: var(--color-font);
 }
 
+:where(button, a, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus-ring) !important;
+  outline-offset: 2px;
+}
+
 input, textarea {
   &::placeholder {
     color: var(--color-font-label);
@@ -452,6 +468,38 @@ input, textarea {
     // background-color: rgba(0, 0, 0, 0.4);
     transition: background-color 0.4s ease;
   }
+}
+
+* {
+  scrollbar-color: var(--shell-scroll-thumb, var(--color-primary-alpha-600)) transparent;
+  scrollbar-width: thin;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: transparent;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-button {
+  width: 0;
+  height: 0;
+  display: none;
+}
+*::-webkit-scrollbar-thumb {
+  min-height: 32px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--shell-scroll-thumb, var(--color-primary-alpha-600));
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--shell-scroll-thumb-hover, var(--color-primary-alpha-400));
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 
@@ -503,6 +551,8 @@ table {
     // border-bottom: 1px solid @color-theme_2-line;
     box-sizing: border-box;
     font-size: 12px;
+    border-radius: 7px;
+    outline: none;
 
     &:hover {
       background-color: var(--shell-list-hover, var(--color-list-hover-background, var(--color-primary-background-hover)));
@@ -522,6 +572,9 @@ table {
     }
     &.disabled {
       opacity: .5;
+    }
+    &:focus-visible {
+      box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-primary) 62%, transparent);
     }
     .list-item-cell {
       flex: none;
@@ -623,6 +676,54 @@ table {
 
 .play-active-enter-from,
 .play-active-leave-to {
-  transform: scale(0.3);
+  transform: scale(0.92);
   opacity: 0;
+}
+
+// Shared Vue transitions. They are deliberately short and transition-based so
+// rapid state changes can reverse from the current frame.
+.motion-fade-enter-active {
+  transition: opacity var(--motion-duration-fast) var(--motion-ease-out);
+}
+.motion-fade-leave-active {
+  transition: opacity var(--motion-duration-exit) var(--motion-ease-out);
+}
+.motion-fade-enter-from,
+.motion-fade-leave-to {
+  opacity: 0;
+}
+
+.motion-pop-enter-active {
+  transition: opacity var(--motion-duration-fast) var(--motion-ease-out), transform var(--motion-duration-fast) var(--motion-ease-out);
+  transform-origin: center;
+}
+.motion-pop-leave-active {
+  transition: opacity var(--motion-duration-exit) var(--motion-ease-out), transform var(--motion-duration-exit) var(--motion-ease-out);
+  transform-origin: center;
+}
+.motion-pop-enter-from,
+.motion-pop-leave-to {
+  opacity: 0;
+  transform: scale(.96);
+}
+
+.motion-inline-enter-active {
+  transition: opacity var(--motion-duration-fast) var(--motion-ease-out), transform var(--motion-duration-fast) var(--motion-ease-out);
+}
+.motion-inline-leave-active {
+  transition: opacity var(--motion-duration-exit) var(--motion-ease-out), transform var(--motion-duration-exit) var(--motion-ease-out);
+}
+.motion-inline-enter-from,
+.motion-inline-leave-to {
+  opacity: 0;
+  transform: translateX(-6px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition-delay: 0ms !important;
+    transition-duration: 80ms !important;
+  }
 }

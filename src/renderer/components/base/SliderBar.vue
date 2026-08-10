@@ -1,14 +1,25 @@
 <template>
-  <div :class="[$style.sliderContent, { [$style.disabled]: disabled }, className]">
+  <div :class="[$style.sliderContent, { [$style.disabled]: disabled, [$style.dragging]: isDragging }, className]">
     <div :class="[$style.slider]">
       <div ref="dom_sliderBar" :class="$style.sliderBar" :style="{ transform: `scaleX(${(value - min) / (max - min) || 0})` }" />
+      <div :class="$style.sliderThumb" :style="{ left: `${ratio * 100}%` }" />
     </div>
-    <div :class="$style.sliderMask" @mousedown="handleSliderMsDown" />
+    <div
+      :class="$style.sliderMask"
+      role="slider"
+      :tabindex="disabled ? -1 : 0"
+      :aria-valuemin="min"
+      :aria-valuemax="max"
+      :aria-valuenow="value"
+      :aria-disabled="disabled"
+      @keydown="handleKeyDown"
+      @mousedown="handleSliderMsDown"
+    />
   </div>
 </template>
 
 <script>
-import { ref, onBeforeUnmount } from '@common/utils/vueTools'
+import { computed, ref, onBeforeUnmount } from '@common/utils/vueTools'
 // import { player as eventPlayerNames } from '@renderer/event/names'
 
 export default {
@@ -46,6 +57,11 @@ export default {
       msDownRatio: 0,
     }
     const dom_sliderBar = ref(null)
+    const isDragging = ref(false)
+    const ratio = computed(() => {
+      const range = props.max - props.min
+      return range > 0 ? Math.max(0, Math.min(1, (props.value - props.min) / range)) : 0
+    })
 
     const clampValue = val => {
       if (val < props.min) return props.min
@@ -71,6 +87,7 @@ export default {
       if (!width) return
 
       sliderEvent.isMsDown = true
+      isDragging.value = true
       sliderEvent.msDownX = event.clientX
 
       const rawValue = (event.offsetX / width) * getRange() + props.min
@@ -79,6 +96,7 @@ export default {
     }
     const handleSliderMsUp = () => {
       sliderEvent.isMsDown = false
+      isDragging.value = false
     }
     const handleSliderMsMove = event => {
       if (!sliderEvent.isMsDown || props.disabled) return
@@ -90,6 +108,31 @@ export default {
       emitSteppedValue(rawValue)
     }
 
+    const handleKeyDown = event => {
+      if (props.disabled) return
+      let nextValue
+      switch (event.key) {
+        case 'ArrowLeft':
+        case 'ArrowDown':
+          nextValue = props.value - props.step
+          break
+        case 'ArrowRight':
+        case 'ArrowUp':
+          nextValue = props.value + props.step
+          break
+        case 'Home':
+          nextValue = props.min
+          break
+        case 'End':
+          nextValue = props.max
+          break
+        default:
+          return
+      }
+      event.preventDefault()
+      emitSteppedValue(nextValue)
+    }
+
     document.addEventListener('mousemove', handleSliderMsMove)
     document.addEventListener('mouseup', handleSliderMsUp)
     onBeforeUnmount(() => {
@@ -99,7 +142,10 @@ export default {
 
     return {
       handleSliderMsDown,
+      handleKeyDown,
       dom_sliderBar,
+      isDragging,
+      ratio,
     }
   },
 }
@@ -116,10 +162,21 @@ export default {
   // margin-right: 10px;
   display: flex;
   align-items: center;
-  opacity: .5;
+  opacity: .72;
   transition: opacity @transition-normal;
-  &:hover {
+  &:hover,
+  &.dragging,
+  &:focus-within {
     opacity: 1;
+
+    .slider {
+      transform: scaleY(1);
+    }
+
+    .sliderThumb {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
   }
   &.disabled {
     opacity: .3;
@@ -137,9 +194,11 @@ export default {
   overflow: hidden;
   transition: @transition-normal;
   transition-property: background-color, opacity;
-  background-color: var(--slider-track-color, var(--color-primary-alpha-700));
+  background-color: var(--slider-track-color, color-mix(in srgb, var(--color-primary) 20%, transparent));
   // background-color: #f5f5f5;
   position: relative;
+  transform: scaleY(.8);
+  transition: transform @transition-fast, background-color @transition-fast, opacity @transition-fast;
   // border-radius: @radius-progress-border;
 }
 
@@ -154,13 +213,29 @@ export default {
   transform: scaleX(0);
   transform-origin: 0;
   transition-property: transform;
-  transition-timing-function: ease;
+  transition-timing-function: var(--motion-ease-out);
   width: 100%;
   height: 100%;
   // border-radius: @radius-progress-border;
   transition-duration: 0.2s;
-  background-color: var(--slider-fill-color, var(--color-button-font));
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+  background-color: var(--slider-fill-color, var(--color-primary));
+}
+
+.sliderThumb {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  opacity: 0;
+  transform: translateX(-50%) scale(.76);
+  background: var(--slider-thumb-color, var(--color-primary));
+  box-shadow:
+    0 0 0 2px var(--shell-surface-elevated, var(--color-main-background)),
+    0 2px 8px rgba(0, 0, 0, .2);
+  transition: opacity @transition-fast, transform @transition-fast;
+  translate: 0 -50%;
+  pointer-events: none;
 }
 
 .sliderMask {

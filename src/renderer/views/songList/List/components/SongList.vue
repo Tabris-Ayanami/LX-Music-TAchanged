@@ -25,7 +25,7 @@
         <liquid-glass-pagination :count="props.listInfo.total" :limit="props.listInfo.limit" :page="props.listInfo.page" @btn-click="togglePage" />
       </div>
     </div>
-    <transition enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
+    <transition name="motion-fade">
       <div v-show="props.listInfo.noItemLabel" :class="$style.noitem">
         <p v-text="props.listInfo.noItemLabel" />
       </div>

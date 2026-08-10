@@ -20,7 +20,7 @@ transition(@before-enter="handleBeforeEnter" @enter="handleEnter" @after-enter="
           div(:class="$style.controlsWrap")
             play-bar(v-if="visibled && layoutStyle != 'pixel'")
 
-      transition(enter-active-class="animated fadeIn" leave-active-class="animated fadeOut")
+      transition(name="motion-fade")
         LyricPlayer(v-if="visibled")
       music-comment(v-if="visibled" :class="$style.comment" :show="isShowPlayComment" :music-info="playMusicInfo.musicInfo" @close="hideComment")
       div(v-if="layoutStyle == 'pixel'" :class="$style.pixelEcho" :style="pixelEchoStyle" aria-hidden="true")
@@ -36,9 +36,9 @@ transition(@before-enter="handleBeforeEnter" @enter="handleEnter" @after-enter="
       button(type="button" :class="$style.immersiveDockBtn" :aria-label="$t('player__immersive_mode')" :title="$t('player__immersive_mode')" @click.stop="showImmersive")
         svg(version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" space="preserve")
           path(d="M5 4.5h4M4.5 5v4M19 4.5h-4M19.5 5v4M5 19.5h4M4.5 19v-4M19 19.5h-4M19.5 19v-4")
-    transition(enter-active-class="animated fadeIn" leave-active-class="animated fadeOut")
+    transition(name="motion-fade")
       ImmersiveLyrics(v-if="visibled && isImmersive" @close="hideImmersive")
-    transition(enter-active-class="animated-slow fadeIn" leave-active-class="animated-slow fadeOut")
+    transition(name="motion-fade")
       common-audio-visualizer(v-if="appSetting['common.isShowAnimation'] && appSetting['player.audioVisualization'] && visibled && !isImmersive")
 </template>
 
@@ -70,11 +70,11 @@ import { appSetting } from '@renderer/store/setting'
 import { closeWindow, maxWindow, minWindow, setFullScreen } from '@renderer/utils/ipc'
 import { clearPlayDetailOrigin, getPlayDetailOrigin } from '@renderer/utils/playDetailTransition'
 
-const PLAYER_SHELL_DURATION = 620
-const PLAYER_CONTENT_DURATION = 360
-const PLAYER_CONTENT_DELAY = 28
-const PLAYER_FLOATING_REVEAL_DELAY = 440
-const PLAYER_FLOATING_REVEAL_DURATION = 150
+const PLAYER_SHELL_DURATION = 480
+const PLAYER_CONTENT_DURATION = 240
+const PLAYER_CONTENT_DELAY = 16
+const PLAYER_FLOATING_REVEAL_DELAY = 350
+const PLAYER_FLOATING_REVEAL_DURATION = 130
 const PLAYER_MOTION_EASING = 'cubic-bezier(0.2, 0.88, 0.24, 1)'
 const PLAYER_CONTENT_EASING = 'cubic-bezier(0.2, 0.72, 0.2, 1)'
 const DEFAULT_DETAIL_COLORS = {
@@ -83,6 +83,7 @@ const DEFAULT_DETAIL_COLORS = {
   deep: '90, 63, 38',
   light: '247, 236, 220',
 }
+let cancelActivePlayDetailTransition = null
 
 const setStyles = (el, styles) => {
   for (const [key, value] of Object.entries(styles)) el.style[key] = value
@@ -388,30 +389,56 @@ const toAnimationPromise = async animation => {
 }
 
 const animateFallback = (el, opening, done) => {
+  cancelActivePlayDetailTransition?.()
+  if (!el.animate) {
+    cleanupContentStyle(el)
+    done()
+    return
+  }
   cleanupContentStyle(el)
   el.style.willChange = 'opacity, transform'
-  const animation = el.animate(opening
-    ? [
-        { opacity: 0, transform: 'translateY(16px) scale(0.992)' },
-        { opacity: 1, transform: 'translateY(0px) scale(1)' },
-      ]
-    : [
-        { opacity: 1, transform: 'translateY(0px) scale(1)' },
-        { opacity: 0, transform: 'translateY(16px) scale(0.992)' },
-      ], {
-    duration: opening ? PLAYER_CONTENT_DURATION + PLAYER_CONTENT_DELAY : PLAYER_CONTENT_DURATION,
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches || !appSetting['common.isShowAnimation']
+  const frames = reduceMotion
+    ? opening
+      ? [{ opacity: 0 }, { opacity: 1 }]
+      : [{ opacity: 1 }, { opacity: 0 }]
+    : opening
+      ? [
+          { opacity: 0, transform: 'translateY(8px) scale(0.996)' },
+          { opacity: 1, transform: 'translateY(0px) scale(1)' },
+        ]
+      : [
+          { opacity: 1, transform: 'translateY(0px) scale(1)' },
+          { opacity: 0, transform: 'translateY(8px) scale(0.996)' },
+        ]
+  const animation = el.animate(frames, {
+    duration: reduceMotion ? (opening ? 120 : 100) : opening ? PLAYER_CONTENT_DURATION + PLAYER_CONTENT_DELAY : PLAYER_CONTENT_DURATION,
     easing: PLAYER_CONTENT_EASING,
     fill: 'both',
   })
 
-  void toAnimationPromise(animation).then(() => {
+  let finished = false
+  let cancel = null
+  const finish = () => {
+    if (finished) return
+    finished = true
     cleanupContentStyle(el)
+    if (cancelActivePlayDetailTransition == cancel) cancelActivePlayDetailTransition = null
     done()
-  })
+  }
+  cancel = () => {
+    animation.cancel()
+    finish()
+  }
+  cancelActivePlayDetailTransition = cancel
+  void toAnimationPromise(animation).then(finish)
 }
 
 const animatePlayDetail = (el, opening, done) => {
-  if (!el.animate) {
+  cancelActivePlayDetailTransition?.()
+  cancelActivePlayDetailTransition = null
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches || !appSetting['common.isShowAnimation']
+  if (!el.animate || reduceMotion) {
     animateFallback(el, opening, done)
     return
   }
@@ -440,12 +467,12 @@ const animatePlayDetail = (el, opening, done) => {
 
   const contentAnimation = el.animate(opening
     ? [
-        { opacity: 0, transform: 'translateY(14px) scale(0.994)' },
+        { opacity: 0, transform: 'translateY(8px) scale(0.996)' },
         { opacity: 1, transform: 'translateY(0px) scale(1)' },
       ]
     : [
         { opacity: 1, transform: 'translateY(0px) scale(1)' },
-        { opacity: 0, transform: 'translateY(14px) scale(0.994)' },
+        { opacity: 0, transform: 'translateY(8px) scale(0.996)' },
       ], {
     duration: PLAYER_CONTENT_DURATION,
     delay: opening ? PLAYER_CONTENT_DELAY : 0,
@@ -554,14 +581,25 @@ const animatePlayDetail = (el, opening, done) => {
     animations.push(coverAnimation)
   }
 
-  void Promise.all(animations.map(toAnimationPromise)).then(() => {
+  let finished = false
+  let cancel = null
+  const finish = () => {
+    if (finished) return
+    finished = true
     if (floatingRevealTimer) window.clearTimeout(floatingRevealTimer)
     cleanupContentStyle(el)
     layer.remove()
     floatingRevealAnimation?.cancel?.()
     floatingIslandShell?.restore()
+    if (cancelActivePlayDetailTransition == cancel) cancelActivePlayDetailTransition = null
     done()
-  })
+  }
+  cancel = () => {
+    for (const animation of animations) animation.cancel()
+    finish()
+  }
+  cancelActivePlayDetailTransition = cancel
+  void Promise.all(animations.map(toAnimationPromise)).then(finish)
 }
 
 export default {
@@ -678,6 +716,7 @@ export default {
     })
 
     onBeforeUnmount(() => {
+      cancelActivePlayDetailTransition?.()
       document.removeEventListener('keydown', handleDetailKeydown, true)
       if (pixelControlTimer != null) window.clearTimeout(pixelControlTimer)
     })

@@ -13,12 +13,14 @@
 
 
 // Radius
-@radius-progress-border: 5px;
-@radius-border: 4px;
+@radius-progress-border: 999px;
+@radius-border: 8px;
 
-@transition-theme: .4s ease;
-@transition-slow: .6s ease;
-@transition-normal: .4s ease;
-@transition-fast: .2s ease;
+@ease-out: cubic-bezier(.23, 1, .32, 1);
+@ease-in-out: cubic-bezier(.77, 0, .175, 1);
+@transition-theme: .22s @ease-out;
+@transition-slow: .28s @ease-in-out;
+@transition-normal: .22s @ease-out;
+@transition-fast: .16s @ease-out;
 
-@form-radius: 3px;
+@form-radius: 8px;

@@ -2,8 +2,8 @@
   <ul :class="[$style.list, $style[align]]" role="tablist">
     <li
       v-for="item in list"
-      :key="item[itemKey]" :class="[$style.listItem, {[$style.active]: modelValue == item[itemKey]}]" tabindex="-1" role="tab"
-      :aria-label="item[itemLabel]" ignore-tip :aria-selected="modelValue == item[itemKey]" @click="handleToggle(item[itemKey])"
+      :key="item[itemKey]" :class="[$style.listItem, {[$style.active]: modelValue == item[itemKey]}]" :tabindex="modelValue == item[itemKey] ? 0 : -1" role="tab"
+      :aria-label="item[itemLabel]" ignore-tip :aria-selected="modelValue == item[itemKey]" @click="handleToggle(item[itemKey])" @keydown="handleKeydown($event, item[itemKey])"
     >
       <span :class="$style.label">{{ item[itemLabel] }}</span>
     </li>
@@ -45,8 +45,23 @@ export default {
       emit('change', id)
     }
 
+    const handleKeydown = (event, id) => {
+      const keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End']
+      if (!keys.includes(event.key) || !props.list.length) return
+      event.preventDefault()
+      const currentIndex = props.list.findIndex(item => item[props.itemKey] == id)
+      const nextIndex = event.key == 'Home'
+        ? 0
+        : event.key == 'End'
+          ? props.list.length - 1
+          : (currentIndex + (event.key == 'ArrowRight' ? 1 : -1) + props.list.length) % props.list.length
+      handleToggle(props.list[nextIndex][props.itemKey])
+      event.currentTarget.parentElement?.children[nextIndex]?.focus()
+    }
+
     return {
       handleToggle,
+      handleKeydown,
     }
   },
 }
@@ -79,11 +94,15 @@ export default {
   display: block;
   border-radius: 7px;
   cursor: pointer;
-  transition: color @transition-normal, background-color @transition-normal, box-shadow @transition-normal;
+  transition: color @transition-fast, background-color @transition-fast, box-shadow @transition-fast, transform @transition-fast;
 
 
   &:hover {
     color: var(--color-primary);
+  }
+
+  &:active:not(.active) {
+    transform: scale(.97);
   }
 
 

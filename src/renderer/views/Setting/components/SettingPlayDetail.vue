@@ -23,14 +23,19 @@ dd
     small {{ $t('setting__play_detail_immersive_audio_visualization_tip') }}
   div(:class="$style.immersiveDelayControl")
     label(for="setting_play_detail_immersive_control_hide_delay") {{ $t('setting__play_detail_immersive_control_hide_delay', { value: appSetting['playDetail.immersiveControlHideDelay'] }) }}
-    base-slider-bar(
-      id="setting_play_detail_immersive_control_hide_delay"
-      :value="appSetting['playDetail.immersiveControlHideDelay']"
-      :min="1"
-      :max="10"
-      :step="1"
-      @change="updateSetting({ 'playDetail.immersiveControlHideDelay': $event })"
-    )
+    div(:class="$style.delayAdjuster")
+      button(type="button" :class="$style.delayStep" :aria-label="$t('setting__play_detail_immersive_control_hide_delay_decrease')" :disabled="appSetting['playDetail.immersiveControlHideDelay'] <= 1" @click="adjustImmersiveControlHideDelay(-1)") −
+      base-slider-bar(
+        id="setting_play_detail_immersive_control_hide_delay"
+        :class-name="$style.delaySlider"
+        :value="appSetting['playDetail.immersiveControlHideDelay']"
+        :min="1"
+        :max="10"
+        :step="1"
+        @change="updateSetting({ 'playDetail.immersiveControlHideDelay': $event })"
+      )
+      output(:class="$style.delayValue" for="setting_play_detail_immersive_control_hide_delay") {{ appSetting['playDetail.immersiveControlHideDelay'] }}s
+      button(type="button" :class="$style.delayStep" :aria-label="$t('setting__play_detail_immersive_control_hide_delay_increase')" :disabled="appSetting['playDetail.immersiveControlHideDelay'] >= 10" @click="adjustImmersiveControlHideDelay(1)") +
     small {{ $t('setting__play_detail_immersive_control_hide_delay_tip') }}
   div(:class="$style.immersiveEffectGrid")
     button(
@@ -106,6 +111,10 @@ export default {
     },
   },
   setup() {
+    const adjustImmersiveControlHideDelay = delta => {
+      const current = Number(appSetting['playDetail.immersiveControlHideDelay'] ?? 3)
+      updateSetting({ 'playDetail.immersiveControlHideDelay': Math.min(10, Math.max(1, current + delta)) })
+    }
     const immersiveEffectOptions = getImmersiveEffectOptions(key => window.i18n.t(key))
     const backgroundOptions = [
       {
@@ -140,6 +149,7 @@ export default {
     return {
       appSetting,
       updateSetting,
+      adjustImmersiveControlHideDelay,
       immersiveEffectOptions,
       backgroundOptions,
       layoutOptions,
@@ -191,6 +201,53 @@ export default {
     grid-column: 1 / -1;
     color: var(--color-font-label);
     font-size: 11px;
+  }
+}
+
+.delayAdjuster {
+  display: grid;
+  grid-template-columns: 32px minmax(120px, 1fr) 38px 32px;
+  align-items: center;
+  gap: 8px;
+}
+
+.delaySlider {
+  width: 100%;
+  opacity: 1;
+}
+
+.delayValue {
+  color: var(--color-font);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.delayStep {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--shell-control-border, var(--color-divider));
+  border-radius: var(--radius-control, 8px);
+  color: var(--color-font);
+  background: var(--shell-control-fill, var(--color-button-background));
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color var(--motion-duration-fast) ease,
+    background-color var(--motion-duration-fast) ease,
+    border-color var(--motion-duration-fast) ease;
+
+  &:hover:not(:disabled) {
+    color: var(--color-primary);
+    border-color: color-mix(in srgb, var(--color-primary) 42%, transparent);
+    background: var(--shell-control-fill-hover, var(--color-button-background-hover));
+  }
+
+  &:disabled {
+    opacity: .38;
+    cursor: default;
   }
 }
 

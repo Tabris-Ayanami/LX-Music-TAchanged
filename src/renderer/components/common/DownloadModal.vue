@@ -229,16 +229,16 @@ export default {
 .btn {
   display: block;
   border: none;
-  background-color: color-mix(in srgb, var(--color-primary) 36%, rgba(255, 255, 255, 0.95));
-  box-shadow: 0 8px 18px rgba(20, 29, 46, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.38);
+  background-color: var(--shell-control, var(--color-button-background));
+  box-shadow: inset 0 1px 0 var(--shell-edge-light);
   margin-bottom: 15px;
 
   &:hover {
-    background-color: color-mix(in srgb, var(--color-primary) 46%, rgba(255, 255, 255, 0.94));
+    background-color: var(--shell-list-hover, var(--color-button-background-hover));
   }
 
   &:active {
-    background-color: color-mix(in srgb, var(--color-primary) 54%, rgba(255, 255, 255, 0.92));
+    background-color: var(--shell-list-active, var(--color-button-background-active));
   }
 
   &:last-child {

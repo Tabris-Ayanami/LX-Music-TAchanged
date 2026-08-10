@@ -2,8 +2,19 @@
   <div :class="[$style.progress, className]">
     <div :class="[$style.progressBar, $style.progressBar2, {[$style.barTransition]: isActiveTransition}]" :style="{ transform: `scaleX(${progress || 0})` }" @transitionend="handleTransitionEnd" />
     <div v-show="dragging" :class="[$style.progressBar, $style.progressBar3]" :style="{ transform: `scaleX(${dragProgress || 0})` }" />
+    <div :class="[$style.progressThumb, { [$style.dragging]: dragging }]" :style="{ '--progress-ratio': dragging ? dragProgress : progress }" />
+    <div
+      ref="dom_progress"
+      :class="$style.progressMask"
+      role="slider"
+      tabindex="0"
+      :aria-valuemin="0"
+      :aria-valuemax="100"
+      :aria-valuenow="Math.round((dragging ? dragProgress : progress) * 100)"
+      @keydown="handleKeyDown"
+      @mousedown="handleMsDown"
+    />
   </div>
-  <div ref="dom_progress" :class="$style.progressMask" @mousedown="handleMsDown" />
 </template>
 
 <script>
@@ -40,7 +51,9 @@ export default {
     const dragProgress = ref(0)
 
     const handleMsDown = event => {
+      event.preventDefault()
       msEvent.isMsDown = true
+      dragging.value = true
       msEvent.msDownX = event.clientX
       document.addEventListener('mousemove', handleMsMove)
       document.addEventListener('mouseup', handleMsUp)
@@ -60,12 +73,36 @@ export default {
     }
     const handleMsMove = event => {
       if (!msEvent.isMsDown) return
-      dragging.value ||= true
 
       let progress = msEvent.msDownProgress + (event.clientX - msEvent.msDownX) / dom_progress.value.clientWidth
       if (progress > 1) progress = 1
       else if (progress < 0) progress = 0
       dragProgress.value = progress
+    }
+
+    const handleKeyDown = event => {
+      const step = playProgress.maxPlayTime > 0 ? Math.max(5 / playProgress.maxPlayTime, 0.01) : 0.01
+      let nextProgress
+      switch (event.key) {
+        case 'ArrowLeft':
+        case 'ArrowDown':
+          nextProgress = props.progress - step
+          break
+        case 'ArrowRight':
+        case 'ArrowUp':
+          nextProgress = props.progress + step
+          break
+        case 'Home':
+          nextProgress = 0
+          break
+        case 'End':
+          nextProgress = 1
+          break
+        default:
+          return
+      }
+      event.preventDefault()
+      setProgress(Math.max(0, Math.min(1, nextProgress)) * playProgress.maxPlayTime)
     }
 
     onBeforeUnmount(() => {
@@ -87,6 +124,7 @@ export default {
       dragging,
       dragProgress,
       handleMsDown,
+      handleKeyDown,
     }
   },
 }
@@ -96,12 +134,13 @@ export default {
 @import '@renderer/assets/styles/layout.less';
 
 .progress {
+  container-type: inline-size;
   width: 100%;
   height: 5px;
-  overflow: hidden;
+  overflow: visible;
   transition: @transition-normal;
   transition-property: background-color;
-  background-color: var(--slider-track-color, var(--color-primary-light-100-alpha-800));
+  background-color: var(--slider-track-color, color-mix(in srgb, var(--color-primary) 18%, transparent));
   // background-color: #f5f5f5;
   position: relative;
   border-radius: 40px;
@@ -109,10 +148,17 @@ export default {
 .progressMask {
   position: absolute;
   left: 0;
-  top: 0;
+  top: 50%;
   width: 100%;
-  height: 100%;
+  height: 20px;
+  transform: translateY(-50%);
   cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--focus-ring, var(--color-primary));
+    outline-offset: 2px;
+    border-radius: 999px;
+  }
 }
 .progressBar {
   position: absolute;
@@ -121,13 +167,14 @@ export default {
   width: 100%;
   height: 100%;
   transform-origin: 0;
+  border-radius: inherit;
 }
 .progressBar1 {
   background-color: var(--color-primary-light-100-alpha-600);
 }
 
 .progressBar2 {
-  background-color: var(--slider-fill-color, var(--color-primary-light-100-alpha-400));
+  background-color: var(--slider-fill-color, var(--color-primary));
   will-change: transform;
 }
 
@@ -139,8 +186,37 @@ export default {
 
 .barTransition {
   transition-property: transform;
-  transition-timing-function: ease-out;
-  transition-duration: 0.2s;
+  transition-timing-function: var(--motion-ease-out);
+  transition-duration: var(--motion-duration-fast);
+}
+
+.progressThumb {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  opacity: 0;
+  background: var(--slider-thumb-color, var(--color-primary));
+  box-shadow:
+    0 0 0 2px var(--shell-surface-elevated, var(--color-main-background)),
+    0 2px 8px rgba(0, 0, 0, .24);
+  transform: translateX(calc(var(--progress-ratio, 0) * (100cqw - 9px))) translateY(-50%) scale(.78);
+  transition: transform var(--motion-duration-fast) var(--motion-ease-out), opacity var(--motion-duration-fast) var(--motion-ease-out);
+  pointer-events: none;
+
+  &.dragging {
+    opacity: 1;
+    transform: translateX(calc(var(--progress-ratio, 0) * (100cqw - 9px))) translateY(-50%) scale(1);
+    transition-duration: 0ms;
+  }
+}
+
+.progress:hover .progressThumb,
+.progress:focus-within .progressThumb {
+  opacity: 1;
+  transform: translateX(calc(var(--progress-ratio, 0) * (100cqw - 9px))) translateY(-50%) scale(1);
 }
 
 </style>

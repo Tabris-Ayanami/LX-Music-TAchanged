@@ -1,6 +1,17 @@
 <template>
   <div class="content" :class="[$style.select, show ? $style.active : '']">
-    <div ref="dom_btn" class="label-content" :class="$style.label" @click="handleShow">
+    <div
+      ref="dom_btn"
+      class="label-content"
+      :class="$style.label"
+      role="combobox"
+      tabindex="0"
+      :aria-expanded="show"
+      aria-haspopup="listbox"
+      @click="handleToggle"
+      @keydown.enter.space.stop.prevent="handleToggle"
+      @keydown.escape.stop.prevent="handleHide()"
+    >
       <span class="label">{{ label }}</span>
       <div class="icon" :class="$style.icon">
         <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" height="100%" viewBox="0 0 451.847 451.847" space="preserve">
@@ -8,10 +19,10 @@
         </svg>
       </div>
     </div>
-    <ul v-if="show" ref="dom_list" class="selection-list scroll" :class="$style.list" :style="listStyles">
+    <ul v-if="show" ref="dom_list" class="selection-list scroll" :class="$style.list" :style="listStyles" role="listbox">
       <li
         v-for="(item, index) in list" :key="index" :class="[$style.listItem, (itemKey ? item[itemKey] : item) == modelValue ? $style.active : null]"
-        :aria-label="itemName ? item[itemName] : item" @click="handleClick(item)"
+        role="option" :aria-selected="(itemKey ? item[itemKey] : item) == modelValue" :aria-label="itemName ? item[itemName] : item" @click="handleClick(item)"
       >
         {{ itemName ? item[itemName] : item }}
       </li>
@@ -48,8 +59,11 @@ export default {
       show: false,
       hideTimer: null,
       documentClickHandler: null,
+      listOffset: 0,
       listStyles: {
-        transform: 'scaleY(0) translateY(0)',
+        transform: 'translateY(0) scale(.97)',
+        transformOrigin: '50% 0%',
+        transitionDuration: '120ms',
       },
     }
   },
@@ -105,24 +119,36 @@ export default {
       // if (e && e.target.parentNode != this.$refs.dom_list && this.show) return this.show = false
       if (e && (e.target == this.$refs.dom_btn || this.$refs.dom_btn.contains(e.target))) return
       this.clearHideTimer()
-      this.listStyles.transform = 'scaleY(0) translateY(0)'
+      this.listStyles.transitionDuration = '120ms'
+      this.listStyles.transform = `translateY(${this.listOffset}px) scale(.97)`
       if (!this.show) return
       this.hideTimer = setTimeout(() => {
         this.show = false
         this.hideTimer = null
-      }, 50)
+      }, 120)
     },
     handleClick(item) {
       // console.log(this.modelValue)
-      if (item === this.modelValue) return
-      this.$emit('update:modelValue', this.itemKey ? item[this.itemKey] : item)
+      const value = this.itemKey ? item[this.itemKey] : item
+      if (value === this.modelValue) {
+        this.handleHide()
+        return
+      }
+      this.$emit('update:modelValue', value)
       this.$emit('change', item)
+      this.handleHide()
+    },
+    handleToggle() {
+      this.show ? this.handleHide() : this.handleShow()
     },
     handleShow() {
       this.clearHideTimer()
       this.show = true
       this.$nextTick(() => {
-        this.listStyles.transform = `scaleY(1) translateY(${this.handleGetOffset()}px)`
+        this.listOffset = this.handleGetOffset()
+        this.listStyles.transitionDuration = '180ms'
+        this.listStyles.transformOrigin = this.listOffset < 0 ? '50% 100%' : '50% 0%'
+        this.listStyles.transform = `translateY(${this.listOffset}px) scale(1)`
 
         const activeItem = this.$refs.dom_list.children[this.activeIndex]
         if (activeItem) this.$refs.dom_list.scrollTop = activeItem.offsetTop - this.$refs.dom_list.clientHeight * 0.38
@@ -161,7 +187,6 @@ export default {
     }
     .list {
       opacity: 1;
-      transform: scaleY(1) translateY(0);
       pointer-events: auto;
     }
     .icon {
@@ -175,7 +200,7 @@ export default {
 .label {
   background: var(--shell-control, color-mix(in srgb, var(--color-primary) 34%, rgba(255, 255, 255, 0.95)));
   border: 1px solid var(--shell-control-border, color-mix(in srgb, var(--color-primary) 42%, rgba(255, 255, 255, 0.66)));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.46);
+  box-shadow: inset 0 1px 0 var(--shell-edge-light, rgba(255, 255, 255, 0.46));
   padding: 0 10px;
   transition: background-color @transition-normal, border-color @transition-normal, box-shadow @transition-normal;
   height: @selection-height;
@@ -218,16 +243,18 @@ export default {
   top: 0;
   left: 0;
   width: 100%;
-  background: var(--shell-card-strong, var(--color-main-background));
+  background:
+    linear-gradient(180deg, var(--shell-edge-light), transparent 26%),
+    var(--shell-popover, var(--shell-card-strong, var(--color-main-background)));
   opacity: 0;
-  transform: scaleY(0) translateY(0);
-  transform-origin: 0 (@selection-height / 2) 0;
-  transition: .25s ease;
+  transform: translateY(0) scale(.97);
+  transform-origin: 50% 0;
+  transition: var(--motion-duration-fast) var(--motion-ease-out);
   transition-property: transform, opacity;
   z-index: 10;
   border-radius: @form-radius;
-  border: 1px solid var(--shell-control-border, transparent);
-  box-shadow: 0 16px 34px rgba(20, 29, 46, 0.16), 0 6px 16px rgba(20, 29, 46, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+  border: 1px solid var(--shell-elevated-border, var(--shell-control-border));
+  box-shadow: var(--shell-elevated-shadow);
   overflow: auto;
   max-height: 200px;
   isolation: isolate;
@@ -240,21 +267,23 @@ export default {
   // color: var(--color-button-font);
   outline: none;
   transition: background-color @transition-normal;
-  background-color: var(--shell-card-strong, color-mix(in srgb, var(--color-primary) 10%, rgba(255, 255, 255, 0.985)));
+  background-color: transparent;
   color: var(--shell-text, var(--color-font));
   border: none;
   box-sizing: border-box;
   .mixin-ellipsis-1();
 
-  &:hover {
-    background-color: color-mix(in srgb, var(--color-primary) 24%, var(--shell-card-strong, rgba(255, 255, 255, 0.96)));
+  &:hover,
+  &:focus-visible {
+    background-color: var(--shell-list-hover, var(--color-list-hover-background));
+    outline: none !important;
   }
   &:active {
-    background-color: color-mix(in srgb, var(--color-primary) 32%, var(--shell-card-strong, rgba(255, 255, 255, 0.94)));
+    background-color: var(--shell-list-active, var(--color-list-active-background));
   }
   &.active {
     color: var(--shell-button-text, var(--color-button-font));
-    background-color: color-mix(in srgb, var(--color-primary) 34%, var(--shell-card-strong, rgba(255, 255, 255, 0.95)));
+    background-color: var(--shell-list-active, var(--color-list-active-background));
   }
 }
 

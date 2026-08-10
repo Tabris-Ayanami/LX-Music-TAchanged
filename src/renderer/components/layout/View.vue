@@ -1,9 +1,11 @@
 <template>
   <div :class="$style.view">
     <router-view v-slot="{ Component }">
-      <keep-alive :max="6">
-        <component :is="Component" v-if="Component" :key="routeViewKey" class="view-container" />
-      </keep-alive>
+      <transition name="motion-view">
+        <keep-alive :max="6">
+          <component :is="Component" v-if="Component" :key="routeViewKey" class="view-container" />
+        </keep-alive>
+      </transition>
     </router-view>
   </div>
 </template>
@@ -34,6 +36,24 @@ const routeViewKey = computed(() => {
   }
   // background: #fff;
   // overflow: hidden;
+}
+
+:global(.motion-view-enter-active) {
+  z-index: 2;
+  transition: opacity 160ms var(--motion-ease-out), transform 180ms var(--motion-ease-out);
+}
+:global(.motion-view-leave-active) {
+  z-index: 1;
+  pointer-events: none;
+  transition: opacity 100ms var(--motion-ease-out), transform 100ms var(--motion-ease-out);
+}
+:global(.motion-view-enter-from) {
+  opacity: 0;
+  transform: translate3d(0, 3px, 0);
+}
+:global(.motion-view-leave-to) {
+  opacity: 0;
+  transform: translate3d(0, -2px, 0);
 }
 
 </style>

@@ -324,7 +324,6 @@ export default {
 
 //   &.hide {
 //     opacity: 0;
-//     transform: scale(0);
 //   }
 // }
 

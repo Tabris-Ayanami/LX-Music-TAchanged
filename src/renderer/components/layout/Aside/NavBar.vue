@@ -152,7 +152,7 @@ let pillMeasurePending = false
 let pillMeasureNeedsTracking = false
 let isUnmounted = false
 
-const sidebarMotionMs = 460
+const sidebarMotionMs = 280
 const pillInset = 2
 
 const activeItemKey = computed(() => {
@@ -295,8 +295,8 @@ onBeforeUnmount(() => {
   --sidebar-nav-height: var(--sidebar-item-height, 40px);
   --sidebar-nav-radius: var(--sidebar-item-radius, 12px);
   --sidebar-nav-glyph: var(--sidebar-icon-glyph-size, 16px);
-  --sidebar-motion-duration: .46s;
-  --sidebar-motion-curve: cubic-bezier(.2, 0, 0, 1);
+  --sidebar-motion-duration: .28s;
+  --sidebar-motion-curve: var(--motion-ease-drawer);
   flex: 0 0 auto;
   min-height: 0;
   overflow: visible;
@@ -336,7 +336,7 @@ onBeforeUnmount(() => {
     transform var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     height var(--sidebar-motion-duration) var(--sidebar-motion-curve),
-    box-shadow 220ms ease;
+    box-shadow var(--motion-duration-normal) var(--motion-ease-out);
 }
 
 .navPill.floating {
@@ -347,7 +347,7 @@ onBeforeUnmount(() => {
 }
 
 .navPill.tracking {
-  transition: box-shadow 220ms ease;
+  transition: box-shadow var(--motion-duration-normal) var(--motion-ease-out);
 }
 
 .section {
@@ -367,9 +367,9 @@ onBeforeUnmount(() => {
   font-size: 9px;
   letter-spacing: .16em;
   text-transform: uppercase;
-  color: rgba(86, 100, 120, 0.56);
+  color: var(--shell-muted, rgba(86, 100, 120, 0.68));
   overflow: hidden;
-  transition: height var(--sidebar-motion-duration) var(--sidebar-motion-curve), margin var(--sidebar-motion-duration) var(--sidebar-motion-curve), opacity .28s var(--sidebar-motion-curve), color @transition-fast;
+  transition: height var(--sidebar-motion-duration) var(--sidebar-motion-curve), margin var(--sidebar-motion-duration) var(--sidebar-motion-curve), opacity .2s var(--sidebar-motion-curve), color @transition-fast;
 }
 
 .list {
@@ -465,13 +465,13 @@ onBeforeUnmount(() => {
   opacity: 1;
   transform: translateX(0);
   transform-origin: left center;
-  transition: max-width var(--sidebar-motion-duration) var(--sidebar-motion-curve), opacity .28s ease, transform var(--sidebar-motion-duration) var(--sidebar-motion-curve);
+  transition: max-width var(--sidebar-motion-duration) var(--sidebar-motion-curve), opacity .2s var(--motion-ease-out), transform var(--sidebar-motion-duration) var(--sidebar-motion-curve);
   .mixin-ellipsis-1();
 }
 
 .collapsed {
   .sectionTitle {
-    height: 0;
+    height: 11px;
     margin: 0;
     opacity: 0;
   }

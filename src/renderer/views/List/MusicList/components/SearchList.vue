@@ -1,7 +1,7 @@
 <template>
   <teleport to="#view">
     <div v-show="isShow" ref="dom_container" :class="$style.container">
-      <transition enter-active-class="animated-fast zoomIn" leave-active-class="animated zoomOut" @after-leave="handleAnimated">
+      <transition name="motion-pop" @after-leave="handleAnimated">
         <div v-show="visible" :class="$style.search">
           <div :class="$style.form">
             <input

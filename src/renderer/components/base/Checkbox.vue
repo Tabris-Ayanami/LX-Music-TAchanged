@@ -143,7 +143,7 @@ export default {
       }
       .icon {
         transform: scale(1);
-        // opacity: 1;
+        opacity: 1;
       }
     }
   }
@@ -151,6 +151,10 @@ export default {
 .content {
   display: flex;
   align-items: center;
+
+  &:active .container {
+    transform: scale(.94);
+  }
 }
 .container {
   flex: none;
@@ -160,6 +164,8 @@ export default {
   cursor: pointer;
   display: flex;
   color: var(--color-primary);
+  border-radius: 4px;
+  transition: transform @transition-fast;
   // border: 1px solid #ccc;
   &:after {
     position: absolute;
@@ -169,16 +175,15 @@ export default {
     left: 0;
     right: 0;
     border: 1px solid var(--color-font-label);
-    transition: border-color 0.2s ease;
-    border-radius: 2px;
+    transition: border-color @transition-fast, background-color @transition-fast, box-shadow @transition-fast;
+    border-radius: 4px;
   }
 }
 .icon {
-  transition: 0.3s ease;
-  transition-property: transform;
-  transform: scale(0);
-  border-radius: 2px;
-  // opacity: 0;
+  opacity: 0;
+  transition: transform @transition-fast, opacity @transition-fast;
+  transform: scale(.68);
+  border-radius: 4px;
 }
 
 .label {

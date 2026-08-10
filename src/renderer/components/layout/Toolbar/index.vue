@@ -120,12 +120,17 @@ const currentLyric = computed(() => {
   color: var(--shell-text, var(--color-font));
   background: var(--shell-button-bg, rgba(255, 255, 255, 0.06));
   box-shadow: none;
-  transition: transform .22s ease-out, opacity .22s ease-out, background-color .22s ease-out;
+  transition: transform @transition-fast, opacity @transition-fast, background-color @transition-fast;
 
   &:hover {
     opacity: .86;
     transform: translateY(-1px);
     background: var(--shell-button-bg-hover, rgba(255, 255, 255, 0.14));
+  }
+
+  &:active {
+    opacity: 1;
+    transform: scale(.94);
   }
 }
 

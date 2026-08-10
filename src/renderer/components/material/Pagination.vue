@@ -131,8 +131,7 @@ export default {
       // color: var(--color-button-font);
       // border: .0625rem solid @theme_line;
       // border-radius: .3125rem;
-      transition: 0.4s ease;
-      transition-property: all;
+      transition: color @transition-fast, background-color @transition-fast;
       line-height: 1.2;
       display: flex;
       // border-right: none;
@@ -165,13 +164,14 @@ export default {
         border: none;
         cursor: pointer;
         outline: none;
-        transition: background-color .3s ease;
+        transition: transform @transition-fast, color @transition-fast, background-color @transition-fast;
         &:hover {
           color: #fff;
           background:
             linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 76%, #fff 24%), color-mix(in srgb, var(--color-primary) 58%, #2c5fc7 42%));
         }
         &:active {
+          transform: scale(.94);
           color: #fff;
           background:
             linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 82%, #1b2b4a 18%), color-mix(in srgb, var(--color-primary) 64%, #1f3f88 36%));

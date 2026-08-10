@@ -2200,9 +2200,6 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
       pointer-events: auto;
     }
 
-    .coverFrame {
-      animation: album-cover-hop .42s cubic-bezier(.2, .9, .24, 1);
-    }
   }
 
   &::after {
@@ -2486,22 +2483,6 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
 .trackTime {
   text-align: right;
 }
-
-@keyframes album-cover-hop {
-  0% {
-    transform: translateY(0) scale(1);
-  }
-  42% {
-    transform: translateY(-10px) scale(1.035);
-  }
-  72% {
-    transform: translateY(2px) scale(.995);
-  }
-  100% {
-    transform: translateY(0) scale(1);
-  }
-}
-
 
 .artistCover {
   width: 74px;

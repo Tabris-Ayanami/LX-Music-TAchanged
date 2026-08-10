@@ -1,6 +1,6 @@
 <template>
   <div :class="['right', $style.right]" :style="lrcFontSize">
-    <transition enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
+    <transition name="motion-fade">
       <div
         v-show="!isShowLrcSelectContent"
         ref="dom_lyric"
@@ -13,7 +13,7 @@
         <div :class="$style.lyricSpace" />
       </div>
     </transition>
-    <transition enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
+    <transition name="motion-fade">
       <div v-if="isShowLyricProgressSetting" v-show="isStopScroll && !isShowLrcSelectContent" :class="$style.skip">
         <div ref="dom_skip_line" :class="$style.line" />
         <base-btn
@@ -28,7 +28,7 @@
         </base-btn>
       </div>
     </transition>
-    <transition enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
+    <transition name="motion-fade">
       <div v-if="isShowLrcSelectContent" ref="dom_lrc_select_content" tabindex="-1" :class="[$style.lyricSelectContent, 'select', 'scroll', 'lyricSelectContent']" @contextmenu="handleCopySelectText">
         <div v-for="(info, index) in lyric.lines" :key="index" :class="[$style.lyricSelectline, { [$style.lrcActive]: lyric.line == index }]">
           <span>{{ info.text }}</span>

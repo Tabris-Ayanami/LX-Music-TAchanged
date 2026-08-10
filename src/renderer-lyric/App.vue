@@ -1,14 +1,14 @@
 <template>
   <div id="container" :class="[{ lock: setting['desktopLyric.isLock'] }, { hide: isHide || (isHoverHide && isMouseEnter) }]">
     <div id="main" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave" @mousemove="handleMouseMoveMain">
-      <transition enter-active-class="animated-fast fadeIn" leave-active-class="animated-fast fadeOut">
+      <transition name="motion-fade">
         <div v-show="!setting['desktopLyric.isLock']" class="control-bar">
           <layout-control-bar />
         </div>
       </transition>
       <layout-lyric-vertical v-if="setting['desktopLyric.direction'] == 'vertical'" />
       <layout-lyric-horizontal v-else />
-      <transition enter-active-class="animated-fast fadeIn" leave-active-class="animated-fast fadeOut">
+      <transition name="motion-fade">
         <common-audio-visualizer v-if="setting['desktopLyric.audioVisualization']" />
       </transition>
     </div>

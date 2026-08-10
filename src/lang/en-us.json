@@ -599,6 +599,8 @@
   "setting__play_detail_immersive_audio_visualization": "Immersive audio visualization",
   "setting__play_detail_immersive_audio_visualization_tip": "Show a visualization that responds to the music while playing",
   "setting__play_detail_immersive_control_hide_delay": "Auto-hide bottom controls: {value}s",
+  "setting__play_detail_immersive_control_hide_delay_decrease": "Shorten auto-hide delay",
+  "setting__play_detail_immersive_control_hide_delay_increase": "Lengthen auto-hide delay",
   "setting__play_detail_immersive_control_hide_delay_tip": "Return to the lyrics-only view after the pointer stops near the bottom for this duration",
   "setting__play_detail_immersive_audio_visualization_style": "Display type",
   "setting__play_detail_immersive_audio_visualization_family_wave": "Sound wave",

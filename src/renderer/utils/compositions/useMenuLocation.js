@@ -1,33 +1,42 @@
-import { onMounted, onBeforeUnmount, watch, reactive, ref } from '@common/utils/vueTools'
+import { nextTick, onMounted, onBeforeUnmount, watch, reactive, ref } from '@common/utils/vueTools'
 
 
 export default ({ visible, location, onHide }) => {
-  const transition1 = 'transform, opacity'
-  const transition2 = 'transform, opacity, top, left'
   let show = false
+  let offsetX = 0
+  let offsetY = 0
   const dom_menu = ref(null)
   const menuStyles = reactive({
     left: 0,
     top: 0,
     opacity: 0,
     transitionProperty: 'transform, opacity',
-    transform: 'scale(.8, .7) translate(0,0)',
+    transitionDuration: '120ms',
+    transitionTimingFunction: 'cubic-bezier(.23, 1, .32, 1)',
+    transform: 'translate(0, 0) scale(.96)',
+    transformOrigin: '0 0',
     pointerEvents: 'none',
   })
 
   const handleShow = () => {
     show = true
+    menuStyles.transitionDuration = '160ms'
     menuStyles.opacity = 1
-    menuStyles.transform = `scale(1) translate(${handleGetOffsetXY(location.value.x, location.value.y)})`
+    updateOffset(location.value.x, location.value.y)
+    menuStyles.transform = `translate(${offsetX}px, ${offsetY}px) scale(1)`
     menuStyles.pointerEvents = 'auto'
+    nextTick(() => {
+      dom_menu.value?.querySelector('[role="menuitem"]:not([aria-disabled="true"])')?.focus({ preventScroll: true })
+    })
   }
   const handleHide = () => {
+    menuStyles.transitionDuration = '120ms'
     menuStyles.opacity = 0
-    menuStyles.transform = 'scale(.8, .7) translate(0, 0)'
+    menuStyles.transform = `translate(${offsetX}px, ${offsetY}px) scale(.96)`
     menuStyles.pointerEvents = 'none'
     show = false
   }
-  const handleGetOffsetXY = (left, top) => {
+  const updateOffset = (left, top) => {
     const listWidth = dom_menu.value.clientWidth
     const listHeight = dom_menu.value.clientHeight
     const dom_container_parant = dom_menu.value.offsetParent
@@ -35,22 +44,20 @@ export default ({ visible, location, onHide }) => {
     const containerHeight = dom_container_parant.clientHeight
     const offsetWidth = containerWidth - left - listWidth
     const offsetHeight = containerHeight - top - listHeight
-    let x = 0
-    let y = 0
+    offsetX = 0
+    offsetY = 0
     if (containerWidth > listWidth && offsetWidth < 12) {
-      x = offsetWidth - 12
+      offsetX = offsetWidth - 12
     }
     if (containerHeight > listHeight && offsetHeight < 5) {
-      y = offsetHeight - 5
+      offsetY = offsetHeight - 5
     }
-    return `${x}px, ${y}px`
+    menuStyles.transformOrigin = `${offsetX < 0 ? '100%' : '0'} ${offsetY < 0 ? '100%' : '0'}`
   }
   const handleDocumentClick = (event) => {
     if (!show) return
 
     if (event.target == dom_menu.value || dom_menu.value.contains(event.target)) return
-
-    if (show && menuStyles.transitionProperty != transition1) menuStyles.transitionProperty = transition1
 
     onHide()
   }
@@ -62,12 +69,10 @@ export default ({ visible, location, onHide }) => {
   watch(location, location => {
     menuStyles.left = location.x - window.lx.rootOffset + 2 + 'px'
     menuStyles.top = location.y - window.lx.rootOffset + 'px'
-    // nextTick(() => {
     if (show) {
-      if (menuStyles.transitionProperty != transition2) menuStyles.transitionProperty = transition2
-      menuStyles.transform = `scale(1) translate(${handleGetOffsetXY(location.x, location.y)})`
+      updateOffset(location.x, location.y)
+      menuStyles.transform = `translate(${offsetX}px, ${offsetY}px) scale(1)`
     }
-    // })
   }, { deep: true })
 
   onMounted(() => {

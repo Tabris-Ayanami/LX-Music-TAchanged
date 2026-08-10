@@ -292,11 +292,11 @@ onBeforeUnmount(() => {
   pointer-events: none;
   will-change: transform, width, height;
   transition:
-    transform 260ms cubic-bezier(.2, .9, .22, 1.12),
-    width 230ms cubic-bezier(.2, .85, .24, 1),
-    height 230ms cubic-bezier(.2, .85, .24, 1),
-    filter 220ms ease,
-    box-shadow 220ms ease;
+    transform var(--motion-duration-normal) var(--motion-ease-out),
+    width var(--motion-duration-normal) var(--motion-ease-out),
+    height var(--motion-duration-normal) var(--motion-ease-out),
+    filter var(--motion-duration-normal) var(--motion-ease-out),
+    box-shadow var(--motion-duration-normal) var(--motion-ease-out);
   background:
     linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 84%, #fff 16%), color-mix(in srgb, var(--color-primary) 68%, #2c5fc7 32%));
   filter: saturate(1.12);

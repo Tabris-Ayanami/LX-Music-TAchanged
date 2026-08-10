@@ -1,17 +1,18 @@
 <template>
   <teleport to="#root">
-    <ul ref="dom_menu" :class="$style.list" :style="menuStyles" role="toolbar" :aria-hidden="!modelValue">
+    <ul ref="dom_menu" :class="$style.list" :style="menuStyles" role="menu" :aria-hidden="!modelValue" @keydown="handleKeydown">
       <li
         v-for="item in menus"
         v-show="!item.hide && (item.action == 'download' ? appSetting['download.enable'] : true)"
         :key="item.action"
         :class="$style.listItem"
-        role="tab"
+        role="menuitem"
         tabindex="0"
         :aria-label="item[itemName]"
         ignore-tip
-        :disabled="item.disabled ? true : null"
+        :aria-disabled="item.disabled ? 'true' : null"
         @click="menuClick(item)"
+        @keydown.enter.space.stop.prevent="menuClick(item)"
       >
         {{ item[itemName] }}
       </li>
@@ -69,10 +70,30 @@ export default {
       emit('menu-click', item)
     }
 
+    const handleKeydown = event => {
+      if (event.key == 'Escape') {
+        event.preventDefault()
+        onHide()
+        return
+      }
+      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
+      const items = Array.from(dom_menu.value?.querySelectorAll('[role="menuitem"]:not([aria-disabled="true"])') ?? [])
+      if (!items.length) return
+      event.preventDefault()
+      const currentIndex = items.indexOf(document.activeElement)
+      const nextIndex = event.key == 'Home'
+        ? 0
+        : event.key == 'End'
+          ? items.length - 1
+          : (currentIndex + (event.key == 'ArrowDown' ? 1 : -1) + items.length) % items.length
+      items[nextIndex].focus()
+    }
+
     return {
       dom_menu,
       menuStyles,
       menuClick,
+      handleKeydown,
       appSetting,
     }
   },
@@ -84,25 +105,19 @@ export default {
 @import '@renderer/assets/styles/layout.less';
 
 .list {
-  font-size: 12px;
+  font-size: 12.5px;
   position: absolute;
   opacity: 0;
-  transform: scale(0);
-  transform-origin: 0 0 0;
-  transition: .14s ease;
+  transform: scale(.96);
+  transform-origin: 0 0;
+  transition: var(--motion-duration-fast) var(--motion-ease-out);
   transition-property: transform, opacity;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: var(--radius-popover, 10px);
+  border: 1px solid var(--shell-elevated-border, var(--shell-control-border));
   background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-primary) 16%, rgba(255, 255, 255, 0.995)),
-      color-mix(in srgb, var(--color-primary) 24%, rgba(255, 255, 255, 0.99))
-    );
-  box-shadow:
-    0 22px 52px rgba(17, 24, 39, 0.2),
-    0 8px 18px rgba(17, 24, 39, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.48);
+    linear-gradient(180deg, var(--shell-edge-light), transparent 26%),
+    var(--shell-popover, var(--shell-card-strong));
+  box-shadow: var(--shell-elevated-shadow);
   z-index: 10;
   overflow: hidden;
   isolation: isolate;
@@ -112,27 +127,29 @@ export default {
 }
 .listItem {
   cursor: pointer;
-  min-width: 96px;
-  line-height: 34px;
+  min-width: 132px;
+  line-height: 32px;
   // color: var(--color-button-font);
   padding: 0 10px;
-  text-align: center;
+  text-align: left;
   outline: none;
-  color: var(--color-font);
-  transition: @transition-normal;
+  color: var(--shell-text, var(--color-font));
+  transition: @transition-fast;
   transition-property: background-color, opacity;
   box-sizing: border-box;
   .mixin-ellipsis-1();
   // background-color: var(--color-primary-light-600-alpha-800);
 
-  &:hover {
-    background-color: color-mix(in srgb, var(--color-primary) 18%, rgba(255, 255, 255, 0.34));
+  &:hover,
+  &:focus-visible {
+    background-color: var(--shell-list-hover, var(--color-list-hover-background));
+    outline: none !important;
   }
   &:active {
-    background-color: color-mix(in srgb, var(--color-primary) 26%, rgba(255, 255, 255, 0.42));
+    background-color: var(--shell-list-active, var(--color-list-active-background));
   }
 
-  &[disabled] {
+  &[aria-disabled="true"] {
     cursor: default;
     opacity: .4;
     &:hover {

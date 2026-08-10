@@ -30,7 +30,7 @@
 </template>
 
 <script setup>
-import { onMounted } from '@common/utils/vueTools'
+import { onBeforeUnmount, onMounted, watch } from '@common/utils/vueTools'
 // import BubbleCursor from '@common/utils/effects/cursor-effects/bubbleCursor'
 // import '@common/utils/effects/snow.min'
 import useApp from '@renderer/core/useApp'
@@ -39,8 +39,22 @@ import { isSidebarCollapsed } from '@renderer/store/ui'
 
 useApp()
 
+const syncRootThemeClass = isDark => {
+  const root = document.getElementById('root')
+  for (const host of [document.body, root]) {
+    if (!host) continue
+    host.classList.toggle('themeShellDark', isDark)
+    host.classList.toggle('themeShellLight', !isDark)
+    host.style.colorScheme = isDark ? 'dark' : 'light'
+  }
+}
+
+watch(shellIsDark, syncRootThemeClass, { immediate: true })
+
 onMounted(() => {
-  document.getElementById('root').style.display = 'block'
+  const root = document.getElementById('root')
+  root.style.display = 'block'
+  syncRootThemeClass(shellIsDark.value)
 
   // const styles = getComputedStyle(document.documentElement)
   // window.lxData.bubbleCursor = new BubbleCursor({
@@ -49,9 +63,13 @@ onMounted(() => {
   // })
 })
 
-// onBeforeUnmount(() => {
-//   window.lxData.bubbleCursor?.destroy()
-// })
+onBeforeUnmount(() => {
+  const root = document.getElementById('root')
+  for (const host of [document.body, root]) {
+    host?.classList.remove('themeShellDark', 'themeShellLight')
+    host?.style.removeProperty('color-scheme')
+  }
+})
 
 </script>
 
@@ -173,7 +191,7 @@ body {
   box-shadow: var(--shell-panel-shadow);
   contain: layout style;
   will-change: width;
-  transition: width .46s cubic-bezier(.2, 0, 0, 1);
+  transition: width .28s var(--motion-ease-drawer);
 }
 #left::before {
   content: '';
@@ -292,15 +310,15 @@ body {
   transition: opacity @transition-normal, filter @transition-normal;
 }
 #root.show-modal > .view-container {
-  opacity: .9;
+  opacity: .82;
 }
 #view.show-modal > .view-container {
   opacity: .2;
 }
 #root.show-modal-blur > .view-container,
 #view.show-modal-blur > .view-container {
-  opacity: 1;
-  filter: blur(10px) saturate(116%);
+  opacity: .94;
+  filter: blur(5px) saturate(104%);
 }
 
 .themeShellLight {
@@ -352,6 +370,10 @@ body {
   --shell-scroll-track: rgba(255, 255, 255, 0.18);
   --shell-scroll-thumb: rgba(70, 92, 126, 0.32);
   --shell-scroll-thumb-hover: rgba(70, 92, 126, 0.48);
+  --shell-popover: rgba(250, 252, 255, 0.94);
+  --shell-modal: rgba(248, 250, 254, 0.96);
+  --shell-elevated-border: rgba(255, 255, 255, 0.82);
+  --shell-elevated-shadow: 0 24px 64px rgba(42, 58, 84, 0.2), 0 8px 22px rgba(42, 58, 84, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
 
 .themeShellDark {
@@ -403,6 +425,29 @@ body {
   --shell-scroll-track: rgba(255, 255, 255, 0.045);
   --shell-scroll-thumb: rgba(235, 242, 249, 0.19);
   --shell-scroll-thumb-hover: rgba(235, 242, 249, 0.31);
+  --shell-popover: rgba(28, 33, 43, 0.95);
+  --shell-modal: rgba(27, 32, 41, 0.97);
+  --shell-elevated-border: rgba(255, 255, 255, 0.12);
+  --shell-elevated-shadow: 0 28px 72px rgba(0, 0, 0, 0.48), 0 10px 28px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.075);
+
+  --color-main-background: rgba(15, 18, 24, 0.9);
+  --color-content-background: var(--shell-surface-strong);
+  --color-font: var(--shell-text);
+  --color-font-label: var(--shell-muted);
+  --color-primary-font-hover: color-mix(in srgb, var(--color-primary) 72%, white 28%);
+  --color-primary-font-active: color-mix(in srgb, var(--color-primary) 86%, white 14%);
+  --color-primary-background: color-mix(in srgb, var(--color-primary) 14%, rgba(255, 255, 255, 0.055));
+  --color-primary-background-hover: color-mix(in srgb, var(--color-primary) 20%, rgba(255, 255, 255, 0.075));
+  --color-primary-background-active: color-mix(in srgb, var(--color-primary) 28%, rgba(255, 255, 255, 0.09));
+  --color-list-hover-background: var(--shell-list-hover);
+  --color-list-active-background: var(--shell-list-active);
+  --color-button-font: var(--shell-text);
+  --color-button-font-selected: var(--shell-text);
+  --color-button-background: var(--shell-control);
+  --color-button-background-selected: var(--shell-list-active);
+  --color-button-background-hover: var(--shell-list-hover);
+  --color-button-background-active: var(--shell-list-active);
+  --color-list-header-border-bottom: 1px solid var(--shell-divider);
 }
 
 </style>

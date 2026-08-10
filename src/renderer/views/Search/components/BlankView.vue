@@ -1,5 +1,5 @@
 <template>
-  <transition enter-active-class="animated-fast fadeIn" leave-active-class="animated-fast fadeOut">
+  <transition name="motion-fade">
     <div v-show="props.visible" :class="$style.noitem">
       <div v-if="appSetting['search.isShowHotSearch'] || (appSetting['search.isShowHistorySearch'] && historyList.length)" class="scroll" :class="$style.noitemListContainer">
         <dl v-if="appSetting['search.isShowHotSearch']" :class="[$style.noitemList, $style.noitemHotSearchList]">
