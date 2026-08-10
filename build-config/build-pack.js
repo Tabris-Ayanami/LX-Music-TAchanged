@@ -35,6 +35,8 @@ const options = {
     'node_modules/node-gyp-build',
     'node_modules/bufferutil',
     'node_modules/utf-8-validate',
+    'node_modules/taglib-wasm/**/*',
+    'node_modules/@msgpack/msgpack/**/*',
     'build/Release/qrc_decode.node',
     'dist/**/*',
     '!dist/**/*.map',
@@ -42,6 +44,9 @@ const options = {
   asar: {
     smartUnpack: false,
   },
+  asarUnpack: [
+    'node_modules/taglib-wasm/**/*',
+  ],
   extraResources: [
     './licenses',
   ],

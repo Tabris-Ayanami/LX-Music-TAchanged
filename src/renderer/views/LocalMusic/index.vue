@@ -83,6 +83,7 @@
                 :class="$style.songPlanet"
                 :aria-label="`播放 ${entry.item.track.name}`"
                 @click.stop="handleSongPlanetClick(entry.item.track)"
+                @contextmenu.stop.prevent="showTrackContextMenu($event, entry.item.track)"
               >
                 <span :class="$style.spatialCardBody">
                   <span :class="$style.songPlanetHalo">
@@ -132,6 +133,7 @@
               type="button"
               :class="$style.row"
               @click="playTrack(toLocalTrackItem(item).track)"
+              @contextmenu.prevent="showTrackContextMenu($event, toLocalTrackItem(item).track)"
             >
               <span :class="[$style.cell, $style.numCell]">{{ Number(index) + 1 }}</span>
               <span :class="[$style.cell, $style.nameCell]" :title="toLocalTrackItem(item).track.name">{{ toLocalTrackItem(item).track.name }}</span>
@@ -185,6 +187,7 @@
               type="button"
               :class="$style.albumTrackRow"
               @click="playTrack(item.track)"
+              @contextmenu.prevent="showTrackContextMenu($event, item.track)"
             >
               <span :class="$style.trackIndex">{{ Number(index) + 1 }}</span>
               <span :class="$style.trackName" :title="item.track.name">{{ item.track.name }}</span>
@@ -314,6 +317,7 @@
               type="button"
               :class="$style.albumTrackRow"
               @click="playTrack(item.track)"
+              @contextmenu.prevent="showTrackContextMenu($event, item.track)"
             >
               <span :class="$style.trackIndex">{{ Number(index) + 1 }}</span>
               <span :class="$style.trackName" :title="item.track.name">{{ item.track.name }}</span>
@@ -406,6 +410,7 @@
         </div>
       </div>
     </section>
+    <LocalTrackActions ref="localTrackActionsRef" with-menu :list-id="localListId || LOCAL_MUSIC_LIST_ID" @updated="handleTrackUpdated" />
   </div>
 </template>
 
@@ -430,6 +435,7 @@ import {
   setCachedLocalTracks,
 } from '@renderer/utils/localMusic'
 import MusicList from '@renderer/views/List/MusicList/index.vue'
+import LocalTrackActions from '@renderer/components/localMusic/LocalTrackActions.vue'
 import {
   buildSpatialHexLayout,
   buildSpatialIndex,
@@ -486,6 +492,9 @@ const artistPlanetStageRef = ref<HTMLElement | null>(null)
 const songPlanetViewportRef = ref<HTMLElement | null>(null)
 const artistGridRef = ref<HTMLElement | null>(null)
 const localListId = ref('')
+const localTrackActionsRef = ref<{
+  showMenu: (event: MouseEvent, track: LX.Music.MusicInfoLocal) => void
+} | null>(null)
 const tracks = shallowRef<LX.Music.MusicInfoLocal[]>([])
 const albumCovers = shallowRef<Record<string, string>>({})
 const artistCovers = shallowRef<Record<string, string>>({})
@@ -819,6 +828,15 @@ const refreshTracks = async() => {
   // The shared list cache is mutated in place. Keep the shallow ref lightweight,
   // but replace its array snapshot so search and grouping computations refresh.
   tracks.value = [...nextTracks]
+  setCachedLocalTracks(tracks.value)
+}
+
+const showTrackContextMenu = (event: MouseEvent, track: LX.Music.MusicInfoLocal) => {
+  localTrackActionsRef.value?.showMenu(event, track)
+}
+
+const handleTrackUpdated = (updated: LX.Music.MusicInfoLocal) => {
+  tracks.value = tracks.value.map(track => track.id == updated.id ? updated : track)
   setCachedLocalTracks(tracks.value)
 }
 

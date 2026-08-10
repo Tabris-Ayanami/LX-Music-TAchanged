@@ -134,6 +134,12 @@ const modules = {
     clear_music_url: 'clear_music_url',
     get_music_url_count: 'get_music_url_count',
 
+    read_local_metadata: 'read_local_metadata',
+    write_local_metadata: 'write_local_metadata',
+    write_local_embedded_lyrics: 'write_local_embedded_lyrics',
+    read_local_embedded_lyrics: 'read_local_embedded_lyrics',
+    read_local_cover_file: 'read_local_cover_file',
+
     open_api_action: 'open_api_action',
     sync_action: 'sync_action',
     sync_get_server_devices: 'sync_get_server_devices',

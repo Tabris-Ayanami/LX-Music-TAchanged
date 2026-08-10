@@ -96,20 +96,21 @@ export const createLocalMusicInfo = async(path: string): Promise<LX.Music.MusicI
 }
 
 let prevFileInfo: {
-  path: string
+  key: string
   promise: Promise<LX.MusicMetadataModule.IAudioMetadata | null>
 } = {
-  path: '',
+  key: '',
   promise: Promise.resolve(null),
 }
 const getFileMetadata = async(path: string) => {
-  if (prevFileInfo.path == path) return prevFileInfo.promise
-  prevFileInfo.path = path
-  return prevFileInfo.promise = checkPath(path).then(async(isExist) => {
-    return isExist ? import('music-metadata').then(async({ parseFile }) => parseFile(path)).catch(err => {
-      console.log(err)
-      return null
-    }) : null
+  const stats = await getFileStats(path)
+  if (!stats) return null
+  const key = `${path}:${stats.mtimeMs}:${stats.size}`
+  if (prevFileInfo.key == key) return prevFileInfo.promise
+  prevFileInfo.key = key
+  return prevFileInfo.promise = import('music-metadata').then(async({ parseFile }) => parseFile(path)).catch(err => {
+    console.log(err)
+    return null
   })
 }
 /**

@@ -1,8 +1,15 @@
 import { WIN_MAIN_RENDERER_EVENT_NAME } from '@common/ipcNames'
 import { mainHandle } from '@common/mainIpc'
+import { readLocalCoverFile, readLocalEmbeddedLyrics, readLocalMetadata, writeLocalEmbeddedLyrics, writeLocalMetadata } from '@main/modules/localMusicTools/metadata'
 
 
 export default () => {
+  mainHandle<string, LX.LocalMusic.Metadata>(WIN_MAIN_RENDERER_EVENT_NAME.read_local_metadata, async({ params }) => readLocalMetadata(params))
+  mainHandle<LX.LocalMusic.MetadataWriteRequest, LX.LocalMusic.Metadata>(WIN_MAIN_RENDERER_EVENT_NAME.write_local_metadata, async({ params }) => writeLocalMetadata(params))
+  mainHandle<LX.LocalMusic.EmbeddedLyricsWriteRequest, string>(WIN_MAIN_RENDERER_EVENT_NAME.write_local_embedded_lyrics, async({ params }) => writeLocalEmbeddedLyrics(params))
+  mainHandle<string, string>(WIN_MAIN_RENDERER_EVENT_NAME.read_local_embedded_lyrics, async({ params }) => readLocalEmbeddedLyrics(params))
+  mainHandle<string, string>(WIN_MAIN_RENDERER_EVENT_NAME.read_local_cover_file, async({ params }) => readLocalCoverFile(params))
+
   // =========================歌词=========================
   mainHandle<string, LX.Player.LyricInfo>(WIN_MAIN_RENDERER_EVENT_NAME.get_palyer_lyric, async({ params: id }) => {
     // return (getStore(LRC_EDITED, true, false).get(id) as LX.Music.LyricInfo | undefined) ??

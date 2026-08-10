@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "LXTA.Native (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "LXTA.Native (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

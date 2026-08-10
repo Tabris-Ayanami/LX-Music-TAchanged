@@ -718,6 +718,26 @@ export const getMusicUrlCount = async() => {
   return rendererInvoke<number>(WIN_MAIN_RENDERER_EVENT_NAME.get_music_url_count)
 }
 
+export const readLocalMetadata = async(filePath: string) => {
+  return rendererInvoke<string, LX.LocalMusic.Metadata>(WIN_MAIN_RENDERER_EVENT_NAME.read_local_metadata, filePath)
+}
+
+export const writeLocalMetadata = async(request: LX.LocalMusic.MetadataWriteRequest) => {
+  return rendererInvoke<LX.LocalMusic.MetadataWriteRequest, LX.LocalMusic.Metadata>(WIN_MAIN_RENDERER_EVENT_NAME.write_local_metadata, request)
+}
+
+export const writeLocalEmbeddedLyrics = async(request: LX.LocalMusic.EmbeddedLyricsWriteRequest) => {
+  return rendererInvoke<LX.LocalMusic.EmbeddedLyricsWriteRequest, string>(WIN_MAIN_RENDERER_EVENT_NAME.write_local_embedded_lyrics, request)
+}
+
+export const readLocalEmbeddedLyrics = async(filePath: string) => {
+  return rendererInvoke<string, string>(WIN_MAIN_RENDERER_EVENT_NAME.read_local_embedded_lyrics, filePath)
+}
+
+export const readLocalCoverFile = async(filePath: string) => {
+  return rendererInvoke<string, string>(WIN_MAIN_RENDERER_EVENT_NAME.read_local_cover_file, filePath)
+}
+
 /**
  * 退出应用
  */
