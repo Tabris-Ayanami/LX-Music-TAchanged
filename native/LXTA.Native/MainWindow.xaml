@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Window
+    x:Class="LXTA_Native.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:LXTA_Native"
+    xmlns:tb="using:H.NotifyIcon"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="LX Music"
+    mc:Ignorable="d">
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
+
+    <Grid>
+        <Frame x:Name="RootFrame" />
+
+        <!-- Keep the native resize/caption affordances but remove the extra title row.
+             This transparent region sits only over the non-interactive centre of the top bar. -->
+        <Grid x:Name="AppTitleBar"
+              Height="30"
+              Margin="620,0,330,0"
+              VerticalAlignment="Top"
+              Background="Transparent" />
+        <tb:TaskbarIcon x:Name="TrayIcon" ToolTipText="LX Music" IconSource="Assets/AppIcon.ico" Visibility="Collapsed">
+            <tb:TaskbarIcon.ContextFlyout>
+                <MenuFlyout>
+                    <MenuFlyoutItem Text="显示主窗口" Click="ShowWindow_Click" />
+                    <MenuFlyoutSeparator />
+                    <MenuFlyoutItem Text="退出" Click="Exit_Click" />
+                </MenuFlyout>
+            </tb:TaskbarIcon.ContextFlyout>
+        </tb:TaskbarIcon>
+    </Grid>
+</Window>
