@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <ProjectReference Include="../LXTA.Application/LXTA.Application.csproj" />
-    <ProjectReference Include="../LXTA.Domain/LXTA.Domain.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2526" />
-  </ItemGroup>
-</Project>
