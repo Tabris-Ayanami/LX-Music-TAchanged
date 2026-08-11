@@ -190,7 +190,7 @@ UI 只持有：
 ## 6. 非目标
 
 - 本轮不改现有 Electron 行为。
-- 不继续 WinUI Slice 2；保留现有 Slice 1 作为只读验证原型和性能对照。
+- 不继续 WinUI Slice 2；实验成果仅由 `winui-poc` 分支保留，不进入当前 Hybrid 工作树。
 - 不 Fork 或链接 fooyin Core。
 - 不自研完整 WASAPI 播放器。
 - 不把所有网络协议、设置和 UI 状态迁到原生层。
@@ -211,6 +211,17 @@ UI 只持有：
 - `src/renderer/worker/download/*`
 - `src/main/modules/userApi/*`
 - `src/main/modules/bilibili/*`
-- `docs/migration/*` 与当前 `native/*` Slice 1 文档/代码
+- `docs/migration/*` 中仍有效的历史决策记录
 
 外部接口约束参考 [Electron MessagePort](https://www.electronjs.org/docs/latest/tutorial/message-ports)、[Tauri sidecar](https://v2.tauri.app/develop/sidecar/) 以及 [Wails Windows/WebView2](https://wails.io/docs/next/guides/windows/)。
+
+## 8. Stage 0 落地位置
+
+- 业务接口、DTO、稳定错误、job/cancel/progress/capability：`src/renderer/backend/contracts.ts`
+- 当前实现：`src/renderer/backend/electron.ts`
+- 测试实现：`src/renderer/backend/fake.ts`
+- composition root：`src/renderer/backend/index.ts`
+- contract suite：`tests/backend-contract/service-contract-suite.ts`
+- 依赖方向守卫：`scripts/quality/check-backend-boundaries.cjs`
+
+当前 `ElectronBackendAdapter` 仍调用既有 IPC、Renderer worker、数据库逻辑和 HTMLAudio/Web Audio；这不是 Native Core，也没有改变上述实现的所有权。

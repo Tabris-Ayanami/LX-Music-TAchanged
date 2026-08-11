@@ -50,7 +50,8 @@
 import { ref, watch } from '@common/utils/vueTools'
 import { dialog } from '@renderer/plugins/Dialog'
 import { applyLocalLyrics, canAutoApply, fetchCandidateLyrics, searchLocalLyrics, type LyricsCandidate } from '@renderer/services/localLyrics'
-import { getLyricRaw, readLocalEmbeddedLyrics } from '@renderer/utils/ipc'
+import { getLyricRaw } from '@renderer/utils/ipc'
+import { backend } from '@renderer/backend'
 
 const props = withDefaults(defineProps<{ active: boolean, musicInfo: LX.Music.MusicInfoLocal, startMode?: 'current' | 'search' }>(), { startMode: 'current' })
 const emit = defineEmits<{ applied: [] }>()
@@ -82,7 +83,7 @@ const applyCandidate = async(candidate: LyricsCandidate) => {
 
 const loadCurrent = async() => {
   const [embedded, cached] = await Promise.all([
-    readLocalEmbeddedLyrics(props.musicInfo.meta.filePath).catch(() => ''),
+    backend.metadata.readEmbeddedLyrics(props.musicInfo.meta.filePath).catch(() => ''),
     getLyricRaw(props.musicInfo).catch(() => null),
   ])
   const embeddedLyric = embedded.replace(/(?:^|\n\s*)\[awlrc:[^\]]+]\s*$/i, '').trim()

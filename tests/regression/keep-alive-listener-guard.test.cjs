@@ -38,7 +38,7 @@ test('RG-016: quality gate includes a production renderer build', () => {
   const qualityGateSource = fs.readFileSync(path.join(rootDir, 'scripts', 'quality', 'run-quality-gate.cjs'), 'utf8')
   assert.match(
     qualityGateSource,
-    /const steps = \['lint', 'typecheck', 'test:unit', 'build:renderer'\]/,
-    'Quality gate should cover the production renderer build before release',
+    /const steps = \['lint', 'typecheck', 'check:backend-boundaries', 'test:backend-contract', 'test:unit', 'build:renderer'\]/,
+    'Quality gate should cover backend boundaries and contracts before the production renderer build',
   )
 })

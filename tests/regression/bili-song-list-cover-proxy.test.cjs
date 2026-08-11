@@ -9,8 +9,8 @@ const biliSource = fs.readFileSync(path.join(rootDir, 'src', 'renderer', 'utils'
 test('RG-042: Bilibili song-list covers use the first track proxy image', () => {
   assert.match(
     biliSource,
-    /const getTrackPic = async\(item\) => \{[\s\S]*getBiliPic\(\{[\s\S]*bvid: item\.bvid,[\s\S]*cid: item\.cid,[\s\S]*page: item\.page,[\s\S]*\}\)\.catch\(\(\) => item\.cover \|\| ''\)/m,
-    'Bilibili song-list covers should resolve through the image proxy using track params',
+    /const getTrackPic = async\(item\) => \{[\s\S]*backend\.source\.getBilibiliArtwork\(\{[\s\S]*bvid: item\.bvid,[\s\S]*cid: item\.cid,[\s\S]*page: item\.page,[\s\S]*\}\)\.catch\(\(\) => item\.cover \|\| ''\)/m,
+    'Bilibili song-list covers should resolve through Artwork/Source service boundaries using track params',
   )
   assert.match(
     biliSource,

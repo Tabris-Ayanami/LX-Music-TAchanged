@@ -1,0 +1,22 @@
+{
+  "extends": "../../src/renderer/tsconfig.json",
+  "compilerOptions": {
+    "allowJs": false,
+    "isolatedModules": false,
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "typeRoots": ["../../node_modules/@types"],
+    "types": ["node"],
+    "outDir": "../../build/backend-contract-tests",
+    "rootDir": "../..",
+    "target": "ES2022",
+    "noEmit": false
+  },
+  "include": [
+    "../../src/renderer/types/common.d.ts",
+    "../../src/renderer/types/player.d.ts",
+    "../../src/renderer/backend/contracts.ts",
+    "../../src/renderer/backend/fake.ts",
+    "./**/*.ts"
+  ]
+}

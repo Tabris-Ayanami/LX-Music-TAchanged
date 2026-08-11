@@ -1,4 +1,5 @@
-import { saveLyric, writeLocalEmbeddedLyrics } from '@renderer/utils/ipc'
+import { saveLyric } from '@renderer/utils/ipc'
+import { backend } from '@renderer/backend'
 import { setMusicInfo } from '@renderer/store/player/action'
 import { playMusicInfo } from '@renderer/store/player/state'
 import { rankCandidates } from './matching'
@@ -53,7 +54,7 @@ export const applyLocalLyrics = async(track: LX.Music.MusicInfoLocal, lyrics: Ri
   }
   await Promise.all([
     saveLyric(track, lyricInfo),
-    writeLocalEmbeddedLyrics({ filePath: track.meta.filePath, lyric: buildEmbeddedLyric(lyrics) }),
+    backend.metadata.writeEmbeddedLyrics({ filePath: track.meta.filePath, lyric: buildEmbeddedLyric(lyrics) }),
   ])
   if (playMusicInfo.musicInfo?.id == track.id) {
     setMusicInfo({

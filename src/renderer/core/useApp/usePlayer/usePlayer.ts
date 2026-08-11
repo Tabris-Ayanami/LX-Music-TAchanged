@@ -2,11 +2,7 @@ import { onBeforeUnmount, watch } from '@common/utils/vueTools'
 import { useI18n } from '@renderer/plugins/i18n'
 import { setTitle } from '@renderer/utils'
 
-import {
-  getCurrentTime,
-  getDuration,
-  setPause, setStop,
-} from '@renderer/plugins/player'
+import { backend } from '@renderer/backend'
 
 import useMediaSessionInfo from './useMediaSessionInfo'
 import usePlayProgress from './usePlayProgress'
@@ -82,7 +78,7 @@ export default () => {
 
   const handleCanplay = () => {
     if (window.lx.isPlayedStop) {
-      setPause()
+      backend.player.pause()
     }
   }
   const handleEnded = () => {
@@ -103,15 +99,15 @@ export default () => {
   }
   const handleSeekforward = () => {
     const seekOffset = 5
-    const curTime = getCurrentTime()
-    const time = Math.min(getCurrentTime() + seekOffset, getDuration())
+    const curTime = backend.player.getPosition()
+    const time = Math.min(backend.player.getPosition() + seekOffset, backend.player.getDuration())
     if (Math.trunc(curTime) == Math.trunc(time)) return
     setProgress(time)
   }
   const handleSeekbackward = () => {
     const seekOffset = 5
-    const curTime = getCurrentTime()
-    const time = Math.max(getCurrentTime() - seekOffset, 0)
+    const curTime = backend.player.getPosition()
+    const time = Math.max(backend.player.getPosition() - seekOffset, 0)
     if (Math.trunc(curTime) == Math.trunc(time)) return
     setProgress(time)
   }
@@ -120,7 +116,7 @@ export default () => {
     setPlay(false)
     setTitle(null)
     setAllStatus('')
-    setStop()
+    backend.player.stop()
     removePowerSaveBlocker()
   }
 

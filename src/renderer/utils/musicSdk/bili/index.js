@@ -1,5 +1,5 @@
 import musicSearch from './musicSearch'
-import { getBiliComment, getBiliLyric, getBiliMusicUrl, getBiliPic, getBiliSongListDetail } from '@renderer/utils/ipc'
+import { backend } from '@renderer/backend'
 import { decodeName } from '@renderer/utils'
 import { formatPlayTime } from '../../index'
 
@@ -27,7 +27,7 @@ const formatCount = num => {
 
 const getTrackPic = async(item) => {
   if (!item?.bvid) return item?.cover || ''
-  return getBiliPic({
+  return backend.source.getBilibiliArtwork({
     bvid: item.bvid,
     cid: item.cid,
     page: item.page,
@@ -141,7 +141,7 @@ const bili = {
       return tracksToSongLists(result, this.limit_list)
     },
     async getListDetail(id, page = 1) {
-      const result = await getBiliSongListDetail({
+      const result = await backend.source.getBilibiliPlaylist({
         bvid: id,
         page,
         limit: this.limit_song,
@@ -173,7 +173,7 @@ const bili = {
   },
   comment: {
     getComment(songInfo, page = 1, limit = 20) {
-      return getBiliComment({
+      return backend.source.getBilibiliComments({
         ...getBiliParams(songInfo),
         aid: songInfo.aid,
         page,
@@ -182,7 +182,7 @@ const bili = {
       })
     },
     getHotComment(songInfo, page = 1, limit = 20) {
-      return getBiliComment({
+      return backend.source.getBilibiliComments({
         ...getBiliParams(songInfo),
         aid: songInfo.aid,
         page,
@@ -193,16 +193,16 @@ const bili = {
   },
   getMusicUrl(songInfo, type = '128k') {
     return {
-      promise: getBiliMusicUrl(getBiliParams(songInfo), type),
+      promise: backend.source.getBilibiliMusicUrl(getBiliParams(songInfo), type),
     }
   },
   getLyric(songInfo) {
     return {
-      promise: getBiliLyric(getBiliParams(songInfo)),
+      promise: backend.source.getBilibiliLyrics(getBiliParams(songInfo)),
     }
   },
   async getPic(songInfo) {
-    return getBiliPic(getBiliParams(songInfo))
+    return backend.source.getBilibiliArtwork(getBiliParams(songInfo))
   },
   getMusicDetailPageUrl(songInfo) {
     return `https://www.bilibili.com/video/${songInfo.bvid || songInfo.songmid}${songInfo.page ? `?p=${songInfo.page}` : ''}`

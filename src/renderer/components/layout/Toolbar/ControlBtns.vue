@@ -22,10 +22,13 @@
 
 <script setup>
 import { isFullscreen } from '@renderer/store'
-import { closeWindow, minWindow, setFullScreen } from '@renderer/utils/ipc'
+import { backend } from '@renderer/backend'
+
+const closeWindow = backend.platform.closeWindow
+const minWindow = backend.platform.minimizeWindow
 
 const toggleFullscreen = () => {
-  void setFullScreen(!isFullscreen.value).then(fullscreen => {
+  void backend.platform.setFullscreen(!isFullscreen.value).then(fullscreen => {
     isFullscreen.value = fullscreen
   })
 }

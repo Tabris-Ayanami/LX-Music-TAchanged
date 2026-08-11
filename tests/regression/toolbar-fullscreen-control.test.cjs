@@ -19,8 +19,8 @@ test('RG-051: titlebar controls stay available and toggle fullscreen in both mai
   )
   assert.match(
     controlSource,
-    /import \{ closeWindow, minWindow, setFullScreen \} from '@renderer\/utils\/ipc'[\s\S]*setFullScreen\(!isFullscreen\.value\)\.then\(fullscreen => \{[\s\S]*isFullscreen\.value = fullscreen/m,
-    'The main-titlebar control should toggle fullscreen through the shared IPC and synchronize renderer state',
+    /import \{ backend \} from '@renderer\/backend'[\s\S]*backend\.platform\.setFullscreen\(!isFullscreen\.value\)\.then\(fullscreen => \{[\s\S]*isFullscreen\.value = fullscreen/m,
+    'The main-titlebar control should toggle fullscreen through PlatformService and synchronize renderer state',
   )
   assert.doesNotMatch(
     controlSource,
@@ -39,7 +39,7 @@ test('RG-051: titlebar controls stay available and toggle fullscreen in both mai
   )
   assert.match(
     playDetailControlSource,
-    /isFullscreen \? '#icon-window-restore-2' : '#icon-window-maximize-2'[\s\S]*setFullScreen\(!isFullscreen\.value\)/m,
+    /isFullscreen \? '#icon-window-restore-2' : '#icon-window-maximize-2'[\s\S]*backend\.platform\.setFullscreen\(!isFullscreen\.value\)/m,
     'Player detail should use the same stateful fullscreen toggle and icon pair',
   )
   assert.doesNotMatch(

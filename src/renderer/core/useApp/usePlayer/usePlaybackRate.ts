@@ -1,5 +1,5 @@
 import { onBeforeUnmount, watch } from '@common/utils/vueTools'
-import { setPlaybackRate as setPlayerPlaybackRate, setPreservesPitch } from '@renderer/plugins/player'
+import { backend } from '@renderer/backend'
 
 import { debounce } from '@common/utils'
 // import { HOTKEY_PLAYER } from '@common/hotKey'
@@ -10,8 +10,8 @@ export default () => {
   const handleSavePlaybackRate = debounce(savePlaybackRate, 300)
 
   setPlaybackRate(appSetting['player.playbackRate'])
-  setPlayerPlaybackRate(appSetting['player.playbackRate'])
-  setPreservesPitch(appSetting['player.preservesPitch'])
+  backend.player.setPlaybackRate(appSetting['player.playbackRate'])
+  backend.player.setPreservesPitch(appSetting['player.preservesPitch'])
 
 
   const handleSetPlaybackRate = (num: number) => {
@@ -35,7 +35,7 @@ export default () => {
 
   watch(playbackRate, rate => {
     handleSavePlaybackRate(rate)
-    setPlayerPlaybackRate(rate)
+    backend.player.setPlaybackRate(rate)
   })
   watch(() => appSetting['player.playbackRate'], rate => {
     setPlaybackRate(rate)
@@ -43,7 +43,7 @@ export default () => {
 
 
   watch(() => appSetting['player.preservesPitch'], preservesPitch => {
-    setPreservesPitch(preservesPitch)
+    backend.player.setPreservesPitch(preservesPitch)
   })
 
 

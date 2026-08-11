@@ -1,8 +1,7 @@
 import { onBeforeUnmount, watch } from '@common/utils/vueTools'
 import { formatPlayTime2, getRandom } from '@common/utils/common'
 import { throttle } from '@common/utils'
-import { savePlayInfo } from '@renderer/utils/ipc'
-import { onTimeupdate, getCurrentTime, getDuration, setCurrentTime, onVisibilityChange } from '@renderer/plugins/player'
+import { backend } from '@renderer/backend'
 import { playProgress, setNowPlayTime, setMaxplayTime } from '@renderer/store/player/playProgress'
 import { musicInfo, playMusicInfo, playInfo } from '@renderer/store/player/state'
 // import { getList } from '@renderer/store/utils'
@@ -10,7 +9,7 @@ import { appSetting } from '@renderer/store/setting'
 import { playNext } from '@renderer/core/player'
 import { updateListMusics } from '@renderer/store/list/action'
 
-const delaySavePlayInfo = throttle(savePlayInfo, 2000)
+const delaySavePlayInfo = throttle(backend.player.savePlaybackState, 2000)
 
 export default () => {
   let restorePlayTime = 0
@@ -30,7 +29,7 @@ export default () => {
     mediaBuffer.timeout = setTimeout(() => {
       mediaBuffer.timeout = null
       if (window.lx.isPlayedStop) return
-      const currentTime = getCurrentTime()
+      const currentTime = backend.player.getPosition()
 
       mediaBuffer.playTime ||= currentTime
       let skipTime = currentTime + getRandom(3, 6)
@@ -44,7 +43,7 @@ export default () => {
         return
       }
       startBuffering()
-      setCurrentTime(skipTime)
+      backend.player.seek(skipTime)
       console.log(mediaBuffer.playTime)
       console.log(currentTime)
     }, 3000)
@@ -68,7 +67,7 @@ export default () => {
       startBuffering()
     }
     setNowPlayTime(time)
-    setCurrentTime(time)
+    backend.player.seek(time)
 
     // if (!isPlay) audio.play()
   }
@@ -83,12 +82,12 @@ export default () => {
   }
 
   const handleError = () => {
-    restorePlayTime ||= getCurrentTime() // 记录出错的播放时间
+    restorePlayTime ||= backend.player.getPosition() // 记录出错的播放时间
     console.log('handleError')
   }
 
   const handleLoadeddata = () => {
-    setMaxplayTime(getDuration())
+    setMaxplayTime(backend.player.getDuration())
 
     if (playMusicInfo.musicInfo && 'source' in playMusicInfo.musicInfo && !playMusicInfo.musicInfo.interval) {
       // console.log(formatPlayTime2(playProgress.maxPlayTime))
@@ -111,9 +110,9 @@ export default () => {
     if (mediaBuffer.playTime) {
       let playTime = mediaBuffer.playTime
       mediaBuffer.playTime = 0
-      setCurrentTime(playTime)
+      backend.player.seek(playTime)
     } else if (restorePlayTime) {
-      setCurrentTime(restorePlayTime)
+      backend.player.seek(restorePlayTime)
       restorePlayTime = 0
     }
   }
@@ -128,7 +127,7 @@ export default () => {
 
   const handleSetPlayInfo = () => {
     // restorePlayTime = playProgress.nowPlayTime
-    setCurrentTime(restorePlayTime = playProgress.nowPlayTime)
+    backend.player.seek(restorePlayTime = playProgress.nowPlayTime)
     // setMaxplayTime(playProgress.maxPlayTime)
     handlePause()
     if (!playMusicInfo.isTempPlay && playMusicInfo.listId) {
@@ -175,12 +174,12 @@ export default () => {
   window.app_event.on('playerEmptied', handleEmpied)
   window.app_event.on('musicToggled', handleSetPlayInfo)
 
-  const rOnTimeupdate = onTimeupdate(() => {
-    setNowPlayTime(getCurrentTime())
+  const rOnTimeupdate = backend.player.on('timeupdate', () => {
+    setNowPlayTime(backend.player.getPosition())
   })
 
   let currentPlayTime = 0
-  const rVisibilityChange = onVisibilityChange(() => {
+  const rVisibilityChange = backend.player.on('visibilitychange', () => {
     if (document.hidden) {
       currentPlayTime = playProgress.nowPlayTime
     } else {

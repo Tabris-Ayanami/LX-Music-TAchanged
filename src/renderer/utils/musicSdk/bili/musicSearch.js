@@ -1,6 +1,6 @@
 import { decodeName } from '@renderer/utils'
 import { formatPlayTime } from '../../index'
-import { biliSearch } from '@renderer/utils/ipc'
+import { backend } from '@renderer/backend'
 
 export default {
   limit: 20,
@@ -8,7 +8,7 @@ export default {
   page: 0,
   allPage: 1,
   async musicSearch(str, page) {
-    return biliSearch({
+    return backend.source.searchBilibili({
       keyword: str,
       page,
       limit: this.limit,

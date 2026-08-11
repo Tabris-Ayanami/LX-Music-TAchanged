@@ -4,9 +4,11 @@
 
 每个阶段结束时，LX-TA 都必须可正常发布和回退。迁移单位是业务 service，不是语言、库或 IPC channel。任何模块在切换前都有：旧实现 adapter、native 实现、contract test、差分/影子验证、feature flag、数据恢复方案。
 
-当前 WinUI 全量迁移停在现有 Slice 1：不继续 Slice 2，不删除现有 `native/*`，将其保留为只读库验证原型、schema/contract 参考和性能对照。它不再是主迁移路径。
+WinUI 全量迁移已停止，不继续 Slice 2。实验成果保留在 `winui-poc` 分支；`hybrid-native` 当前工作树不携带旧 WinUI/fooyin/native 实验源码，它们也不作为 Hybrid 实现参考。
 
-## Stage 0 — 建立基线与统一 Backend API
+## Stage 0 — 建立基线与统一 Backend API（已完成，2026-08-11）
+
+实际完成范围、未迁移清单、测试与性能数据见 [stage-0-status.md](stage-0-status.md)、[stage-0-direct-dependency-inventory.md](stage-0-direct-dependency-inventory.md) 和 [performance-baseline.md](performance-baseline.md)。Stage 0 只改变依赖方向；Metadata、Artwork、Library、Player 均未标记为 Native 化完成。
 
 ### 目标
 

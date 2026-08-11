@@ -1,10 +1,4 @@
-import {
-  downloadTasksGet,
-  // downloadListClear,
-  downloadTasksCreate,
-  downloadTasksRemove,
-  downloadTasksUpdate,
-} from '@renderer/utils/ipc'
+import { backend } from '@renderer/backend'
 import {
   downloadList,
 } from './state'
@@ -26,7 +20,7 @@ const throttleUpdateTask = (tasks: LX.Download.ListItem[]) => {
   if (timer) return
   timer = setTimeout(() => {
     timer = null
-    void downloadTasksUpdate(Array.from(waitingUpdateTasks.values()))
+    void backend.download.updatePersistedTasks(Array.from(waitingUpdateTasks.values()))
     waitingUpdateTasks.clear()
   }, 100)
 }
@@ -39,7 +33,7 @@ const runingTask = new Map<string, LX.Download.ListItem>()
 
 export const getDownloadList = async(): Promise<LX.Download.ListItem[]> => {
   if (!downloadList.length) {
-    const list = await downloadTasksGet()
+    const list = await backend.download.listPersistedTasks()
     for (const downloadInfo of list) {
       markRaw(downloadInfo.metadata)
       switch (downloadInfo.status) {
@@ -59,7 +53,7 @@ export const getDownloadList = async(): Promise<LX.Download.ListItem[]> => {
 const addTasks = async(list: LX.Download.ListItem[]) => {
   const addMusicLocationType = appSetting['list.addMusicLocationType']
 
-  await downloadTasksCreate(list.map(i => toRaw(i)), addMusicLocationType)
+  await backend.download.createPersistedTasks(list.map(i => toRaw(i)), addMusicLocationType)
 
   if (addMusicLocationType === 'top') {
     arrUnshift(downloadList, list)
@@ -412,7 +406,7 @@ export const pauseDownloadTasks = async(list: LX.Download.ListItem[]) => {
  * @param ids 要移除的任务Id
  */
 export const removeDownloadTasks = async(ids: string[]) => {
-  await downloadTasksRemove(ids)
+  await backend.download.removePersistedTasks(ids)
 
   const idsSet = new Set<string>(ids)
   const newList = downloadList.filter(task => {

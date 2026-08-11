@@ -164,9 +164,9 @@ Chromium/WebView renderer、Vue/React、DOM/CSS、Folia、Three.js、WebGL textu
 6. Stage 5：Renderer 去 Node、Electron Main 极薄。
 7. Stage 6：用实测独立决定 Electron/Tauri/Wails。
 
-## 当前应做与不应做
+## 当前状态与下一决策
 
-当前只应审阅本评估、决定路线，并在获批后从 Stage 0 开始。现在不应：
+Stage 0 已于 2026-08-11 完成：统一 Backend API、Electron adapter、fake/contract tests、依赖守卫、主要入口迁移和基线均已落地。当前应停止并审阅 [stage-0-status.md](stage-0-status.md)；Stage 1 尚未开始。现在不应：
 
 - 实现 Native Core；
 - 修改 Electron 行为；

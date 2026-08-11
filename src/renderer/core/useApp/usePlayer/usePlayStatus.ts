@@ -1,5 +1,5 @@
 import { onBeforeUnmount, watch } from '@common/utils/vueTools'
-import { sendPlayerStatus, onPlayerAction } from '@renderer/utils/ipc'
+import { backend } from '@renderer/backend'
 // import store from '@renderer/store'
 
 import { loveList } from '@renderer/store/list/state'
@@ -24,21 +24,21 @@ export default () => {
   }
 
   const handlePlay = () => {
-    sendPlayerStatus({ status: 'playing' })
+    backend.player.publishShellStatus({ status: 'playing' })
   }
   const handlePause = () => {
-    sendPlayerStatus({ status: 'paused' })
+    backend.player.publishShellStatus({ status: 'paused' })
   }
   const handleStop = () => {
     if (playMusicInfo.musicInfo != null) return
-    sendPlayerStatus({ status: 'stoped' })
+    backend.player.publishShellStatus({ status: 'stoped' })
   }
   const handleError = () => {
-    sendPlayerStatus({ status: 'error' })
+    backend.player.publishShellStatus({ status: 'error' })
   }
   const handleSetPlayInfo = async() => {
     await updateCollectStatus()
-    sendPlayerStatus({
+    backend.player.publishShellStatus({
       collect,
       name: musicInfo.name,
       singer: musicInfo.singer,
@@ -50,7 +50,7 @@ export default () => {
     })
   }
   const handleSetLyric = () => {
-    sendPlayerStatus({
+    backend.player.publishShellStatus({
       lyric: musicInfo.lrc ?? '',
       tlyric: musicInfo.tlrc ?? '',
       rlyric: musicInfo.rlrc ?? '',
@@ -60,13 +60,13 @@ export default () => {
     })
   }
   const handleSetPic = () => {
-    sendPlayerStatus({
+    backend.player.publishShellStatus({
       picUrl: musicInfo.pic ?? '',
     })
   }
   const handleSetLyricLine = (text: string, line: number) => {
     let curLine = lyric.lines[line]?.extendedLyrics.join('\n') ?? ''
-    sendPlayerStatus({
+    backend.player.publishShellStatus({
       lyricLineText: text,
       lyricLineAllText: curLine ? text + '\n' + curLine : text,
     })
@@ -76,10 +76,10 @@ export default () => {
   // }
   const throttleListChange = throttle(async listIds => {
     if (!listIds.includes(loveList.id)) return
-    if (await updateCollectStatus()) sendPlayerStatus({ collect })
+    if (await updateCollectStatus()) backend.player.publishShellStatus({ collect })
   })
   const throttleProgressStatus = throttle((progress: number) => {
-    sendPlayerStatus({ progress })
+    backend.player.publishShellStatus({ progress })
   }, 500)
   // const updateSetting = () => {
   //   const setting = store.getters.setting
@@ -87,7 +87,7 @@ export default () => {
   //   buttons.lockLrc = setting.desktopLyric.isLock
   //   setButtons()
   // }
-  const rTaskbarThumbarClick = onPlayerAction(async({ params: { action, data } }) => {
+  const rTaskbarThumbarClick = backend.player.onShellAction(async({ action, data }) => {
     switch (action) {
       case 'play':
         play()
@@ -104,12 +104,12 @@ export default () => {
       case 'collect':
         if (!playMusicInfo.musicInfo) return
         void addListMusics(loveList.id, ['progress' in playMusicInfo.musicInfo ? playMusicInfo.musicInfo.metadata.musicInfo : playMusicInfo.musicInfo])
-        if (await updateCollectStatus()) sendPlayerStatus({ collect })
+        if (await updateCollectStatus()) backend.player.publishShellStatus({ collect })
         break
       case 'unCollect':
         if (!playMusicInfo.musicInfo) return
         void removeListMusics({ listId: loveList.id, ids: ['progress' in playMusicInfo.musicInfo ? playMusicInfo.musicInfo.metadata.musicInfo.id : playMusicInfo.musicInfo.id] })
-        if (await updateCollectStatus()) sendPlayerStatus({ collect })
+        if (await updateCollectStatus()) backend.player.publishShellStatus({ collect })
         break
       case 'seek': {
         let progress = data as number
@@ -149,10 +149,10 @@ export default () => {
     throttleProgressStatus(newValue)
   })
   watch(() => playProgress.maxPlayTime, (newValue) => {
-    sendPlayerStatus({ duration: newValue })
+    backend.player.publishShellStatus({ duration: newValue })
   })
   watch(() => appSetting['player.playbackRate'], rate => {
-    sendPlayerStatus({ playbackRate: rate })
+    backend.player.publishShellStatus({ playbackRate: rate })
   })
 
   window.app_event.on('play', handlePlay)
@@ -186,7 +186,7 @@ export default () => {
     // buttons.lockLrc = setting.desktopLyric.isLock
     await updateCollectStatus()
     if (playMusicInfo.musicInfo == null) return
-    sendPlayerStatus({
+    backend.player.publishShellStatus({
       collect,
       name: musicInfo.name,
       singer: musicInfo.singer,

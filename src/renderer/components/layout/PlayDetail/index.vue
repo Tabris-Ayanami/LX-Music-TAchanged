@@ -67,7 +67,7 @@ import ControlBtnsRightHeader from './ControlBtnsRightHeader.vue'
 import ImmersiveLyrics from './ImmersiveLyrics.vue'
 import { registerAutoHideMounse, unregisterAutoHideMounse } from './autoHideMounse'
 import { appSetting } from '@renderer/store/setting'
-import { closeWindow, maxWindow, minWindow, setFullScreen } from '@renderer/utils/ipc'
+import { backend } from '@renderer/backend'
 import { clearPlayDetailOrigin, getPlayDetailOrigin } from '@renderer/utils/playDetailTransition'
 
 const PLAYER_SHELL_DURATION = 480
@@ -768,18 +768,18 @@ export default {
       visibled,
       isFullscreen,
       fullscreenExit() {
-        void setFullScreen(false).then((fullscreen) => {
+        void backend.platform.setFullscreen(false).then((fullscreen) => {
           isFullscreen.value = fullscreen
         })
       },
       min() {
-        minWindow()
+        backend.platform.minimizeWindow()
       },
       max() {
-        maxWindow()
+        backend.platform.maximizeWindow()
       },
       close() {
-        closeWindow()
+        backend.platform.closeWindow()
       },
     }
   },

@@ -1,5 +1,5 @@
 import { onBeforeUnmount, watch } from '@common/utils/vueTools'
-import { onTimeupdate, getCurrentTime } from '@renderer/plugins/player'
+import { backend } from '@renderer/backend'
 import { playProgress } from '@renderer/store/player/playProgress'
 import { musicInfo } from '@renderer/store/player/state'
 // import { getList } from '@renderer/store/utils'
@@ -119,8 +119,8 @@ export default () => {
   window.app_event.on('setProgress', setProgress)
   window.app_event.on('musicToggled', handleSetPlayInfo)
 
-  const rOnTimeupdate = onTimeupdate(() => {
-    const time = getCurrentTime()
+  const rOnTimeupdate = backend.player.on('timeupdate', () => {
+    const time = backend.player.getPosition()
     const duration = playProgress.maxPlayTime
     if (duration > 10 && duration - time < 10 && !preloadMusicInfo.info) {
       void preloadNextMusicUrl(time)

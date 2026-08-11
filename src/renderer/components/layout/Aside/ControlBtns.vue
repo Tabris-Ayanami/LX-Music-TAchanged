@@ -14,10 +14,13 @@
 </template>
 
 <script setup>
-import { minWindow, closeWindow } from '@renderer/utils/ipc'
+import { backend } from '@renderer/backend'
 import { onMounted, onBeforeUnmount, ref, useCssModule } from '@common/utils/vueTools'
 // import { getRandom } from '../../utils'
 import { isFullscreen } from '@renderer/store'
+
+const minWindow = backend.platform.minimizeWindow
+const closeWindow = backend.platform.closeWindow
 
 const dom_btns = ref()
 

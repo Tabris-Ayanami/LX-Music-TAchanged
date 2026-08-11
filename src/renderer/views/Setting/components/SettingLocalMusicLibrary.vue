@@ -45,20 +45,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from '@common/utils/vueTools'
-import { getListMusics } from '@renderer/store/list/action'
-import { showSelectDialog } from '@renderer/utils/ipc'
-import {
-  addLocalMusicLibraryFolders,
-  buildLocalAlbumGroups,
-  buildLocalArtistGroups,
-  ensureLocalMusicList,
-  getLocalMusicLibraryFolders,
-  removeLocalMusicLibraryFolder,
-  removeLocalMusicLibraryFolderTracks,
-  rescanLocalMusicLibrary,
-  setCachedLocalTracks,
-} from '@renderer/utils/localMusic'
+import { onBeforeUnmount, onMounted, ref } from '@common/utils/vueTools'
+import { backend } from '@renderer/backend'
 
 const folders = ref<string[]>([])
 const tracks = ref<LX.Music.MusicInfoLocal[]>([])
@@ -66,35 +54,28 @@ const isBusy = ref(false)
 const statusText = ref('')
 const localListId = ref('')
 
-const albumCount = computed(() => buildLocalAlbumGroups(tracks.value).length)
-const artistCount = computed(() => buildLocalArtistGroups(tracks.value).length)
-
-const refreshFolders = () => {
-  folders.value = getLocalMusicLibraryFolders()
-}
-
-const refreshTracks = async() => {
-  const list = await ensureLocalMusicList()
-  localListId.value = list.id
-  tracks.value = (await getListMusics(list.id)).filter((track): track is LX.Music.MusicInfoLocal => track.source == 'local')
-  setCachedLocalTracks(tracks.value)
-}
+const albumCount = ref(0)
+const artistCount = ref(0)
 
 const refreshAll = async() => {
-  refreshFolders()
-  await refreshTracks()
+  const overview = await backend.library.getOverview()
+  localListId.value = overview.listId
+  folders.value = overview.folders
+  tracks.value = overview.tracks
+  albumCount.value = overview.albumCount
+  artistCount.value = overview.artistCount
 }
 
 const handleListUpdate = (ids: string[]) => {
   if (!localListId.value || !ids.includes(localListId.value)) return
-  void refreshTracks()
+  void refreshAll()
 }
 
 const handleRescan = async() => {
   isBusy.value = true
   statusText.value = '正在扫描本地音乐库...'
   try {
-    const result = await rescanLocalMusicLibrary()
+    const result = await backend.library.startRescan().result
     await refreshAll()
     statusText.value = `扫描完成：${result.folderCount} 个文件夹，找到 ${result.scannedFileCount} 个媒体文件，当前共 ${result.totalCount} 首歌曲。`
   } catch (error) {
@@ -106,22 +87,22 @@ const handleRescan = async() => {
 }
 
 const handleAddFolders = async() => {
-  const { canceled, filePaths } = await showSelectDialog({
+  const { canceled, filePaths } = await backend.platform.select({
     title: '选择本地音乐文件夹',
     properties: ['openDirectory', 'multiSelections'],
   })
   if (canceled || !filePaths.length) return
 
-  folders.value = addLocalMusicLibraryFolders(filePaths)
+  folders.value = await backend.library.registerFolders(filePaths)
   await handleRescan()
 }
 
 const handleRemoveFolder = async(folder: string) => {
   isBusy.value = true
   statusText.value = '正在移除文件夹歌曲...'
-  folders.value = removeLocalMusicLibraryFolder(folder)
   try {
-    await removeLocalMusicLibraryFolderTracks(folder)
+    folders.value = await backend.library.unregisterFolder(folder)
+    await backend.library.removeFolderTracks(folder)
     await handleRescan()
   } finally {
     isBusy.value = false

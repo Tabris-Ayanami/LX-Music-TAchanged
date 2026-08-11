@@ -116,7 +116,7 @@ void (async() => {
     const { i18nPlugin } = await import('./plugins/i18n')
     const { default: App } = await import('./App.vue')
     const { default: router } = await import('./router')
-    const { getSetting, updateSetting } = await import('./utils/ipc')
+    const { backend } = await import('./backend')
     const { langList } = await import('@root/lang')
     const { initSetting } = await import('./store/setting')
     await import('./worker')
@@ -131,7 +131,7 @@ void (async() => {
       }
     })
 
-    const setting = await getSetting()
+    const setting = await backend.settings.get()
     // window.lx.appSetting = setting
     // Set language automatically
     if (!setting['common.langId'] || !window.i18n.availableLocales.includes(setting['common.langId'])) {
@@ -149,14 +149,14 @@ void (async() => {
         langId ??= 'en-us'
       }
       setting['common.langId'] = langId
-      void updateSetting({ 'common.langId': langId })
+      void backend.settings.update({ 'common.langId': langId })
       console.log('Set lang', setting['common.langId'])
     }
     window.setLang(setting['common.langId'])
     window.i18n.setLanguage(setting['common.langId'])
 
     if (!setting['common.startInFullscreen'] && (document.body.clientHeight > window.screen.availHeight || document.body.clientWidth > window.screen.availWidth) && setting['common.windowSizeId'] > 1) {
-      void updateSetting({ 'common.windowSizeId': 1 })
+      void backend.settings.update({ 'common.windowSizeId': 1 })
     }
 
     // store.commit('setSetting', setting)

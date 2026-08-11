@@ -1,6 +1,6 @@
 import { reactive, computed } from '@common/utils/vueTools'
 import defaultSetting from '@common/defaultSetting'
-import { updateSetting as saveSetting } from '@renderer/utils/ipc'
+import { backend } from '@renderer/backend'
 
 export const isDesktopLyricDisabled = true
 
@@ -26,7 +26,7 @@ export const mergeSetting = (newSetting: Partial<LX.AppSetting>) => {
 export const updateSetting = window.lxData.updateSetting = (setting: Partial<LX.AppSetting>) => {
   // console.warn(setting)
   if (isDesktopLyricDisabled && setting['desktopLyric.enable']) setting = { ...setting, 'desktopLyric.enable': false }
-  void saveSetting(setting)
+  void backend.settings.update(setting)
 }
 
 /**

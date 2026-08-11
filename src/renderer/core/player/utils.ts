@@ -3,7 +3,7 @@ import { toRaw, markRawList } from '@common/utils/vueTools'
 import { clearPlayedList } from '@renderer/store/player/action'
 import { appSetting } from '@renderer/store/setting'
 import { dislikeInfo } from '@renderer/store/dislikeList'
-import { setPowerSaveBlocker as setPowerSaveBlockerRemote } from '@renderer/utils/ipc'
+import { backend } from '@renderer/backend'
 
 // export const getPlayType = (highQuality: boolean, musicInfo: LX.Music.MusicInfo | LX.Download.ListItem): LX.Quality | null => {
 //   if ('progress' in musicInfo || musicInfo.source == 'local') return null
@@ -52,14 +52,14 @@ export const setPowerSaveBlocker = (enabled: boolean, force = false) => {
   if (enabled) {
     clearTimer()
     if (!force && !appSetting['player.powerSaveBlocker']) return
-    setPowerSaveBlockerRemote(true)
+    backend.platform.setPowerSaveBlocker(true)
   } else if (force) {
     clearTimer()
-    setPowerSaveBlockerRemote(false)
+    backend.platform.setPowerSaveBlocker(false)
   } else {
     if (timeout) return
     timeout = setTimeout(() => {
-      setPowerSaveBlockerRemote(false)
+      backend.platform.setPowerSaveBlocker(false)
     }, 60_000 * 1.5)
   }
 }

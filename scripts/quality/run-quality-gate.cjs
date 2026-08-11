@@ -9,7 +9,7 @@ const path = require('node:path')
 
 const rootDir = path.resolve(__dirname, '..', '..')
 const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm'
-const steps = ['lint', 'typecheck', 'test:unit', 'build:renderer']
+const steps = ['lint', 'typecheck', 'check:backend-boundaries', 'test:backend-contract', 'test:unit', 'build:renderer']
 const failures = []
 
 for (const step of steps) {

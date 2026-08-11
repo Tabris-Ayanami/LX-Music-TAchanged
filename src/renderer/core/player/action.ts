@@ -1,4 +1,4 @@
-import { isEmpty, setPause, setPlay, setResource, setStop } from '@renderer/plugins/player'
+import { backend } from '@renderer/backend'
 import { isPlay, playedList, playInfo, playMusicInfo, tempPlayList, musicInfo as _musicInfo } from '@renderer/store/player/state'
 import {
   getList,
@@ -132,7 +132,7 @@ export const setMusicUrl = (musicInfo: LX.Music.MusicInfo | LX.Download.ListItem
   gettingUrlId = createGettingUrlId(musicInfo)
   void getMusicPlayUrl(musicInfo, isRefresh).then((url) => {
     if (!url) return
-    setResource(url)
+    backend.player.load({ source: url })
   }).catch((err: any) => {
     console.log(err)
     setAllStatus(err.message)
@@ -198,7 +198,7 @@ const handlePlay = () => {
 
   if (!musicInfo) return
 
-  setStop()
+  backend.player.stop()
   window.app_event.pause()
 
   clearDelayNextTimeout()
@@ -583,25 +583,25 @@ export const playPrev = async(isAutoToggle = false): Promise<void> => {
 export const play = () => {
   window.lx.isPlayedStop &&= false
   if (playMusicInfo.musicInfo == null) return
-  if (isEmpty()) {
+  if (backend.player.isEmpty()) {
     if (createGettingUrlId(playMusicInfo.musicInfo) != gettingUrlId) setMusicUrl(playMusicInfo.musicInfo)
     return
   }
-  setPlay()
+  backend.player.play()
 }
 
 /**
  * 暂停播放
  */
 export const pause = () => {
-  setPause()
+  backend.player.pause()
 }
 
 /**
  * 停止播放
  */
 export const stop = () => {
-  setStop()
+  backend.player.stop()
   setTimeout(() => {
     window.app_event.stop()
   })

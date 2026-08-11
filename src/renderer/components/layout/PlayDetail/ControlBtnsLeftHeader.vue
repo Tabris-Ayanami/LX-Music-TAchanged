@@ -22,7 +22,10 @@ div(:class="$style.header")
 import { ref, onMounted, onBeforeUnmount, useCssModule } from '@common/utils/vueTools'
 import { isFullscreen } from '@renderer/store'
 import { setShowPlayerDetail } from '@renderer/store/player/action'
-import { closeWindow, minWindow, setFullScreen } from '@renderer/utils/ipc'
+import { backend } from '@renderer/backend'
+
+const closeWindow = backend.platform.closeWindow
+const minWindow = backend.platform.minimizeWindow
 
 const dom_btns = ref()
 
@@ -58,7 +61,7 @@ const hide = () => {
 }
 const fullscreenExit = () => {
   dom_btns.value?.classList.remove(cssModule.hover)
-  void setFullScreen(false).then((fullscreen) => {
+  void backend.platform.setFullscreen(false).then((fullscreen) => {
     isFullscreen.value = fullscreen
   })
 }

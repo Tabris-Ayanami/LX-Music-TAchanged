@@ -1,5 +1,5 @@
 import { onBeforeUnmount, watch } from '@common/utils/vueTools'
-import { setVolume as setPlayerVolume, setMute as setPlayerMute } from '@renderer/plugins/player'
+import { backend } from '@renderer/backend'
 
 import { debounce } from '@common/utils'
 import { HOTKEY_PLAYER } from '@common/hotKey'
@@ -12,8 +12,8 @@ export default () => {
 
   setVolume(appSetting['player.volume'])
   setMute(appSetting['player.isMute'])
-  setPlayerVolume(appSetting['player.volume'])
-  setPlayerMute(appSetting['player.isMute'])
+  backend.player.setVolume(appSetting['player.volume'])
+  backend.player.setMuted(appSetting['player.isMute'])
 
   const handleToggleVolumeMute = (_isMute?: boolean) => {
     let muteStatus = _isMute ?? !isMute.value
@@ -45,11 +45,11 @@ export default () => {
 
   watch(volume, _volume => {
     handleSaveVolume(_volume)
-    setPlayerVolume(_volume)
+    backend.player.setVolume(_volume)
   })
   watch(isMute, mute => {
     saveVolumeIsMute(mute)
-    setPlayerMute(mute)
+    backend.player.setMuted(mute)
   })
   watch(() => appSetting['player.volume'], _volume => {
     setVolume(_volume)

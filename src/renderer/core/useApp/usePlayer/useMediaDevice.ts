@@ -4,7 +4,7 @@ import {
 } from '@common/utils/vueTools'
 import { pause } from '@renderer/core/player/action'
 import { dialog } from '@renderer/plugins/Dialog'
-import { setMediaDeviceId } from '@renderer/plugins/player'
+import { backend } from '@renderer/backend'
 import { isPlay } from '@renderer/store/player/state'
 import { appSetting, saveMediaDeviceId } from '@renderer/store/setting'
 
@@ -41,12 +41,12 @@ export default () => {
   const setMediaDevice = async(deviceId: string, label: string) => {
     prevDeviceLabel = label
     // console.log(device)
-    setMediaDeviceId(deviceId).then(() => {
+    backend.player.setOutputDevice(deviceId).then(() => {
       prevDeviceId = deviceId
       saveMediaDeviceId(deviceId)
     }).catch((err: any) => {
       console.log(err)
-      setMediaDeviceId('default').finally(() => {
+      backend.player.setOutputDevice('default').finally(() => {
         prevDeviceId = 'default'
         saveMediaDeviceId('default')
       })

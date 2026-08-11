@@ -62,7 +62,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from '@common/utils/vueTools'
 import { dialog } from '@renderer/plugins/Dialog'
-import { readLocalCoverFile, readLocalMetadata, showSelectDialog, writeLocalMetadata } from '@renderer/utils/ipc'
+import { backend } from '@renderer/backend'
 import LyricsMatchPanel from './LyricsMatchPanel.vue'
 
 const props = defineProps<{
@@ -123,7 +123,7 @@ watch(() => props.show, async visible => {
   error.value = ''
   coverChanged.value = false
   try {
-    metadata.value = await readLocalMetadata(props.musicInfo.meta.filePath)
+    metadata.value = await backend.metadata.read(props.musicInfo.meta.filePath)
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err)
   } finally {
@@ -134,14 +134,14 @@ watch(() => props.show, async visible => {
 const close = () => { if (!saving.value) emit('update:show', false) }
 
 const selectCover = async() => {
-  const result = await showSelectDialog({
+  const result = await backend.platform.select({
     title: '选择歌曲封面',
     properties: ['openFile'],
     filters: [{ name: '图片', extensions: ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'] }],
   })
   if (result.canceled || !result.filePaths[0]) return
   try {
-    metadata.value.coverDataUrl = await readLocalCoverFile(result.filePaths[0])
+    metadata.value.coverDataUrl = await backend.artwork.readLocalFile(result.filePaths[0])
     coverChanged.value = true
   } catch (err) {
     void dialog(err instanceof Error ? err.message : String(err))
@@ -157,7 +157,7 @@ const save = async() => {
   if (saving.value) return
   saving.value = true
   try {
-    const result = await writeLocalMetadata({
+    const result = await backend.metadata.write({
       filePath: props.musicInfo.meta.filePath,
       metadata: metadata.value,
       coverChanged: coverChanged.value,

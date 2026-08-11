@@ -1,7 +1,7 @@
 import { onBeforeUnmount } from '@common/utils/vueTools'
 import { useI18n } from '@renderer/plugins/i18n'
 import { musicInfo, playMusicInfo } from '@renderer/store/player/state'
-import { setStop, isEmpty } from '@renderer/plugins/player'
+import { backend } from '@renderer/backend'
 import { playNext, setMusicUrl } from '@renderer/core/player'
 import { setAllStatus } from '@renderer/store/player/action'
 import { appSetting } from '@renderer/store/setting'
@@ -85,7 +85,7 @@ export default () => {
     if (!musicInfo.id) return
     clearLoadingTimeout()
     if (window.lx.isPlayedStop) return
-    if (!isEmpty()) setStop()
+    if (!backend.player.isEmpty()) backend.player.stop()
     if (playMusicInfo.musicInfo && errCode !== 1 && retryNum < 2) { // 若音频URL无效则尝试刷新2次URL
       // console.log(this.retryNum)
       retryNum++

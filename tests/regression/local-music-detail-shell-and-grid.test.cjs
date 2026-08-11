@@ -77,8 +77,8 @@ test('RG-041: local library management lives in settings', () => {
   )
   assert.match(
     settingLocalLibrarySource,
-    /showSelectDialog\(\{[\s\S]*properties: \['openDirectory', 'multiSelections'\][\s\S]*addLocalMusicLibraryFolders\(filePaths\)[\s\S]*await handleRescan\(\)/m,
-    'Adding folders from settings should register folders and rescan the library',
+    /backend\.platform\.select\(\{[\s\S]*properties: \['openDirectory', 'multiSelections'\][\s\S]*backend\.library\.registerFolders\(filePaths\)[\s\S]*await handleRescan\(\)/m,
+    'Adding folders from settings should use business services to register folders and rescan the library',
   )
   assert.match(
     localMusicUtilsSource,

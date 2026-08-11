@@ -1,5 +1,5 @@
 import { onBeforeUnmount } from '@common/utils/vueTools'
-import { getDuration, getPlaybackRate, getCurrentTime } from '@renderer/plugins/player'
+import { backend } from '@renderer/backend'
 import { isPlay, musicInfo, playMusicInfo } from '@renderer/store/player/state'
 import { playProgress } from '@renderer/store/player/playProgress'
 import { pause, play, playNext, playPrev, stop } from '@renderer/core/player'
@@ -50,9 +50,9 @@ export default () => {
     playbackRate?: number
   } = {}) => {
     navigator.mediaSession.setPositionState({
-      duration: state.duration ?? getDuration(),
-      playbackRate: state.playbackRate ?? getPlaybackRate(),
-      position: state.position ?? getCurrentTime(),
+      duration: state.duration ?? backend.player.getDuration(),
+      playbackRate: state.playbackRate ?? backend.player.getPlaybackRate(),
+      position: state.position ?? backend.player.getPosition(),
     })
   }
 
@@ -101,17 +101,17 @@ export default () => {
   navigator.mediaSession.setActionHandler('seekbackward', details => {
     console.log('seekbackward')
     const seekOffset = details.seekOffset ?? 5
-    setProgress(Math.max(getCurrentTime() - seekOffset, 0))
+    setProgress(Math.max(backend.player.getPosition() - seekOffset, 0))
   })
   navigator.mediaSession.setActionHandler('seekforward', details => {
     console.log('seekforward')
     const seekOffset = details.seekOffset ?? 5
-    setProgress(Math.min(getCurrentTime() + seekOffset, getDuration()))
+    setProgress(Math.min(backend.player.getPosition() + seekOffset, backend.player.getDuration()))
   })
   navigator.mediaSession.setActionHandler('seekto', details => {
     console.log('seekto', details.seekTime)
     if (details.seekTime == null) return
-    let time = Math.min(details.seekTime, getDuration())
+    let time = Math.min(details.seekTime, backend.player.getDuration())
     time = Math.max(time, 0)
     setProgress(time)
   })
