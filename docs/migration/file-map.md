@@ -102,3 +102,17 @@
 | `native/LXTA.Native/Services/PlayerService.cs` | Demo AudioGraph spike | MainPage VM | AudioGraph/MediaPlayer/DSP/FFT | retain as research, rewrite against playback contract |
 | `native/LXTA.Native/Services/UserApiService.cs` | Demo user source | static locator | launches Node process | remove; violates approved stack |
 | `native/LXTA.Native/LXTA.Native.csproj` | Demo build | dotnet | WinUI/WASDK/SQLite/H.NotifyIcon/MSIX tooling | research reference only; new solution uses unpackaged framework-dependent x64 local builds |
+
+## Active Native Slice 1 files
+
+| Native file/group | Feature | Called by | Calls / side effects | Boundary |
+|---|---|---|---|---|
+| `native/src/LXTA.App/App.xaml.cs` | composition root/startup | WinUI runtime | DI registration, main window creation, local crash log | App only |
+| `native/src/LXTA.App/MainWindow.xaml(.cs)` | shell/local library UI | App | title bar, navigation, theme, virtualization, Composition transition | View -> ViewModel |
+| `native/src/LXTA.App/ViewModels/LocalLibraryViewModel.cs` | Slice 1 UI state | MainWindow | cancellable query, grouping, artwork requests | App -> Application ports |
+| `native/src/LXTA.Application/Library/*` | read/query/group use case | ViewModel/tests | pure filtering/sorting/grouping | no WinUI/SQLite |
+| `native/src/LXTA.Domain/Library/*` | immutable library models | Application/infra/App projection | no side effects | Domain |
+| `native/src/LXTA.Storage/Legacy/SqliteLegacyLibraryReader.cs` | legacy library adapter | LocalLibraryService | SQLite read-only query, meta JSON parsing, file-exists projection | Storage implements port |
+| `native/src/LXTA.Platform.Windows/Paths/WindowsAppPaths.cs` | profile paths | DI/infra | resolves legacy DB; creates isolated cache root | Windows platform |
+| `native/src/LXTA.Platform.Windows/Artwork/WindowsArtworkCache.cs` | artwork cache | ViewModel | sidecar/thumbnail read; isolated cache write | Windows platform |
+| `native/tests/LXTA.*.Tests/**` | Slice 1 regression | `dotnet test` | pure 50k fixture and temp SQLite fixture | no production profile writes |

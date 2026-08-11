@@ -88,4 +88,15 @@ Domain references no WinUI, Windows SDK, SQLite, HTTP or JSON implementation.
 Application exposes commands, queries and observable immutable state; it does not expose DB rows or Win32 handles.
 ```
 
-Dependency rules are enforced with project references and architecture tests. Cross-feature communication uses typed application events, not service locator, static globals or an IPC-name surrogate.
+Dependency rules are currently enforced by project references; add dedicated architecture tests when later slices create enough infrastructure edges to justify them. Cross-feature communication uses typed application events, not service locator, static globals or an IPC-name surrogate.
+
+## 7. Active Slice 1 dependency graph
+
+```text
+LXTA.App
+  -> LXTA.Application -> LXTA.Domain
+  -> LXTA.Storage ------^  (read-only SQLite adapter)
+  -> LXTA.Platform.Windows -> LXTA.Application / Domain
+```
+
+The active solution has no `App` reference from infrastructure, no static service locator and no Network/Media/Graphics project yet. Those projects are created only when a vertical slice has real code for them. The old monolithic Demo is outside the solution.

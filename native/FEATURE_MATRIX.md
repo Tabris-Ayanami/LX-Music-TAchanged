@@ -1,23 +1,20 @@
-# WinUI 3 迁移验收矩阵
+# Native implementation snapshot
 
-| 模块 | 当前状态 | 验收入口 |
+权威迁移状态位于 `docs/migration/matrix.json`。本页只描述当前可运行解决方案，防止旧 Demo 的实验代码被误认为已迁移功能。
+
+| Area | Actual status | Evidence |
 |---|---|---|
-| 原数据目录与 SQLite | 已接入 | 启动后歌单/本地音乐数量与 Electron 版比对 |
-| 歌单写操作 | 已接入 | 新建、重命名、删除、移除歌曲、顺序读取 |
-| 本地音乐导入 | 已接入 | 本地音乐 → 导入文件夹 |
-| 本地播放 | 已接入 | 双击/点击歌曲，验证播放、暂停、上一首、下一首、进度、音量 |
-| 播放模式 | 已接入 | 播放栏循环按钮切换列表/单曲/随机 |
-| 在线搜索 | 已接入 | 酷我、酷狗、QQ、网易、咪咕、B 站并发搜索；点击结果播放 |
-| 自定义音源 | 已接入 | 设置 → 在线音源脚本；读取原 `user_api.json` |
-| 歌词 | 已接入 | 数据库 LRC、翻译、罗马音、当前行与桌面歌词同步 |
-| 下载 | 已接入 | 下载管理 → 继续；验证 Range 断点续传 |
-| 同步 | 已接入原生快照协议 | 设置 → 局域网同步服务；令牌、导出/导入、合并写回 |
-| 托盘、媒体键、热键 | 已接入 | 托盘菜单、SMTC、Ctrl+Alt+Space/左右方向键 |
-| 外观 | 已接入 | 设置 → 纯色/Mica/Acrylic、内置主题与原自定义主题 |
-| 更新检查 | 已接入 | 设置 → 自动检查更新 |
-| 发布 | 已接入 | `native/scripts/publish.ps1`；展开目录及含 Node 的 MSIX |
-| 高级音效 | 已接入原生音频图 | 十段 EQ、原生混响、回声；不支持 AudioGraph 的编码自动回退 MediaPlayer |
-| Folia/频谱视觉化 | 已接入 | 播放栏实时 PCM 帧 FFT 频谱，设置可关闭 |
-| 多语言资源 | 已接入基础资源 | 复用原版简中/繁中/英文 JSON，设置内可切换界面文本 |
+| Phase 0 build profile | Implemented | unpackaged, framework-dependent, x64 Debug/Release project properties |
+| Startup / main window | Scaffolded | real WinUI window, custom drag title bar, native caption buttons |
+| Sidebar / local navigation | Implemented for Slice 1 | tracks, albums, artists |
+| Legacy SQLite access | Implemented read-only | `Mode=ReadOnly`, `Pooling=false`, fixture hash test |
+| Tracks browser | Implemented | virtualized list, search, availability filter, sort |
+| Albums / artists | Implemented | grouping, virtualized cards, read-only detail |
+| Artwork | Implemented for browsing | isolated cache, sidecar and Windows thumbnail paths |
+| Theme / motion foundation | Scaffolded | Light/Dark resources and compositor-only view transition |
+| Playback and queue | Not started | explicitly disabled in shell |
+| Online/custom sources/Bilibili | Not started | only future architecture seam retained |
+| Downloads/sync/OpenAPI/Folia | Not started | excluded from solution |
+| Public deployment | Deferred | no packaging/signing/updater project |
 
-验收门槛：Debug/Release 均零警告零错误；冒烟脚本通过；启动后无未处理异常；原数据不被破坏；发布包包含 `Assets/user-api-host.mjs` 与 `Runtime/node.exe`。
+No row in this file implies Electron-vs-Native behavior verification. That status changes only after recorded manual or automated comparison evidence.

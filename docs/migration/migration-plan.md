@@ -27,29 +27,28 @@ The matrix uses only: `pending`, `analysis_complete`, `native_scaffolded`, `impl
 
 Do not advance a whole feature because a demo class with the same name exists.
 
-## 3. Phase 0 — Executable foundation and compatibility fixtures
+## 3. Phase 0 — Minimal executable foundation
 
-**Vertical outcome:** launch a native diagnostic shell that selects an isolated profile, validates/imports a copied legacy fixture read-only and reports readiness. It does not migrate a user-facing feature.
+**Vertical outcome:** launch a native shell on the current development PC, establish dependency direction and test read-only access through an isolated Native data/cache root. It does not implement deployment or unrelated feature infrastructure.
 
 Scope:
 
-- Create the recommended solution/project boundaries, DI composition root, logging, cancellation and test projects.
-- Establish one isolated Native development data root and explicit copied-fixture/legacy-import paths without touching a real Electron profile.
-- Implement read-only schema/settings inspection and fixture cloning.
-- Add behavior-trace schema and Electron fixture-capture helpers kept outside production behavior.
-- Decide minimum supported Windows/architectures and make project/solution build commands consistent.
-- Add PresentMon/ETW-based frame instrumentation and define the 120 Hz reference hardware/run profile before UI motion is accepted.
-- Build the versioned real-script corpus and prove the minimum managed JavaScript host contract for the core custom-source feature.
+- Create only the project boundaries needed by Slice 1, a DI composition root, local crash logging and test projects.
+- Establish one isolated Native development data/cache root and explicit legacy-database override paths.
+- Implement schema-v2 local-library inspection through a SQLite connection that is mechanically read-only.
+- Lock the development build to unpackaged, framework-dependent x64 Debug/Release.
+- Defer behavior-trace tooling and PresentMon/ETW automation until the first slice that can use each tool; their absence does not block the minimal foundation.
+- Preserve `IMusicSourceAdapter`/future Network boundaries conceptually, but do not select or prove a custom-source JavaScript runtime in Phase 0. Compatibility work belongs to its dedicated vertical slice and must not block Slice 1.
 
-Build/run/test: ordinary local framework-dependent x64 Debug/Release builds from the solution; launch unpackaged output to a readiness screen; unit tests for paths/version parsing and integration tests against copied valid/invalid schema-v2 fixtures.
+Build/run/test: ordinary local framework-dependent x64 Debug/Release builds from the solution; launch unpackaged output; unit tests for pure local-library queries and integration tests against copied valid/invalid schema-v2 fixtures.
 
 Exit conditions:
 
-- No Electron/Chromium/WebView2/Node/Vue/React dependency.
-- Dependency rules are mechanically checked.
+- No Electron/Chromium/Node/Vue/React dependency and no WebView2 control/API/application code path. The selected Windows App SDK NuGet graph itself carries Microsoft's WebView2 support package transitively; this framework fact is disclosed rather than treated as permission to use WebView2.
+- Project references enforce the initial dependency direction; a dedicated architecture-test package can be added only when multiple additional infrastructure projects make it useful.
 - No production legacy database is written.
-- Startup stages, failures and shutdown are observable and deterministic.
-- The custom-source compatibility corpus, required APIs and managed-engine gaps are documented; an unproven Node-free runtime is not presented as compatible.
+- Startup failures reach a local diagnostic log and a user-visible library error state.
+- Custom-source compatibility remains a core future requirement, but no custom-source proof, runtime or corpus is a Phase 0 exit condition.
 - No MSIX/App Installer/signing/installer/updater/self-contained/ARM64/x86/clean-machine work is present or required.
 
 ## 4. Slice 1 — Native shell + read-only local library browser
@@ -69,6 +68,12 @@ Scope:
 Build/run/test: standalone runnable app; 10k/50k list fixture; keyboard/DPI/theme/localization UI suite; golden screenshots; startup/library baseline; 120 Hz scrolling/navigation/panel trace with 8.33 ms frame budget.
 
 Exit conditions: shell and local browsing behavior verified; no write statement is reachable; scrolling and common motion sustain the 120 Hz acceptance cadence on reference hardware; Electron data remains untouched.
+
+### 4.1 Implementation record — 2026-08-11
+
+Phase 0 and the implementation portion of Slice 1 now exist in `native/src`: five production projects (`App`, `Application`, `Domain`, `Storage`, `Platform.Windows`) plus Application and Storage tests. The active solution excludes the old Demo. The app reads `userlist_local_music` using SQLite `Mode=ReadOnly`, keeps logs/artwork under `%LOCALAPPDATA%\LX-TA\NativeDev`, and implements virtualized tracks/groups, query/filter/sort, group detail, artwork cache, Light/Dark resources and compositor opacity/translation transitions.
+
+The current feature state is `implemented`, not `behavior_verified` or `performance_verified`. Automated tests cover a 50,000-track query fixture and database hash/no-WAL behavior. A real unpackaged window was launched and remained responsive while reading the current profile, but the user elected to perform UI interaction and visual comparison personally. Golden screenshot review, keyboard/DPI coverage and measured 120 Hz/8.33 ms evidence therefore remain open acceptance work; they are not disguised as completed gates.
 
 ## 5. Slice 2 — Local library ownership: scan, lists and metadata
 
@@ -261,4 +266,4 @@ If implemented: default off; localhost-only by default; explicit token-protected
 
 ## 18. Next-stage recommendation
 
-The next stage should execute only Phase 0 and Slice 1: establish the clean unpackaged x64 solution and deliver a read-only Local Library Browser vertical slice against cloned fixtures. Phase 0 must also produce an executable proof for the managed custom-source compatibility contract. Playback backend format work remains a bounded corpus spike. Do not begin player migration, Folia rendering, public deployment work or C++ unless the scope is explicitly expanded.
+After the user completes the manual Slice 1 UI/visual review, the recommended next vertical slice is Slice 2: local folder selection, expanded-format scanning/refresh, owned Native library storage, metadata/artwork editing and lyric matching with rollback tests. Custom-source compatibility remains core but starts only in its dedicated slice and does not retroactively block this local-library slice. Do not begin playback, Folia, public deployment work or C++ unless the next task explicitly authorizes it.

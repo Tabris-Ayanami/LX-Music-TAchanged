@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>LXTA.Domain</RootNamespace>
+  </PropertyGroup>
+</Project>

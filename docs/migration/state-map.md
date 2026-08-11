@@ -145,3 +145,9 @@ Native target: sensitive session material goes through `ISecureSessionStore`/Pas
 | localStorage | seven UI/update/local-library keys | direct component/store writes |
 
 All Native stores need explicit schema version, atomic writes, cancellation behavior and corruption recovery. Data migration is read/validate/write-new/verify; it must not silently claim successful import after a caught parsing exception.
+
+## 11. Native Slice 1 state implemented
+
+`LocalLibraryViewModel` is the sole UI owner for the Slice 1 projection: immutable `allTracks`, current query text, availability filter, sort, current tracks/albums/artists view, selected group, visible tracks/groups, loading/error status and the active cancellable query. A 120 ms cancellation-aware debounce prevents stale search results from replacing newer input.
+
+The authoritative source remains the Electron SQLite file, opened read-only. Native writes only derived artwork and diagnostics under `%LOCALAPPDATA%\LX-TA\NativeDev`; no player, queue, scan, list mutation, settings import, network session or download state exists in the active solution.

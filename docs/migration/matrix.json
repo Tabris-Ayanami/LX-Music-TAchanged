@@ -7,8 +7,8 @@
     "migration_risk": "high",
     "migration_difficulty": "high",
     "required_tests": ["unpackaged x64 Debug/Release startup", "cold/warm startup", "isolated Native data root", "invalid database recovery", "clean shutdown", "startup performance"],
-    "status": "analysis_complete",
-    "notes": "Initialization order and profile selection must be fixed before any writable migration."
+    "status": "native_scaffolded",
+    "notes": "Minimal unpackaged x64 DI startup and local crash boundary now run. Writable profile migration, activation and shutdown parity remain future work."
   },
   {
     "feature": "Single instance and protocol activation",
@@ -29,8 +29,8 @@
     "migration_risk": "high",
     "migration_difficulty": "high",
     "required_tests": ["show/hide/minimize/maximize", "fullscreen", "close-to-tray", "bounds/DPI restore", "snap layout"],
-    "status": "analysis_complete",
-    "notes": "Frameless chrome and per-monitor DPI require native-specific design."
+    "status": "native_scaffolded",
+    "notes": "Slice 1 has a real WinUI window, Mica backdrop, custom drag region and native caption buttons. Hide/tray/fullscreen/bounds persistence and manual parity evidence remain open."
   },
   {
     "feature": "Sidebar and navigation",
@@ -40,8 +40,8 @@
     "migration_risk": "medium",
     "migration_difficulty": "medium",
     "required_tests": ["all routes", "back/forward", "collapsed state", "keyboard navigation", "unreachable leaderboard route parity"],
-    "status": "analysis_complete",
-    "notes": "Current leaderboard route exists without a current sidebar entry."
+    "status": "native_scaffolded",
+    "notes": "Tracks/albums/artists navigation is implemented for Slice 1; future online routes are visible but honestly disabled. Full route/history parity is not claimed."
   },
   {
     "feature": "Search",
@@ -150,8 +150,8 @@
     "migration_risk": "medium",
     "migration_difficulty": "high",
     "required_tests": ["track search/sort", "album/artist grouping", "detail navigation", "cover fallback", "10k/50k virtualization", "visual parity"],
-    "status": "analysis_complete",
-    "notes": "Recommended first user-visible vertical slice is read-only browsing."
+    "status": "implemented",
+    "notes": "Slice 1 read-only workflow is implemented: real schema-v2 data, virtualized tracks/groups, search, availability filter, five sorts, group detail and artwork cache. User-managed UI/golden/120 Hz comparison remains pending, so this is not behavior_verified."
   },
   {
     "feature": "Metadata editing and artwork",
@@ -161,8 +161,8 @@
     "migration_risk": "critical",
     "migration_difficulty": "very_high",
     "required_tests": ["15 metadata formats", "tag round trip", "artwork", "read-only/corrupt file", "verify/rollback", "cache invalidation"],
-    "status": "analysis_complete",
-    "notes": "Never edit the only media copy without verified rollback."
+    "status": "native_scaffolded",
+    "notes": "Read-only Slice 1 artwork loading/cache is implemented with sidecar and Windows thumbnails. Metadata read/write/edit and rollback remain unimplemented."
   },
   {
     "feature": "Local lyric matching",
@@ -249,8 +249,8 @@
     "migration_risk": "critical",
     "migration_difficulty": "very_high",
     "required_tests": ["120 Hz reference display", "8.33 ms frame budget", "navigation/panel/hover/press", "large-list scrolling", "cover and lyric motion", "animation interruption", "reduced motion", "integrated GPU"],
-    "status": "analysis_complete",
-    "notes": "Cross-cutting priority and exit gate for every visual slice; a 60 Hz-only pass is insufficient."
+    "status": "native_scaffolded",
+    "notes": "Slice 1 view transitions use compositor opacity/offset only. No 120 Hz PresentMon/ETW measurement exists yet; performance_verified is intentionally withheld."
   },
   {
     "feature": "Aura and dynamic backgrounds",
@@ -337,8 +337,8 @@
     "migration_risk": "high",
     "migration_difficulty": "high",
     "required_tests": ["built-in/custom", "edit/persist", "system follow", "shell appearance", "contrast", "light/dark visual parity"],
-    "status": "analysis_complete",
-    "notes": "Extract values from source/screenshots; do not redesign."
+    "status": "native_scaffolded",
+    "notes": "Slice 1 provides Light/Dark XAML resources and an in-shell toggle based on Electron screenshots. System-follow, custom themes, persistence and golden comparison remain open."
   },
   {
     "feature": "Localization",
@@ -436,8 +436,8 @@
     "migration_risk": "critical",
     "migration_difficulty": "very_high",
     "required_tests": ["all 9 tables and 3 indexes", "read/write transactions", "WAL/crash", "invalid/newer schema backup", "cache counts/clear", "concurrent clients"],
-    "status": "analysis_complete",
-    "notes": "Authoritative data and disposable cache require separate deletion policies."
+    "status": "native_scaffolded",
+    "notes": "Local-list tables are read using SQLite Mode=ReadOnly/Pooling=false; integration tests preserve the DB hash and create no WAL/SHM. Other tables, writes, migrations and cache namespaces remain unimplemented."
   },
   {
     "feature": "Network proxy and policy",

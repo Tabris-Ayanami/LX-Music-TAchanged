@@ -117,3 +117,11 @@ Test at 100%, 125%, 150% and 200% scale, resized/narrow window states, light/dar
 6. Prototype Diorama's visual result in 2.5D; use Direct3D/HLSL only when evidence shows it cannot meet parity and the result still meets the 120 Hz target on reference hardware.
 
 The visual-review checklist additionally includes reduced-motion fallbacks, compositor-friendly properties, animation interruption, focus states and image decode/memory budgets. It supports parity and performance; it does not authorize a redesign.
+
+## 10. Slice 1 implementation record
+
+The first Native shell uses XAML for all layout, typography, controls, virtualized song rows and album/artist cards. View changes animate only compositor-owned opacity and `Visual.Offset` with the legacy `.23,1,.32,1` easing family; no layout property is animated. Light/Dark theme dictionaries establish the pale-blue/white and deep navy surfaces visible in the reference screenshots.
+
+No Win2D, Direct3D, HLSL, Three.js port or graphics worker exists. Album/artist browsing currently uses a uniform virtualized card grid rather than the Electron two-dimensional planet layout, and the bottom player-shaped surface is explicitly disabled because playback is outside Slice 1. These are known visual differences, not parity claims.
+
+The code path is suitable for high-refresh compositor presentation, but suitability is not measurement. The user will perform the visual interaction review; a 120 Hz PresentMon/ETW trace and 8.33 ms frame evidence remain required before `performance_verified`.

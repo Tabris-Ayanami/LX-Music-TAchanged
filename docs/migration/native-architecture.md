@@ -196,11 +196,11 @@ Structured local logs include correlation/operation IDs, feature, duration and e
 
 Database migration is recoverable: validate, backup, migrate transactionally, re-open/verify, then mark complete. If validation fails, retain the original and offer an explicit recovery path rather than silently replacing it.
 
-## 10. Existing Native Demo assessment
+## 10. Existing Native Demo assessment and replacement status
 
 ### Current structure and build result
 
-The demo is one `LXTA.Native` WinUI 3 project targeting `net10.0-windows10.0.26100.0`, Windows App SDK 2.3.1, CommunityToolkit.Mvvm, Microsoft.Data.Sqlite and H.NotifyIcon. It contains a `MainWindow`, a large `MainPage`, one main view model, models, static `NativeAppServices` and service classes for player/library/search/download/lyrics/settings/sync/update/theme/hotkeys/desktop lyric.
+The old demo is one `LXTA.Native` WinUI 3 project targeting `net10.0-windows10.0.26100.0`, Windows App SDK 2.3.1, CommunityToolkit.Mvvm, Microsoft.Data.Sqlite and H.NotifyIcon. It contains a `MainWindow`, a large `MainPage`, one main view model, models, static `NativeAppServices` and service classes for player/library/search/download/lyrics/settings/sync/update/theme/hotkeys/desktop lyric.
 
 On 2026-08-10:
 
@@ -208,7 +208,7 @@ On 2026-08-10:
 - `dotnet build native/LXTA.Native.slnx -c Debug -p:Platform=x64 --no-restore` failed because the solution does not define/resolve that solution configuration, not because the project compile failed.
 - No source was changed to obtain either result.
 
-The Demo project still advertises x86/x64/ARM64 and enables MSIX tooling. Those settings belong to the discarded deployment experiment and must not be copied into the new current solution; the active target is unpackaged, framework-dependent and x64-only.
+The old project still advertises x86/x64/ARM64 and enables MSIX tooling. It is now excluded from `native/LXTA.Native.slnx` and retained only for source-level audit. Those settings belong to the discarded deployment experiment and are not copied into the active unpackaged, framework-dependent, x64-only solution.
 
 This verifies compilation of the project under the already restored environment, not runtime behavior or parity.
 
@@ -223,11 +223,30 @@ This verifies compilation of the project under the already restored environment,
 
 The demo directly targets legacy paths/schema in places, caps/approximates data in places, and implements a visually/functionally small shell. Existing code is not evidence that a feature is `implemented`; no demo feature is marked implemented in `matrix.json` without behavior verification.
 
-Estimated reusable product code is low: roughly 10–20% may survive after extracting narrow Windows wrappers or test fixtures. The useful knowledge is higher than the reusable architecture.
+Actual Slice 1 reuse is lower than the earlier estimate: no old service, model, view model, XAML page, static locator or project configuration is part of the new solution. Only `Assets/AppIcon.ico` is linked as an asset. The experiment's source remains outside the solution for audit and can be deleted after the user no longer needs that provenance.
+
+### Active minimal solution after Slice 1
+
+```text
+native/src/
+├─ LXTA.App               WinUI shell, view model, theme and Composition motion
+├─ LXTA.Application       local-library use case, queries and service ports
+├─ LXTA.Domain            immutable local track/group models
+├─ LXTA.Storage           read-only legacy SQLite adapter
+└─ LXTA.Platform.Windows  app paths and Windows artwork cache
+
+native/tests/
+├─ LXTA.Application.Tests
+└─ LXTA.Storage.Tests
+```
+
+`Network`, `Media` and `Graphics` projects are intentionally absent until an authorized vertical slice needs a real implementation boundary. This keeps Phase 0 minimal without changing the eventual dependency direction.
+
+Direct package/source audit of the active app contains no Electron, Chromium, Node, Vue, React or WebView2 application dependency/API. The `Microsoft.WindowsAppSDK` NuGet graph nevertheless includes Microsoft's WebView2 support package and copies support assemblies even when no `WebView2` control is instantiated. This is an upstream WinUI/Windows App SDK packaging characteristic, not an LXTA browser-host design. If “no WebView2” is intended to prohibit even those unused transitive framework bytes, that conflicts with the selected WinUI package and requires a separate framework/package decision; it does not authorize using the control.
 
 ## 11. Explicit architecture decision gates
 
-1. **Custom user source compatibility:** this is a core requirement, not an optional compatibility experiment. Inventory real scripts and establish a managed-engine compatibility corpus in Phase 0. Jint or another managed engine is acceptable only after API/language/async/network/sandbox tests; Node, Chromium and WebView2 remain prohibited. If no compliant engine can run the corpus, stop and report the exact incompatibilities rather than silently replacing the feature.
+1. **Custom user source compatibility:** this is a core requirement, not an optional compatibility experiment, but it does not block Phase 0 or Slice 1. In its dedicated vertical slice, inventory real scripts and establish a managed-engine compatibility corpus. Jint or another managed engine is acceptable only after API/language/async/network/sandbox tests; Node, Chromium and WebView2 remain prohibited. If no compliant engine can run the corpus, stop and report the exact incompatibilities rather than silently replacing the feature.
 2. **Local build profile (decided):** unpackaged, framework-dependent, x64-only Debug/Release builds on the current development PC. This is not an early risk or decision gate. Public packaging, signing, installers, automatic update, self-contained output, other architectures and clean-machine testing remain absent until explicitly requested.
 3. **Playback backend:** decide MediaPlayer/AudioGraph/fallback based on format and DSP corpus, not demo code.
 4. **OpenAPI exposure:** explicitly low priority and optional. Do not implement it until all core slices and parity gates are complete. It may be omitted; if included later, default it off/localhost and protect LAN mode with a token.

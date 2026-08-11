@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.8.3" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.8.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/LXTA.Application/LXTA.Application.csproj" />
+    <ProjectReference Include="../../src/LXTA.Storage/LXTA.Storage.csproj" />
+  </ItemGroup>
+</Project>

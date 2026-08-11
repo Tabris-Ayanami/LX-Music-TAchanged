@@ -1,6 +1,8 @@
 # Electron 参考实现架构
 
 > 分析基线：`native-rewrite`，2026-08-10。本文描述的是当前 Electron 参考实现，不把既有 `native/` Demo 当作需求来源。仓库实际 Git 根目录为 `F:\player\lx-music-desktop-master\lx-music-desktop-master`，截图位于其同级 `截图反馈/`。
+>
+> Native implementation update, 2026-08-11: the active `native/LXTA.Native.slnx` contains the minimal Phase 0 + Slice 1 replacement projects under `native/src`. It reads the legacy local-music list through a read-only adapter and writes only an isolated Native cache/log root. The former `native/LXTA.Native/` experiment is not referenced by the solution.
 
 ## 1. 运行时总览
 

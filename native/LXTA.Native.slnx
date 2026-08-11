@@ -1,3 +1,18 @@
 <Solution>
-  <Project Path="LXTA.Native/LXTA.Native.csproj" />
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/src/">
+    <Project Path="src/LXTA.App/LXTA.App.csproj" />
+    <Project Path="src/LXTA.Application/LXTA.Application.csproj" />
+    <Project Path="src/LXTA.Domain/LXTA.Domain.csproj" />
+    <Project Path="src/LXTA.Platform.Windows/LXTA.Platform.Windows.csproj" />
+    <Project Path="src/LXTA.Storage/LXTA.Storage.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LXTA.Application.Tests/LXTA.Application.Tests.csproj" />
+    <Project Path="tests/LXTA.Storage.Tests/LXTA.Storage.Tests.csproj" />
+  </Folder>
 </Solution>

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>LXTA.App</RootNamespace>
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
+    <EnableMsixTooling>false</EnableMsixTooling>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../LXTA.Application/LXTA.Application.csproj" />
+    <ProjectReference Include="../LXTA.Domain/LXTA.Domain.csproj" />
+    <ProjectReference Include="../LXTA.Platform.Windows/LXTA.Platform.Windows.csproj" />
+    <ProjectReference Include="../LXTA.Storage/LXTA.Storage.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2526" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.3.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="../../LXTA.Native/Assets/AppIcon.ico" Link="Assets/AppIcon.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

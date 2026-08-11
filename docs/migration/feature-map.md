@@ -50,3 +50,7 @@
 ## 覆盖核对
 
 用户指定的 startup、main window、sidebar、search、local/library、metadata、lyrics match、player/queue/immersive、lyrics/desktop lyrics、download、leaderboard/song lists、settings/themes、Bilibili/cookie、comments、OpenAPI、sync、User API、tray/hotkeys/window state、database/cache/network/workers/FFmpeg、React/Vue/Three/R3F/Framer、localization、packaging/update 均已入表。额外加入 dislike、备份、sleep timer、first-run pact、source switching 与播放恢复。
+
+## Native implementation checkpoint
+
+Phase 0 + Slice 1 currently implement only the Native shell and the read-only portion of `Local Music / tracks` plus `Local albums/artists`: real legacy SQLite data, search/filter/sort, virtualization, grouping/detail, artwork cache and Light/Dark shell resources. Scanner, metadata mutation, lyric matching and playback remain separate future features. See `matrix.json` for the authoritative states; no Slice 1 entry is marked `behavior_verified` until the user's manual comparison evidence is recorded.

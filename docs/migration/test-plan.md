@@ -194,7 +194,22 @@ Each vertical slice must archive:
 
 `matrix.json` moves through the allowed states only on this evidence; `done` requires both behavior and performance verification where the feature has a meaningful performance path.
 
-## 8. Current Demo verification record
+## 8. Current Native verification record
+
+On 2026-08-11 the replacement solution was verified on the current Windows development PC:
+
+- `dotnet build native/LXTA.Native.slnx -c Debug -p:Platform=x64 --disable-build-servers`: 0 warnings, 0 errors.
+- `native/scripts/smoke.ps1 -Configuration Release`: full solution 0 warnings/0 errors, then all 6 tests passed.
+- Application unit suite: 4 passed, including search/filter/sort/grouping and a 50,000-track query fixture.
+- Storage integration suite: 2 passed, including schema rejection plus SHA-256 before/after equality and absence of reader-created WAL/SHM files.
+- The unpackaged Debug executable created a responsive WinUI main window and loaded the current profile as `958` local tracks (`LX Music — 本地音乐 · 958 首`). Its title provides a non-invasive readiness signal.
+- Reference screenshots under `截图反馈` were used to derive the sidebar proportions, pale blue glass-like surfaces, dense table, cards, rounded selection treatment and bottom-shell affordance.
+
+The user asked to perform UI control and visual review personally. Consequently, navigation clicks, keyboard/DPI checks, Electron/Native golden capture, artwork inspection and 120 Hz presentation traces are still pending manual acceptance. `matrix.json` deliberately does not use `behavior_verified` or `performance_verified` for Slice 1.
+
+The repository script `native/scripts/smoke.ps1` builds the active solution and runs both suites. It never starts a packaged deployment or writes the Electron profile.
+
+## 9. Retired Demo verification record
 
 The current demo project compiled without restore using:
 
@@ -203,3 +218,5 @@ dotnet build native/LXTA.Native/LXTA.Native.csproj -c Debug -p:Platform=x64 --no
 ```
 
 Result: 0 warnings, 0 errors. Building `native/LXTA.Native.slnx` with `Debug|x64` failed at solution configuration resolution. No runtime/UI parity test was inferred from compilation, and no code was changed to make either command pass.
+
+This record describes the now-unreferenced `native/LXTA.Native/` experiment, not the current solution.

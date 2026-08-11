@@ -161,3 +161,9 @@ The existing Native Demo contains both `MediaPlayer` and `AudioGraph` experiment
 3. Cancellation correctness during rapid switching and stale network URL responses.
 4. Durable range-download recovery and FFmpeg post-processing.
 5. Retaining exact queue/retry/preload semantics while replacing a browser event model.
+
+## 11. Native Slice 1 media boundary implemented
+
+Slice 1 does not initialize any playback backend. It materializes local tracks from `userlist_local_music` through `SqliteLegacyLibraryReader`, parses the legacy `meta` JSON and reports file availability without opening media streams.
+
+`WindowsArtworkCache` checks same-basename JPG/PNG artwork before requesting a Windows `MusicView` thumbnail. Cache keys include media path/size/mtime and, for sidecars, sidecar path/size/mtime. Derived files live only under `%LOCALAPPDATA%\LX-TA\NativeDev\Cache\Artwork`; failures degrade to an initial-letter tile and cannot fail the library load. Metadata writing, scanning and decoder support remain unimplemented.
