@@ -77,6 +77,8 @@ const captureSample = async context => {
     phase: context.phase,
     temperature: context.temperature,
     variant: context.variant,
+    attribution: context.attribution,
+    ...(context.conditions == null ? {} : { conditions: context.conditions }),
     runIndex: context.runIndex,
     elapsedMs: context.elapsedMs,
     rootPid: context.rootPid,

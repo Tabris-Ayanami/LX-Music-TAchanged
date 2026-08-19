@@ -97,11 +97,14 @@ const installVariant = async(client, name) => {
   }
 
   let handlingError
+  const pendingHandlers = new Set()
   const unsubscribe = client.on('Fetch.requestPaused', event => {
     if (handlingError) return Promise.resolve()
-    return Promise.resolve(handlePausedRequest(client, variant, event)).catch(error => {
-      handlingError = error
-    })
+    const pending = Promise.resolve(handlePausedRequest(client, variant, event))
+      .catch(error => { handlingError = error })
+      .finally(() => pendingHandlers.delete(pending))
+    pendingHandlers.add(pending)
+    return pending
   })
   try {
     await client.call('Fetch.enable', {
@@ -121,6 +124,7 @@ const installVariant = async(client, name) => {
       if (cleanedUp) return
       cleanedUp = true
       unsubscribe?.()
+      await Promise.allSettled([...pendingHandlers])
       let disableError
       try {
         await client.call('Fetch.disable')

@@ -145,6 +145,27 @@ test('a rejected Fetch command invalidates the variant without leaking an event-
   await assert.rejects(installed.cleanup(), /variant failed while handling Fetch\.requestPaused/i)
 })
 
+test('cleanup waits for every paused request before declaring attribution healthy', async() => {
+  const client = createFakeClient()
+  let release
+  const pending = new Promise(resolve => { release = resolve })
+  client.call = async(method, params = {}) => {
+    client.calls.push({ method, params })
+    if (method === 'Fetch.failRequest') await pending
+    return {}
+  }
+  const installed = await installVariant(client, 'no-remote-images')
+  const listener = client.listeners.get('Fetch.requestPaused')
+  void listener({ requestId: 'slow', resourceType: 'Image', request: { url: 'https://img.example/slow.jpg' } })
+  let cleaned = false
+  const cleanup = installed.cleanup().then(() => { cleaned = true })
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(cleaned, false)
+  release()
+  await cleanup
+  assert.equal(cleaned, true)
+})
+
 test('application attribution environment requires the master test guard and one specific flag', () => {
   for (const [name, flag] of Object.entries(APPLICATION_VARIANT_FLAGS)) {
     const baseEnvironment = { UNRELATED: 'preserved' }
