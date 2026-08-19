@@ -117,7 +117,7 @@ const createScenarioDrivers = options => {
   const now = options?.now ?? Date.now
   if (typeof now != 'function') throw new TypeError('now must be a function')
   const searchRoute = `#/search?source=${encodeURIComponent(config.search.source.trim())}&type=music&page=1&text=${encodeURIComponent(config.search.keyword.trim())}`
-  const playbackRoute = `#/local?view=tracks&keyword=${encodeURIComponent(copiedMedia.playbackTrack)}`
+  const playbackRoute = '#/local?view=tracks'
   const navigationRecovery = Object.freeze({
     origin: 'actions-complete',
     checkpointsMs: Object.freeze([...config.recoveryCheckpointsMs]),

@@ -7,16 +7,17 @@ const { prepareWorkspace } = require('./workspace.cjs')
 const { collectActiveProfilePaths, excludeInvokerProcessChain } = require('./process-discovery.cjs')
 
 const parseArguments = argumentsList => {
-  const parsed = { mediaRoots: [], copyBrowserCaches: false }
+  const parsed = { mediaRoots: [], copyBrowserCaches: false, verificationMediaSubset: false }
   for (const argument of argumentsList) {
     if (argument.startsWith('--profile-source=')) parsed.profileSource = argument.slice('--profile-source='.length)
     else if (argument.startsWith('--media-root=')) parsed.mediaRoots.push(argument.slice('--media-root='.length))
     else if (argument.startsWith('--output=')) parsed.outputRoot = argument.slice('--output='.length)
     else if (argument === '--copy-browser-caches') parsed.copyBrowserCaches = true
+    else if (argument === '--verification-media-subset') parsed.verificationMediaSubset = true
     else throw new Error(`unknown argument: ${argument}`)
   }
   if (!parsed.profileSource || !parsed.outputRoot || parsed.mediaRoots.length === 0) {
-    throw new Error('usage: --profile-source=<path> --media-root=<path> [--media-root=<path>] --output=<path>')
+    throw new Error('usage: --profile-source=<path> --media-root=<path> [--media-root=<path>] --output=<path> [--verification-media-subset]')
   }
   return parsed
 }

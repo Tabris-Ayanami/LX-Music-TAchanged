@@ -157,6 +157,9 @@ const resolveOptions = options => {
   if (options.activeProfilePaths.some(activePath => typeof activePath !== 'string' || activePath.length === 0)) {
     throw new TypeError('activeProfilePaths must contain paths')
   }
+  if (options.verificationMediaSubset != null && typeof options.verificationMediaSubset !== 'boolean') {
+    throw new TypeError('verificationMediaSubset must be boolean')
+  }
 
   return {
     profileSource: path.resolve(options.profileSource),
@@ -165,6 +168,7 @@ const resolveOptions = options => {
     activeProfilePaths: options.activeProfilePaths.map(activePath => path.resolve(activePath)),
     activityEvidenceMethod: options.activityEvidenceMethod ?? 'injected-active-profile-paths',
     copyBrowserCaches: options.copyBrowserCaches === true,
+    verificationMediaSubset: options.verificationMediaSubset === true,
   }
 }
 
@@ -278,6 +282,7 @@ const prepareWorkspace = async options => {
     const copiedMedia = []
     let copiedLocalTrackCount = 0
     let copiedLocalTrackBytes = 0
+    const excludedLocalRows = []
 
     const copyReferencedFile = async sourceFilePath => {
       const match = findMediaRoot(sourceFilePath, resolved.mediaRoots)
@@ -329,7 +334,19 @@ const prepareWorkspace = async options => {
           throw new Error(`local row ${row.workspaceRowId} contains invalid meta JSON`)
         }
 
-        const trackMapping = await copyReferencedFile(meta.filePath)
+        const trackRoot = findMediaRoot(meta.filePath, resolved.mediaRoots)
+        if (!trackRoot && resolved.verificationMediaSubset) {
+          excludedLocalRows.push({ workspaceRowId: row.workspaceRowId, reason: 'outside-declared-media-roots' })
+          continue
+        }
+        let trackMapping
+        try {
+          trackMapping = await copyReferencedFile(meta.filePath)
+        } catch (error) {
+          if (!resolved.verificationMediaSubset || error.code !== 'ENOENT') throw error
+          excludedLocalRows.push({ workspaceRowId: row.workspaceRowId, reason: 'source-file-missing' })
+          continue
+        }
         meta.filePath = trackMapping.destinationPath
         copiedLocalTrackCount += 1
         copiedLocalTrackBytes += trackMapping.bytes
@@ -349,10 +366,14 @@ const prepareWorkspace = async options => {
         await rewriteOptionalPaths(meta)
         rewrittenRows.push({ meta: JSON.stringify(meta), workspaceRowId: row.workspaceRowId })
     }
+    if (resolved.verificationMediaSubset && rewrittenRows.length === 0) {
+      throw new Error('verification media subset contains no usable local tracks')
+    }
     await runSqliteWorker(resolved.outputRoot, {
       operation: 'rewrite-local',
       databasePath,
       rows: rewrittenRows,
+      excludedRowIds: excludedLocalRows.map(row => row.workspaceRowId),
     })
 
     copiedMedia.sort((left, right) => left.destinationPath.localeCompare(right.destinationPath))
@@ -380,6 +401,15 @@ const prepareWorkspace = async options => {
       })),
       copiedLocalTrackCount,
       copiedLocalTrackBytes,
+      ...(resolved.verificationMediaSubset ? {
+        verificationMediaSubset: {
+          enabled: true,
+          complete: false,
+          includedLocalTrackCount: copiedLocalTrackCount,
+          excludedLocalTrackCount: excludedLocalRows.length,
+          exclusions: excludedLocalRows,
+        },
+      } : {}),
       database: {
         sourcePath: sourceDatabasePath,
         path: databasePath,

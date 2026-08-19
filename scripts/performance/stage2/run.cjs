@@ -97,6 +97,9 @@ const validateWorkspaceManifestForRun = async(manifest, reportDirectory, manifes
   for (const key of ['version', 'outputRoot', 'profileSource', 'profilePath', 'mediaPath', 'nativeProfilePath', 'nativeCachePath', 'manifestPath']) {
     if (String(storedManifest[key]) != String(manifest[key])) throw new Error(`In-memory workspace manifest differs from its file at ${key}`)
   }
+  if (JSON.stringify(storedManifest.verificationMediaSubset ?? null) != JSON.stringify(manifest.verificationMediaSubset ?? null)) {
+    throw new Error('In-memory workspace manifest differs from its file at verificationMediaSubset')
+  }
   const expectedDatabasePath = path.join(canonical.profilePath, 'LxDatas', 'lx.data.db')
   if (normalizeForComparison(manifest.database?.path) != normalizeForComparison(expectedDatabasePath) || !/^[a-f0-9]{64}$/i.test(manifest.database?.sha256 ?? '')) {
     throw new Error('Workspace manifest copied database evidence is incomplete')
@@ -269,7 +272,13 @@ const applyRunConfiguration = async(rendererClient, config) => {
   const observed = await rendererClient.call('Runtime.evaluate', {
     expression: `(async() => {
       window.resizeTo(${requested.width}, ${requested.height})
-      await new Promise(resolve => setTimeout(resolve, 100))
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+        const widthDelta = ${requested.width} - window.outerWidth
+        const heightDelta = ${requested.height} - window.outerHeight
+        if (widthDelta === 0 && heightDelta === 0) break
+        window.resizeBy(widthDelta, heightDelta)
+      }
       return {
         width: window.outerWidth,
         height: window.outerHeight,
@@ -284,7 +293,7 @@ const applyRunConfiguration = async(rendererClient, config) => {
   })
   const bounds = observed.result?.value
   if (bounds?.width != requested.width || bounds?.height != requested.height) {
-    throw new Error(`Electron window bounds differ from requested ${requested.width}x${requested.height}`)
+    throw new Error(`Electron window bounds differ from requested ${requested.width}x${requested.height}: observed ${bounds?.width ?? 'unavailable'}x${bounds?.height ?? 'unavailable'}`)
   }
   return { window: { width: bounds.width, height: bounds.height }, requestedTheme: config.theme, effectiveTheme: bounds.effectiveTheme ?? null }
 }
@@ -355,6 +364,9 @@ const createDefaultDependencies = () => ({
 const validateRunOptions = options => {
   if (!Number.isInteger(options.runs) || options.runs < 1) throw new TypeError('runs must be a positive integer')
   if (options.runs < 5 && options.verificationOnly !== true) throw new Error('formal Stage 2 runs require at least five runs per temperature')
+  if (options.workspaceManifest?.verificationMediaSubset?.enabled === true && options.verificationOnly !== true) {
+    throw new Error('a verification media subset can only run with --verification-only=true')
+  }
   if (!Array.isArray(options.scenarios) || options.scenarios.length == 0) throw new Error('at least one scenario is required')
   if (!Array.isArray(options.variants) || options.variants.length == 0) throw new Error('at least one variant is required')
   for (const variantName of options.variants) getVariant(variantName)

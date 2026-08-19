@@ -21,11 +21,13 @@ const run = () => {
     }
     if (request.operation === 'rewrite-local') {
       const update = db.prepare('UPDATE my_list_music_info SET meta = ? WHERE rowid = ?')
-      db.transaction(rows => {
+      const remove = db.prepare("DELETE FROM my_list_music_info WHERE rowid = ? AND source = 'local'")
+      db.transaction((rows, excludedRowIds) => {
         for (const row of rows) update.run(row.meta, row.workspaceRowId)
-      })(request.rows)
+        for (const rowId of excludedRowIds) remove.run(rowId)
+      })(request.rows, request.excludedRowIds ?? [])
       db.pragma('wal_checkpoint(TRUNCATE)')
-      return { updatedRowCount: request.rows.length }
+      return { updatedRowCount: request.rows.length, deletedRowCount: request.excludedRowIds?.length ?? 0 }
     }
     throw new Error(`unknown SQLite worker operation: ${request.operation}`)
   } finally {

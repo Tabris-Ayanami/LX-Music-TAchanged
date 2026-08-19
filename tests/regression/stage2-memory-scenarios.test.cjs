@@ -274,6 +274,10 @@ test('playback variants reuse one copied local track and restore every changed s
     .filter(call => call.action == 'play-copied-track')
     .map(call => call.payload.trackPath)
   assert.deepEqual(tracks, Array(4).fill(copiedMedia.playbackTrack))
+  assert.deepEqual(
+    page.calls.filter(call => call.action == 'navigate').map(call => call.payload.route),
+    Array(4).fill('#/local?view=tracks'),
+  )
   assert.equal(
     page.calls.filter(call => call.action == 'enter-immersive-player').length,
     3,

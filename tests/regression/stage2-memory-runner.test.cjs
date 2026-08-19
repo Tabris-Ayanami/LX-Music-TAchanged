@@ -111,6 +111,17 @@ test('runner records five cold and five warm launches without conflating tempera
   }
 })
 
+test('a verification media subset cannot be reported as a formal Stage 2 run', async() => {
+  await assert.rejects(runMatrix({
+    outputDirectory: 'ignored',
+    workspaceManifest: { verificationMediaSubset: { enabled: true, complete: false } },
+    config: scenarioConfig,
+    scenarios: ['local-tracks'],
+    variants: ['control'],
+    runs: 5,
+  }), /verification-only/i)
+})
+
 test('failure preserves raw samples and closes only runner-owned launches', async() => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'lx-stage2-runner-fail-'))
   const closed = []
@@ -149,6 +160,7 @@ test('Fetch attribution is active before the probe reload and its controls reach
     async call(method, params = {}) {
       calls.push(method)
       if (method == 'Runtime.evaluate' && params.expression?.includes('window.resizeTo')) {
+        assert.match(params.expression, /window\.resizeBy\(widthDelta, heightDelta\)/)
         return { result: { value: { width: 1280, height: 800, effectiveTheme: { documentTheme: '', prefersDark: false } } } }
       }
       if (method == 'Runtime.evaluate') return { result: { value: { readyState: 'complete', probeReady: true } } }
@@ -211,6 +223,7 @@ test('runner rejects a manifest or report path that can escape or overlap the pr
     const manifest = await createWorkspaceManifest(root)
     await validateWorkspaceManifestForRun(manifest, path.join(root, 'reports'), manifest.manifestPath)
     await assert.rejects(validateWorkspaceManifestForRun({ ...manifest, nativeCachePath: manifest.profileSource }, path.join(root, 'reports'), manifest.manifestPath), /inside the prepared workspace|differs from its file/i)
+    await assert.rejects(validateWorkspaceManifestForRun({ ...manifest, verificationMediaSubset: { enabled: true, complete: false } }, path.join(root, 'reports'), manifest.manifestPath), /differs from its file.*verificationMediaSubset/i)
     await assert.rejects(validateWorkspaceManifestForRun(manifest, path.join(manifest.profileSource, 'report'), manifest.manifestPath), /overlap.*source profile/i)
   } finally {
     await fs.rm(root, { recursive: true, force: true })

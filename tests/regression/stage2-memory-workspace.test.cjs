@@ -248,6 +248,35 @@ test('a local database path outside declared media roots aborts without leaving 
   await assert.rejects(fs.stat(fixture.outputRoot), { code: 'ENOENT' })
 })
 
+test('verification subset removes uncopied local rows and records exclusions', async t => {
+  const outsideRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'lx-stage2-subset-outside-'))
+  t.after(() => fs.rm(outsideRoot, { recursive: true, force: true }))
+  const outsideTrack = path.join(outsideRoot, 'outside.flac')
+  await fs.writeFile(outsideTrack, 'excluded-from-verification-subset')
+  const fixture = await makeFixture(t, { outsideLocalPath: outsideTrack })
+
+  const manifest = await prepareWorkspace({
+    profileSource: fixture.profileSource,
+    outputRoot: fixture.outputRoot,
+    mediaRoots: [fixture.mediaRoot],
+    activeProfilePaths: [],
+    verificationMediaSubset: true,
+  })
+
+  assert.deepEqual(manifest.verificationMediaSubset, {
+    enabled: true,
+    complete: false,
+    includedLocalTrackCount: 1,
+    excludedLocalTrackCount: 1,
+    exclusions: [{ workspaceRowId: 1, reason: 'outside-declared-media-roots' }],
+  })
+  assert.equal(manifest.copiedLocalTrackCount, 1)
+  const copiedRows = readRows(manifest.database.path)
+  assert.equal(copiedRows.some(row => row.id === 'local-a'), false)
+  assert.equal(copiedRows.some(row => row.id === 'local-b'), true)
+  assert.equal(copiedRows.some(row => row.meta.includes(outsideTrack)), false)
+})
+
 test('symlink and junction media inputs are rejected before copying', async t => {
   const fixture = await makeFixture(t)
   const targetRoot = path.join(fixture.fixtureRoot, 'junction-target')
