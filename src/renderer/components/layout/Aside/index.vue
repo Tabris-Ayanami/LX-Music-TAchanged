@@ -10,7 +10,7 @@
               </svg>
             </span>
           </button>
-          <router-link to="/search" :class="$style.brandLink">
+          <router-link to="/discover" :class="$style.brandLink">
             <strong :class="$style.brandText">LX MUSIC</strong>
           </router-link>
         </div>

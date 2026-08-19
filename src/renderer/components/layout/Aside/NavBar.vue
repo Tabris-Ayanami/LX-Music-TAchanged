@@ -1,16 +1,6 @@
 <template>
   <div ref="menuRef" :class="[$style.menu, { [$style.collapsed]: isSidebarCollapsed }]" @mouseleave="handleMenuLeave">
-    <span v-show="pillVisible" :class="[$style.navPill, { [$style.floating]: pillFloating, [$style.tracking]: pillTracking }]" :style="pillStyle" aria-hidden="true">
-      <LiquidGlassLayer
-        variant="capsule"
-        active
-        interactive
-        :highlight="false"
-        :displacement-scale="pillFloating ? 28 : 22"
-        :blur-amount="pillFloating ? 1.15 : .95"
-        corner-radius="inherit"
-      />
-    </span>
+    <span v-show="pillVisible" :class="[$style.navPill, { [$style.floating]: pillFloating, [$style.tracking]: pillTracking }]" :style="pillStyle" aria-hidden="true" />
     <section v-for="section in menus" :key="section.title" :class="$style.section">
       <p :class="$style.sectionTitle" :aria-hidden="isSidebarCollapsed">{{ section.title }}</p>
       <ul :class="$style.list" role="toolbar">
@@ -45,7 +35,6 @@ import { useRoute } from '@common/utils/vueRouter'
 import { appSetting } from '@renderer/store/setting'
 import { isSidebarCollapsed } from '@renderer/store/ui'
 import { useI18n } from '@root/lang'
-import LiquidGlassLayer from '@renderer/components/common/liquidGlass/LiquidGlassLayer.vue'
 
 const route = useRoute()
 const t = useI18n()
@@ -99,12 +88,12 @@ const menus = computed(() => [
     title: 'DISCOVER',
     items: [
       {
-        key: 'search',
-        to: '/search',
-        icon: '#icon-search-2',
-        iconSize: '0 0 425.2 425.2',
-        name: 'Search',
-        label: '搜索',
+        key: 'discover',
+        to: '/discover',
+        icon: '#icon-compass',
+        iconSize: '0 0 24 24',
+        name: 'Discover',
+        label: '发现',
       },
       {
         key: 'songList',
@@ -167,7 +156,7 @@ const pillFloating = computed(() => !!hoverKey.value && hoverKey.value != active
 const pillStyle = computed(() => ({
   width: `${pillRect.value.width}px`,
   height: `${pillRect.value.height}px`,
-  transform: `translate3d(${pillRect.value.x}px, ${pillRect.value.y}px, 0)`,
+  transform: `translate3d(${pillRect.value.x}px, ${pillRect.value.y}px, 0) ${pillFloating.value ? 'translateY(-2px)' : 'translateY(0)'}`,
 }))
 
 const currentPillKey = computed(() => hoverKey.value || activeItemKey.value)
@@ -322,28 +311,42 @@ onBeforeUnmount(() => {
   top: 0;
   z-index: 0;
   border-radius: var(--sidebar-nav-radius);
-  corner-shape: squircle;
   pointer-events: none;
   will-change: transform, width, height;
   overflow: hidden;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 84%, #fff 16%), color-mix(in srgb, var(--color-primary) 66%, #2c5fc7 34%));
+    linear-gradient(180deg, color-mix(in srgb, var(--color-primary) 92%, #fff 8%), color-mix(in srgb, var(--color-primary) 74%, #0d7a52 26%));
   box-shadow:
-    0 12px 28px color-mix(in srgb, var(--color-primary) 24%, rgba(16, 26, 44, .18)),
-    inset 0 1px 0 rgba(255, 255, 255, .24),
-    inset 0 -1px 0 rgba(0, 0, 0, .14);
+    inset 0 1px 0 rgba(255, 255, 255, .35),
+    inset 0 -1px 0 rgba(0, 0, 0, .12),
+    0 4px 14px color-mix(in srgb, var(--color-primary) 24%, rgba(20, 28, 44, .12));
   transition:
     transform var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     height var(--sidebar-motion-duration) var(--sidebar-motion-curve),
-    box-shadow var(--motion-duration-normal) var(--motion-ease-out);
+    box-shadow var(--motion-duration-normal) var(--motion-ease-out),
+    background var(--motion-duration-normal) var(--motion-ease-out);
+}
+
+.navPill::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  border-radius: var(--sidebar-nav-radius) var(--sidebar-nav-radius) 0 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .32), rgba(255, 255, 255, 0));
+  pointer-events: none;
 }
 
 .navPill.floating {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-primary) 96%, #fff 4%), color-mix(in srgb, var(--color-primary) 80%, #0d7a52 20%));
   box-shadow:
-    0 18px 36px color-mix(in srgb, var(--color-primary) 28%, rgba(13, 23, 42, .24)),
-    inset 0 1px 0 rgba(255, 255, 255, .26),
-    inset 0 -1px 0 rgba(0, 0, 0, .14);
+    inset 0 1px 0 rgba(255, 255, 255, .4),
+    inset 0 -1px 0 rgba(0, 0, 0, .12),
+    0 8px 20px color-mix(in srgb, var(--color-primary) 28%, rgba(20, 28, 44, .14));
 }
 
 .navPill.tracking {
@@ -411,20 +414,19 @@ onBeforeUnmount(() => {
     color @transition-fast;
 
   &:hover {
-    color: #fff;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, .28);
+    color: var(--shell-text, var(--color-font));
   }
 
   &:focus-visible {
-    color: #fff;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, .28);
+    color: var(--shell-text, var(--color-font));
     outline: none;
   }
 }
 
 .active {
   color: #fff;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, .28);
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .18);
 }
 
 .iconWrap {

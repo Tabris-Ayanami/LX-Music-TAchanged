@@ -1,4 +1,4 @@
-export const BACKEND_INTERFACE_VERSION = '0.1.0' as const
+export const BACKEND_INTERFACE_VERSION = '0.2.0' as const
 
 export type StableId = string
 export type JobId = StableId
@@ -9,7 +9,10 @@ export type BackendCapability =
   | 'player.web-audio'
   | 'library.legacy-electron'
   | 'metadata.legacy-electron'
+  | 'metadata.native-shadow'
+  | 'metadata.native'
   | 'artwork.legacy-electron'
+  | 'artwork.native-variants'
   | 'download.legacy-electron'
   | 'source.javascript'
   | 'settings.electron'
@@ -209,7 +212,9 @@ export interface MetadataService {
 
 export interface ArtworkService {
   readLocalFile: (filePath: string, signal?: AbortSignal) => Promise<string>
-  getLocalTrackArtwork: (filePath: string, signal?: AbortSignal) => Promise<string | null>
+  getLocalTrackArtwork: (request: LX.LocalMusic.ArtworkVariantRequest, signal?: AbortSignal) => Promise<LX.LocalMusic.ArtworkHandle | null>
+  getExternalArtworkPreview: (request: LX.LocalMusic.ExternalArtworkRequest, signal?: AbortSignal) => Promise<LX.LocalMusic.ArtworkHandle>
+  invalidate: (filePath: string, signal?: AbortSignal) => Promise<void>
 }
 
 export interface DownloadService {

@@ -320,25 +320,21 @@ onBeforeUnmount(() => {
     inset: 1px 2px;
     z-index: -1;
     border-radius: inherit;
-    corner-shape: squircle;
     background:
-      linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 78%, #fff 22%), color-mix(in srgb, var(--color-primary) 58%, #2c5fc7 42%));
+      linear-gradient(180deg, color-mix(in srgb, var(--color-primary) 92%, #fff 8%), color-mix(in srgb, var(--color-primary) 74%, #0d7a52 26%));
     box-shadow:
-      0 12px 24px color-mix(in srgb, var(--color-primary) 20%, rgba(16, 26, 44, .16)),
-      inset 0 1px 0 rgba(255, 255, 255, .18),
+      inset 0 1px 0 rgba(255, 255, 255, .35),
       inset 0 -1px 0 rgba(0, 0, 0, .12);
     opacity: 0;
     transform: scale(.96);
     transition:
       opacity var(--motion-duration-normal) var(--motion-ease-out),
-      transform var(--motion-duration-normal) var(--motion-ease-out),
-      box-shadow var(--motion-duration-normal) var(--motion-ease-out);
+      transform var(--motion-duration-normal) var(--motion-ease-out);
     pointer-events: none;
   }
 
   &:hover {
-    color: #fff;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, .28);
+    color: var(--shell-text, var(--color-font));
 
     &::before {
       opacity: .92;
@@ -353,7 +349,8 @@ onBeforeUnmount(() => {
 
 .active {
   color: #fff;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, .28);
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .18);
 
   &::before {
     opacity: 1;
@@ -374,12 +371,10 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 18px rgba(35, 52, 78, 0.12);
   transition:
     width var(--sidebar-motion-duration) var(--sidebar-motion-curve),
     height var(--sidebar-motion-duration) var(--sidebar-motion-curve),
-    border-radius var(--sidebar-motion-duration) var(--sidebar-motion-curve),
-    box-shadow @transition-fast;
+    border-radius var(--sidebar-motion-duration) var(--sidebar-motion-curve);
 }
 
 .cover {

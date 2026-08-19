@@ -15,23 +15,23 @@ const toolbarSearchInputSource = fs.readFileSync(toolbarSearchInputPath, 'utf8')
 test('RG-023: search suggestions expand the toolbar shell into a blurred glass panel', () => {
   assert.match(
     searchInputSource,
-    /:class="\[\$style\.search, \{\[\$style\.active\]: focus\}, \{\[\$style\.expanded\]: visibleList\}/m,
+    /\$style\.goo,[\s\S]*\[\$style\.active\]: focus,[\s\S]*\[\$style\.expanded\]: visibleList/m,
     'The search shell should track a dedicated expanded state when suggestion/history rows are visible',
   )
   assert.match(
     searchInputSource,
-    /<LiquidGlassLayer[\s\S]*:active="true"[\s\S]*:blur-amount="visibleList \? 1\.18 : 0\.9"[\s\S]*:saturation="visibleList \? 168 : 148"[\s\S]*:over-light="visibleList"/m,
-    'The search shell should stay visible in its compact glass state and only deepen blur while the expanded suggestion panel is open',
+    /<filter id="lx-search-goo">[\s\S]*<feGaussianBlur[\s\S]*<feColorMatrix[\s\S]*<feComposite/m,
+    'The search shell should keep the dedicated goo filter used by the capsule and detached action button',
   )
   assert.match(
     searchInputSource,
-    /\.list \{[\s\S]*&::before \{[\s\S]*backdrop-filter: blur\(32px\) saturate\(184%\);[\s\S]*opacity: 0;[\s\S]*\}\s*[\s\S]*ul \{[\s\S]*opacity: 0;[\s\S]*transform: translateY\(-10px\);/m,
-    'The suggestion list should render its own blurred glass panel and stagger the content reveal behind the expanding shell',
+    /\.list \{[\s\S]*z-index: 10;[\s\S]*background: var\(--search-panel-bg,[\s\S]*border: 1px solid var\(--shell-divider,/m,
+    'The suggestion list should render as a separate readable surface above the goo layer',
   )
   assert.match(
     searchInputSource,
-    /\.expanded \{[\s\S]*\.list \{[\s\S]*&::before \{[\s\S]*opacity: 1;[\s\S]*transform: scaleY\(1\);[\s\S]*\}[\s\S]*ul \{[\s\S]*opacity: 1;[\s\S]*transform: translateY\(0\);/m,
-    'The expanded search state should animate the shell blur and content separately to avoid text appearing before the glass panel',
+    /:global\(\.goo-item-enter-from\) \{[\s\S]*translateY\(10px\) scale\(\.96\);[\s\S]*filter: blur\(6px\);/m,
+    'Suggestion items should keep the stagger-compatible reveal motion',
   )
 })
 

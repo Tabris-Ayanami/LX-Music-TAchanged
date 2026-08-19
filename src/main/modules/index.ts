@@ -6,6 +6,7 @@ import registerAppMenu from './appMenu'
 import registerWinLyric from './winLyric'
 import registerCommonRenderers from './commonRenderers'
 import registerBili from './bili'
+import registerNativeCore from './nativeCore'
 
 let isRegistered = false
 export default () => {
@@ -18,5 +19,6 @@ export default () => {
   registerAppMenu()
   registerWinLyric()
   registerBili()
+  registerNativeCore()
   isRegistered = true
 }

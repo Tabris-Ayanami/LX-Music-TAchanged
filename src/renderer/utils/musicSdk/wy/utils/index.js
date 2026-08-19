@@ -1,6 +1,15 @@
 import { httpFetch } from '../../../request'
 import { eapi } from './crypto'
 
+/**
+ * 读取已保存的网易云 Cookie（账号管理中粘贴）
+ * @returns {string}
+ */
+export const getWYCookie = () => {
+  const cookie = window?.lxData?.appSetting?.['account.wy.cookie']?.trim() || ''
+  return cookie
+}
+
 export const eapiRequest = (url, data) => {
   return httpFetch('http://interface.music.163.com/eapi/batch', {
     method: 'post',

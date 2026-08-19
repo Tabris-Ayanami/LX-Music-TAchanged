@@ -5,8 +5,8 @@
         <tag-list :source="source" :tag-id="tagId" :sort-id="sortId" />
         <sort-tab :source="source" :tag-id="tagId" :sort-id="sortId" />
       </div>
-      <base-btn :class="$style.btn" outline min @click="visibleOpenSongListModal = true">{{ $t('songlist__import_input_show_btn') }}</base-btn>
-      <base-selection :model-value="source" :class="$style.select" :list="sourceList" item-key="id" item-name="name" @update:model-value="handleToggleSource" />
+      <origin-chip :class="$style.btn" @click="visibleOpenSongListModal = true">{{ $t('songlist__import_input_show_btn') }}</origin-chip>
+      <liquid-glass-segmented-nav :model-value="source" :class="$style.select" :items="sourceItems" @change="handleToggleSource" />
     </div>
     <list-view :source="source" :tag-id="tagId" :sort-id="sortId" :page="page" />
     <open-list-modal v-model="visibleOpenSongListModal" :source-list="sourceList" />
@@ -20,6 +20,8 @@ import TagList from './components/TagList.vue'
 import SortTab from './components/SortTab.vue'
 import OpenListModal from './components/OpenListModal.vue'
 import ListView from './ListView.vue'
+import LiquidGlassSegmentedNav from '@renderer/components/common/liquidGlass/LiquidGlassSegmentedNav.vue'
+import OriginChip from '@renderer/components/common/OriginChip.vue'
 import { sources, listInfo, isVisibleListDetail } from '@renderer/store/songList/state'
 import { sourceNames } from '@renderer/store'
 import { useRoute, useRouter } from '@common/utils/vueRouter'
@@ -81,6 +83,8 @@ export default {
     SortTab,
     ListView,
     OpenListModal,
+    LiquidGlassSegmentedNav,
+    OriginChip,
   },
   beforeRouteEnter: verifyQueryParams,
   beforeRouteUpdate: verifyQueryParams,
@@ -89,6 +93,9 @@ export default {
 
     const sourceList = computed(() => {
       return sources.map(s => ({ id: s, name: sourceNames.value[s] }))
+    })
+    const sourceItems = computed(() => {
+      return sources.map(s => ({ value: s, label: sourceNames.value[s] }))
     })
     const router = useRouter()
     const route = useRoute()
@@ -109,6 +116,7 @@ export default {
       sortId,
       page,
       sourceList,
+      sourceItems,
       handleToggleSource,
       visibleOpenSongListModal,
     }
@@ -156,17 +164,22 @@ export default {
 
 .btn {
   flex: none;
-  color: var(--shell-button-text, var(--color-font)) !important;
-  border: 1px solid var(--shell-control-border) !important;
-  border-radius: 8px !important;
-  background: var(--shell-button-bg) !important;
-  box-shadow: none !important;
-  transition: transform @transition-fast, background-color @transition-fast, border-color @transition-fast;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--shell-control-border, color-mix(in srgb, var(--color-primary) 20%, rgba(255, 255, 255, 0.72)));
+  background: var(--shell-control, color-mix(in srgb, var(--color-primary) 10%, rgba(255, 255, 255, 0.82)));
+  color: var(--color-font);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform @transition-fast;
+
   &:hover {
-    color: var(--shell-button-text, var(--color-font)) !important;
-    background: var(--shell-button-bg-hover) !important;
     transform: translateY(-1px);
-    border-color: color-mix(in srgb, var(--color-primary) 48%, var(--shell-control-border)) !important;
   }
 }
 

@@ -104,15 +104,20 @@ const handleSubmit = () => {
   flex-flow: row nowrap;
 }
 .select {
-  width: auto;
+  width: 110px;
+  flex: none;
   :global {
     .label-content {
+      width: 110px;
       height: 100%;
       border-top-right-radius: 0;
       border-bottom-right-radius: 0;
+      padding: 0 6px 0 10px;
     }
 
     .selection-list {
+      width: auto;
+      min-width: 110px;
       li {
         // background-color: var(--color-main-background);
         text-align: center;

@@ -71,6 +71,14 @@ dd
   div(v-if="appSetting['playDetail.background'] == 'blur'" :class="$style.blurControl")
     label(:for="$style.backgroundBlur") {{ $t('setting__play_detail_background_blur_amount', { value: appSetting['playDetail.backgroundBlur'] }) }}
     base-slider-bar(:id="$style.backgroundBlur" :value="appSetting['playDetail.backgroundBlur']" :min="8" :max="64" :step="1" @change="updateSetting({ 'playDetail.backgroundBlur': $event })")
+    span(:class="$style.blurDynamicOption")
+      base-checkbox(
+        id="setting_play_detail_background_dynamic_cover"
+        :model-value="appSetting['playDetail.backgroundUseDynamicCover']"
+        :label="$t('setting__play_detail_background_dynamic_cover')"
+        @update:model-value="updateSetting({ 'playDetail.backgroundUseDynamicCover': $event })"
+      )
+      small {{ $t('setting__play_detail_background_dynamic_cover_tip') }}
 
 dd
   h3#play_detail_layout {{ $t('setting__play_detail_layout') }}
@@ -679,17 +687,33 @@ export default {
 }
 
 .blurControl {
-  max-width: 520px;
+  max-width: 720px;
   display: flex;
   align-items: center;
   gap: 14px;
   margin-top: 14px;
+  flex-wrap: wrap;
   color: var(--color-font-label);
   font-size: 12px;
 }
 
 .blurControl :global(.base-slider-bar) {
   flex: 1;
+  min-width: 180px;
+}
+
+.blurDynamicOption {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  color: var(--color-font-label);
+  font-size: 12px;
+
+  small {
+    width: 100%;
+    font-size: 11px;
+  }
 }
 
 @media (max-width: 980px) {

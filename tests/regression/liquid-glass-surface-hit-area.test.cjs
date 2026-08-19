@@ -13,18 +13,18 @@ const toolbarSource = fs.readFileSync(toolbarPath, 'utf8')
 test('RG-019: glass search and toolbar surfaces keep live controls above the overlay', () => {
   assert.match(
     searchInputSource,
-    /<div :class="\[\$style\.search,[\s\S]*>\s*<LiquidGlassLayer[\s\S]*variant="search"[\s\S]*:active="true"[\s\S]*:interactive="true"/m,
-    'The search shell should mount the glass layer inside the existing host instead of replacing the input surface',
+    /\$style\.goo,[\s\S]*\[\$style\.collapsed\]: !expanded[\s\S]*@click="handleMainClick"/m,
+    'The goo shell should keep the existing host as the interaction owner',
   )
   assert.match(
     searchInputSource,
-    /\.form \{[\s\S]*position: relative;[\s\S]*z-index: 1;/m,
-    'Search form controls should stay above the glass overlay so focus, typing, and action buttons remain usable',
+    /\.goo:not\(\.collapsed\) \{[\s\S]*\.input \{[\s\S]*pointer-events: auto;[\s\S]*\}/m,
+    'The input should become interactive only after the compact shell expands',
   )
   assert.match(
     searchInputSource,
-    /\.list \{[\s\S]*position: relative;[\s\S]*z-index: 1;/m,
-    'Suggestion lists should render above the glass layer so hover and click selection continue to work when the panel expands',
+    /\.list \{[\s\S]*position: absolute;[\s\S]*z-index: 10;/m,
+    'Suggestion lists should render above the goo layer so hover and click selection remain usable',
   )
   assert.doesNotMatch(
     toolbarSource,

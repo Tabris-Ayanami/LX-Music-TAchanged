@@ -738,6 +738,14 @@ export const readLocalCoverFile = async(filePath: string) => {
   return rendererInvoke<string, string>(WIN_MAIN_RENDERER_EVENT_NAME.read_local_cover_file, filePath)
 }
 
+export const getLocalArtworkVariant = async(request: LX.LocalMusic.ArtworkVariantRequest) => {
+  return rendererInvoke<LX.LocalMusic.ArtworkVariantRequest, LX.LocalMusic.ArtworkHandle | null>(WIN_MAIN_RENDERER_EVENT_NAME.get_local_artwork_variant, request)
+}
+
+export const invalidateLocalArtwork = async(filePath: string) => {
+  return rendererInvoke<string>(WIN_MAIN_RENDERER_EVENT_NAME.invalidate_local_artwork, filePath)
+}
+
 /**
  * 退出应用
  */

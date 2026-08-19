@@ -27,7 +27,10 @@ const capabilities = new Set<BackendCapability>([
   'player.web-audio',
   'library.legacy-electron',
   'metadata.legacy-electron',
+  'metadata.native-shadow',
+  'metadata.native',
   'artwork.legacy-electron',
+  'artwork.native-variants',
   'download.legacy-electron',
   'source.javascript',
   'settings.electron',
@@ -146,7 +149,26 @@ export class ElectronBackendAdapter implements BackendApi {
 
   readonly artwork: BackendApi['artwork'] = {
     readLocalFile: async(filePath, signal) => call(() => legacyIpc.readLocalCoverFile(filePath), signal),
-    getLocalTrackArtwork: async(filePath, signal) => call(async() => (await window.lx.worker.main.getMusicFilePic(filePath)) || null, signal),
+    getLocalTrackArtwork: async(request, signal) => call(async() => {
+      if (window.lxData.appSetting['backend.artwork'] == 'native') {
+        try { return await legacyIpc.getLocalArtworkVariant(request) } catch {}
+      }
+      const value = await window.lx.worker.main.getMusicFilePic(request.filePath)
+      if (!value) return null
+      const url = /^(?:https?:|data:|blob:|file:)/i.test(value) ? value : `file:///${value.replaceAll('\\', '/')}`
+      return { id: request.filePath, url, mimeType: '', width: request.size, height: request.size, byteLength: 0, sourceFingerprint: 'legacy' }
+    }, signal),
+    getExternalArtworkPreview: async(request, signal) => call(async() => {
+      if (window.lxData.appSetting['backend.artwork'] == 'native') {
+        try {
+          const value = await legacyIpc.getLocalArtworkVariant({ filePath: request.mediaFilePath, externalArtworkPath: request.artworkFilePath, size: request.size })
+          if (value) return value
+        } catch {}
+      }
+      const url = await legacyIpc.readLocalCoverFile(request.artworkFilePath)
+      return { id: request.artworkFilePath, url, mimeType: '', width: request.size, height: request.size, byteLength: 0, sourceFingerprint: 'legacy' }
+    }, signal),
+    invalidate: async(filePath, signal) => call(() => legacyIpc.invalidateLocalArtwork(filePath), signal),
   }
 
   readonly download: BackendApi['download'] = {

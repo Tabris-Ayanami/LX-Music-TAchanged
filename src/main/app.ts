@@ -125,6 +125,16 @@ export const applyElectronEnvParams = () => {
 }
 
 export const setUserDataPath = () => {
+  const testUserDataPath = globalThis.process.env.LX_TEST_USER_DATA_PATH
+  if (testUserDataPath) {
+    const isolatedPath = path.resolve(testUserDataPath)
+    if (!existsSync(isolatedPath)) mkdirSync(isolatedPath, { recursive: true })
+    app.setPath('userData', isolatedPath)
+    global.lxOldDataPath = isolatedPath
+    global.lxDataPath = path.join(isolatedPath, 'LxDatas')
+    if (!existsSync(global.lxDataPath)) mkdirSync(global.lxDataPath)
+    return
+  }
   let isPortable = false
   // windows平台下如果应用目录下存在 portable 文件夹则将数据存在此文件下
   if (process.platform == 'win32') {

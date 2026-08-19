@@ -38,7 +38,21 @@
       :class="$style.blurBackground"
       :style="blurBackgroundStyle"
       aria-hidden="true"
-    />
+    >
+      <video
+        v-if="showBlurDynamicCover && dynamicCoverUrl"
+        :class="$style.blurBackgroundVideo"
+        :src="dynamicCoverUrl"
+        :poster="dynamicCoverPoster || musicInfo.pic || undefined"
+        muted
+        playsinline
+        loop
+        autoplay
+        preload="auto"
+        disablepictureinpicture
+        @error="blurVideoFailed = true"
+      />
+    </div>
 
     <FoliaVisualizerHost
       :effect="effect"
@@ -151,6 +165,7 @@ import { playProgress } from '@renderer/store/player/playProgress'
 import { isPlay, musicInfo, playMusicInfo } from '@renderer/store/player/state'
 import { setMusicInfo } from '@renderer/store/player/action'
 import { appSetting } from '@renderer/store/setting'
+import { dynamicCoverUrl, dynamicCoverPoster } from '@renderer/store/player/dynamicCover'
 import { biliSearch, getBiliLyricSource, getBiliVideoUrl } from '@renderer/utils/ipc'
 
 defineEmits(['close'])
@@ -159,6 +174,12 @@ const closeButton = ref()
 const controlsVisible = ref(false)
 const soundPanelVisible = ref(false)
 const stylePanelVisible = ref(false)
+const blurVideoFailed = ref(false)
+
+// 切歌时重置视频失败标志，允许下一首歌重试动态封面
+watch(() => musicInfo.id, () => {
+  blurVideoFailed.value = false
+})
 const sourcePanelVisible = ref(false)
 const mvVideo = ref()
 const mvUrl = ref('')
@@ -190,6 +211,11 @@ const immersiveStyle = computed(() => ({
 const blurBackgroundStyle = computed(() => ({
   backgroundImage: musicInfo.pic ? `url("${String(musicInfo.pic).replace(/"/g, '\\"')}")` : undefined,
 }))
+const showBlurDynamicCover = computed(() => (
+  !!appSetting['playDetail.immersiveBackgroundUseDynamicCover'] &&
+  !!dynamicCoverUrl.value &&
+  !blurVideoFailed.value
+))
 const biliTrack = computed(() => {
   const track = playMusicInfo.musicInfo
   if (track?.source != 'bili' || !track.meta?.bvid) return null
@@ -688,6 +714,15 @@ watch(controlHideDelay, () => {
       radial-gradient(circle at 50% 42%, rgba(var(--detail-color-light), .08), transparent 46%),
       linear-gradient(145deg, rgba(var(--detail-color-deep), .44), rgba(7, 9, 15, .7));
   }
+}
+
+.blurBackgroundVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .mvBackground {

@@ -25,11 +25,36 @@ declare namespace LX {
       filePath: string
       metadata: Omit<Metadata, 'filePath' | 'format' | 'bitrate' | 'sampleRate'>
       coverChanged: boolean
+      coverSourcePath?: string
     }
 
     interface EmbeddedLyricsWriteRequest {
       filePath: string
       lyric: string
+    }
+
+    type ArtworkSize = 64 | 128 | 256 | 512
+
+    interface ArtworkHandle {
+      id: string
+      url: string
+      mimeType: string
+      width: number
+      height: number
+      byteLength: number
+      sourceFingerprint: string
+    }
+
+    interface ArtworkVariantRequest {
+      filePath: string
+      size: ArtworkSize
+      externalArtworkPath?: string
+    }
+
+    interface ExternalArtworkRequest {
+      mediaFilePath: string
+      artworkFilePath: string
+      size: ArtworkSize
     }
   }
 }

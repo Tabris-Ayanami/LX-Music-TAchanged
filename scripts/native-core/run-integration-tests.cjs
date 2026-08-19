@@ -1,0 +1,296 @@
+const assert = require('node:assert/strict')
+const { spawn, execFileSync } = require('node:child_process')
+const { createHash, randomUUID } = require('node:crypto')
+const fs = require('node:fs/promises')
+const net = require('node:net')
+const path = require('node:path')
+const Module = require('node:module')
+const ts = require('typescript')
+const { generate, formats } = require('./media-fixtures.cjs')
+
+const executable = path.resolve(__dirname, '../../native-core/target/debug/lx-native-core.exe')
+const hashFile = async(file) => createHash('sha256').update(await fs.readFile(file)).digest('hex')
+const wait = async(ms) => new Promise(resolve => setTimeout(resolve, ms))
+const loadTypeScriptModule = async(file) => {
+  const source = await fs.readFile(file, 'utf8')
+  const output = ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
+    fileName: file,
+  }).outputText
+  const loaded = new Module(file, module)
+  loaded.filename = file
+  loaded.paths = Module._nodeModulePaths(path.dirname(file))
+  loaded._compile(output, file)
+  return loaded.exports
+}
+const waitForLine = async(stream, pattern) => new Promise((resolve, reject) => {
+  let text = ''
+  const timer = setTimeout(() => reject(new Error(`Timed out waiting for ${pattern}`)), 5_000)
+  stream.on('data', chunk => {
+    text += chunk.toString()
+    if (!pattern.test(text)) return
+    clearTimeout(timer)
+    resolve()
+  })
+})
+
+class RpcClient {
+  constructor(socket) {
+    this.socket = socket
+    this.pending = new Map()
+    this.buffer = Buffer.alloc(0)
+    socket.on('data', chunk => this.onData(chunk))
+    socket.on('close', () => this.rejectAll(new Error('pipe closed')))
+    socket.on('error', error => this.rejectAll(error))
+  }
+
+  call(method, params = {}, requestId = randomUUID()) {
+    const body = Buffer.from(JSON.stringify({ protocolVersion: '1.0', requestId, method, params }))
+    const frame = Buffer.alloc(4 + body.length)
+    frame.writeUInt32LE(body.length, 0)
+    body.copy(frame, 4)
+    return new Promise((resolve, reject) => {
+      this.pending.set(requestId, { resolve, reject })
+      this.socket.write(frame)
+    })
+  }
+
+  close() { this.socket.destroy() }
+
+  onData(chunk) {
+    this.buffer = Buffer.concat([this.buffer, chunk])
+    while (this.buffer.length >= 4) {
+      const size = this.buffer.readUInt32LE(0)
+      if (this.buffer.length < size + 4) return
+      const response = JSON.parse(this.buffer.subarray(4, size + 4).toString())
+      this.buffer = this.buffer.subarray(size + 4)
+      const pending = this.pending.get(response.requestId)
+      if (!pending) continue
+      this.pending.delete(response.requestId)
+      if (response.error) pending.reject(Object.assign(new Error(response.error.message), response.error))
+      else pending.resolve(response.result)
+    }
+  }
+
+  rejectAll(error) {
+    for (const pending of this.pending.values()) pending.reject(error)
+    this.pending.clear()
+  }
+}
+
+const connect = async(pipeName, child) => {
+  let lastError
+  for (let index = 0; index < 100; index++) {
+    if (child.exitCode != null) throw new Error(`sidecar exited before connect: ${child.exitCode}`)
+    try {
+      const socket = await new Promise((resolve, reject) => {
+        const candidate = net.createConnection(pipeName)
+        candidate.once('connect', () => resolve(candidate))
+        candidate.once('error', reject)
+      })
+      return new RpcClient(socket)
+    } catch (error) {
+      lastError = error
+      await wait(40)
+    }
+  }
+  throw lastError
+}
+
+const startCore = async(fixture, options = {}) => {
+  const pipeName = `\\\\.\\pipe\\lx-ta-native-test-${process.pid}-${randomUUID()}`
+  const args = [
+    '--pipe', pipeName,
+    '--profile', fixture.profile,
+    '--cache', fixture.cache,
+    '--ffmpeg', fixture.ffmpegPath,
+    '--artwork-cache-budget', String(options.budget ?? 2 * 1024 * 1024),
+  ]
+  const child = spawn(executable, args, { windowsHide: true, env: { ...process.env, ...(options.env ?? {}) }, stdio: ['ignore', 'ignore', 'pipe'] })
+  let logs = ''
+  child.stderr.on('data', value => { logs += value.toString() })
+  const client = await connect(pipeName, child)
+  return { child, client, logs: () => logs, stop: () => { client.close(); if (!child.killed) child.kill() } }
+}
+
+const fullMetadata = (value) => ({
+  ...value,
+  embeddedLyrics: value.embeddedLyrics ?? '',
+  artworkPresent: value.artworkPresent ?? false,
+})
+
+const run = async() => {
+  execFileSync('cargo', ['build', '--manifest-path', path.resolve(__dirname, '../../native-core/Cargo.toml')], { stdio: 'inherit' })
+  const fixture = await generate()
+  const legacyMedia = await loadTypeScriptModule(path.resolve(__dirname, '../../src/main/modules/localMusicTools/metadata.ts'))
+  const report = { formats: {}, shadowDifferences: {}, failureTests: {}, artwork: {}, root: fixture.root }
+  let core = await startCore(fixture)
+  try {
+    const handshake = await core.client.call('core.handshake')
+    assert.equal(handshake.protocolVersion, '1.0')
+    assert.ok(handshake.capabilities.includes('metadata.read'))
+    assert.ok(handshake.capabilities.includes('artwork.variant'))
+
+    const cancellationTarget = path.join(fixture.work, 'cancellation-target.wav')
+    await fs.copyFile(fixture.files.wav, cancellationTarget)
+    const cancellationId = randomUUID()
+    const cancellation = core.client.call('artwork.variant', {
+      filePath: cancellationTarget,
+      externalArtworkPath: fixture.largeArtwork,
+      size: 512,
+    }, cancellationId)
+    const cancellationAssertion = assert.rejects(cancellation, error => error.code == 'aborted')
+    await core.client.call('rpc.cancel', { requestId: cancellationId })
+    await cancellationAssertion
+    report.failureTests.cancellation = 'passed'
+
+    for (const extension of formats) {
+      let metadata
+      try { metadata = await core.client.call('metadata.read', { filePath: fixture.files[extension] }) } catch (error) {
+        throw new Error(`metadata corpus failed for ${extension}: ${error.message}`, { cause: error })
+      }
+      assert.equal(metadata.filePath, fixture.files[extension])
+      assert.ok(metadata.duration > 0, `${extension} duration should be readable`)
+      report.formats[extension] = { format: metadata.format, duration: metadata.duration, title: metadata.title, artworkPresent: metadata.artworkPresent }
+      const legacy = await legacyMedia.readLocalMetadata(fixture.files[extension])
+      const legacyLyrics = await legacyMedia.readLocalEmbeddedLyrics(fixture.files[extension]).catch(() => '')
+      const comparisons = {
+        title: [legacy.title, metadata.title], artists: [legacy.artists, metadata.artists], album: [legacy.album, metadata.album],
+        albumArtists: [legacy.albumArtists, metadata.albumArtists], genre: [legacy.genre, metadata.genre], year: [legacy.year, metadata.year],
+        trackNumber: [legacy.trackNumber, metadata.trackNumber], totalTracks: [legacy.totalTracks, metadata.totalTracks],
+        discNumber: [legacy.discNumber, metadata.discNumber], totalDiscs: [legacy.totalDiscs, metadata.totalDiscs],
+        comment: [legacy.comment, metadata.comment], composer: [legacy.composer, metadata.composer], embeddedLyrics: [legacyLyrics, metadata.embeddedLyrics],
+        duration: [legacy.duration, metadata.duration], bitrate: [legacy.bitrate, metadata.bitrate], sampleRate: [legacy.sampleRate, metadata.sampleRate],
+        artworkPresent: [Boolean(legacy.coverDataUrl), metadata.artworkPresent],
+      }
+      report.shadowDifferences[extension] = Object.fromEntries(Object.entries(comparisons).filter(([field, values]) => {
+        if (field == 'duration') return Math.abs(Number(values[0]) - Number(values[1])) > 0.05
+        if (field == 'bitrate') return Math.abs(Number(values[0]) - Number(values[1])) > 2
+        return JSON.stringify(values[0]) != JSON.stringify(values[1])
+      }))
+    }
+    assert.equal(report.formats.wav.title, '')
+    assert.equal(report.formats.flac.title, 'Unicode 标题・テスト')
+    assert.match((await core.client.call('metadata.lyrics.read', { filePath: fixture.files.flac })) || '', /Stage 1/)
+    await assert.rejects(core.client.call('metadata.read', { filePath: fixture.malformed }))
+    report.failureTests.malformed = 'passed'
+
+    for (const size of [64, 128, 256, 512]) {
+      const artwork = await core.client.call('artwork.variant', { filePath: fixture.files.mp3, size })
+      assert.ok(artwork)
+      assert.ok(artwork.width <= size && artwork.height <= size)
+      assert.equal(path.extname(artwork.cachePath), '.webp')
+      await fs.access(artwork.cachePath)
+      report.artwork[size] = { width: artwork.width, height: artwork.height, byteLength: artwork.byteLength }
+    }
+    const external = await core.client.call('artwork.variant', { filePath: fixture.files.wav, externalArtworkPath: fixture.largeArtwork, size: 128 })
+    assert.ok(external && external.width == 128 && external.height == 128)
+    const oriented = await core.client.call('artwork.variant', { filePath: fixture.files.flac, externalArtworkPath: fixture.orientationArtwork, size: 128 })
+    assert.ok(oriented && oriented.width < oriented.height, `EXIF orientation was not applied: ${JSON.stringify(oriented)}`)
+    report.artwork.orientation = { width: oriented.width, height: oriented.height }
+    const changedMedia = path.join(fixture.work, 'artwork-change.mp3')
+    await fs.copyFile(fixture.files.mp3, changedMedia)
+    const changedBefore = await core.client.call('artwork.variant', { filePath: changedMedia, size: 64 })
+    const changedTime = new Date(Date.now() + 5_000)
+    await fs.utimes(changedMedia, changedTime, changedTime)
+    const changedAfter = await core.client.call('artwork.variant', { filePath: changedMedia, size: 64 })
+    assert.notEqual(changedBefore.id, changedAfter.id)
+    report.artwork.fileChangeInvalidation = 'passed'
+    const beforeInvalidate = await core.client.call('artwork.cache.stats')
+    const removed = await core.client.call('artwork.invalidate', { filePath: fixture.files.mp3 })
+    assert.ok(removed >= 4)
+    const afterInvalidate = await core.client.call('artwork.cache.stats')
+    assert.ok(afterInvalidate.entryCount < beforeInvalidate.entryCount)
+    report.artwork.cache = { beforeInvalidate, afterInvalidate }
+
+    const writable = path.join(fixture.work, 'write-copy.mp3')
+    await fs.copyFile(fixture.files.mp3, writable)
+    const original = await core.client.call('metadata.read', { filePath: writable })
+    const updated = await core.client.call('metadata.write', {
+      filePath: writable,
+      metadata: fullMetadata({ ...original, title: 'Native 写入验证', comment: 'round trip' }),
+      coverChanged: false,
+    })
+    assert.equal(updated.title, 'Native 写入验证')
+    assert.equal((await core.client.call('metadata.read', { filePath: writable })).title, 'Native 写入验证')
+    report.failureTests.normalWriteRoundTrip = 'passed'
+    const withExternalArtwork = await core.client.call('metadata.write', {
+      filePath: writable,
+      metadata: fullMetadata({ ...updated, coverDataUrl: '' }),
+      coverChanged: true,
+      coverSourcePath: fixture.largeArtwork,
+    })
+    assert.equal(withExternalArtwork.artworkPresent, true)
+    const withoutArtwork = await core.client.call('metadata.write', {
+      filePath: writable,
+      metadata: fullMetadata({ ...withExternalArtwork, coverDataUrl: '', artworkPresent: false }),
+      coverChanged: true,
+    })
+    assert.equal(withoutArtwork.artworkPresent, false)
+    report.failureTests.artworkWriteAndRemove = 'passed'
+
+    const readOnly = path.join(fixture.work, 'readonly.mp3')
+    await fs.copyFile(fixture.files.mp3, readOnly)
+    const readOnlyHash = await hashFile(readOnly)
+    await fs.chmod(readOnly, 0o444)
+    try {
+      await assert.rejects(core.client.call('metadata.write', { filePath: readOnly, metadata: fullMetadata({ ...original, filePath: readOnly, title: 'must-not-commit' }), coverChanged: false }))
+      assert.equal(await hashFile(readOnly), readOnlyHash)
+      report.failureTests.readOnly = 'passed'
+    } finally { await fs.chmod(readOnly, 0o666) }
+
+    const locked = path.join(fixture.work, 'locked.mp3')
+    await fs.copyFile(fixture.files.mp3, locked)
+    const lockedHash = await hashFile(locked)
+    const locker = spawn('powershell.exe', ['-NoProfile', '-Command', "$stream=[IO.File]::Open($env:LX_LOCK_PATH,[IO.FileMode]::Open,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None); Write-Output 'locked'; Start-Sleep -Seconds 30"], {
+      env: { ...process.env, LX_LOCK_PATH: locked }, windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'],
+    })
+    try {
+      await waitForLine(locker.stdout, /locked/)
+      await assert.rejects(core.client.call('metadata.write', { filePath: locked, metadata: fullMetadata({ ...original, filePath: locked, title: 'must-not-commit' }), coverChanged: false }))
+    } finally {
+      locker.kill()
+      await new Promise(resolve => locker.once('exit', resolve))
+    }
+    assert.equal(await hashFile(locked), lockedHash)
+    report.failureTests.locked = 'passed'
+  } finally {
+    core.stop()
+  }
+
+  for (const failpoint of ['after-copy', 'after-write', 'after-verify', 'after-commit']) {
+    const target = path.join(fixture.work, `failure-${failpoint}.mp3`)
+    await fs.copyFile(fixture.files.mp3, target)
+    const before = await hashFile(target)
+    core = await startCore(fixture, { env: { LX_NATIVE_TEST_FAILPOINT: failpoint } })
+    try {
+      const metadata = await core.client.call('metadata.read', { filePath: target })
+      await assert.rejects(core.client.call('metadata.write', { filePath: target, metadata: fullMetadata({ ...metadata, title: `failure-${failpoint}` }), coverChanged: false }))
+      assert.equal(await hashFile(target), before, `${failpoint} changed the original`)
+      report.failureTests[failpoint] = 'passed'
+    } finally { core.stop() }
+  }
+
+  const crashTarget = path.join(fixture.work, 'crash-after-copy.mp3')
+  await fs.copyFile(fixture.files.mp3, crashTarget)
+  const crashHash = await hashFile(crashTarget)
+  core = await startCore(fixture, { env: { LX_NATIVE_TEST_FAILPOINT: 'crash-after-copy' } })
+  const crashMetadata = await core.client.call('metadata.read', { filePath: crashTarget })
+  await assert.rejects(core.client.call('metadata.write', { filePath: crashTarget, metadata: fullMetadata({ ...crashMetadata, title: 'crash' }), coverChanged: false }))
+  assert.equal(await hashFile(crashTarget), crashHash)
+  report.failureTests.sidecarExit = 'passed'
+  core.stop()
+
+  core = await startCore(fixture, { budget: 80 * 1024 })
+  try {
+    for (const size of [64, 128, 256, 512]) await core.client.call('artwork.variant', { filePath: fixture.files.mp3, size })
+    const stats = await core.client.call('artwork.cache.stats')
+    assert.ok(stats.byteSize <= stats.byteBudget, `LRU cache exceeded budget: ${JSON.stringify(stats)}`)
+    assert.ok(stats.entryCount < 4)
+    report.artwork.budgetEviction = stats
+  } finally { core.stop() }
+
+  process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
+}
+
+run().catch(error => { console.error(error); process.exitCode = 1 })

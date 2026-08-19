@@ -1,14 +1,17 @@
 import { WIN_MAIN_RENDERER_EVENT_NAME } from '@common/ipcNames'
 import { mainHandle } from '@common/mainIpc'
-import { readLocalCoverFile, readLocalEmbeddedLyrics, readLocalMetadata, writeLocalEmbeddedLyrics, writeLocalMetadata } from '@main/modules/localMusicTools/metadata'
+import { readLocalCoverFile, readLocalEmbeddedLyrics, writeLocalEmbeddedLyrics } from '@main/modules/localMusicTools/metadata'
+import { getArtworkVariant, invalidateArtwork, readMetadataWithBackend, writeMetadataWithBackend } from '@main/modules/nativeCore/mediaServices'
 
 
 export default () => {
-  mainHandle<string, LX.LocalMusic.Metadata>(WIN_MAIN_RENDERER_EVENT_NAME.read_local_metadata, async({ params }) => readLocalMetadata(params))
-  mainHandle<LX.LocalMusic.MetadataWriteRequest, LX.LocalMusic.Metadata>(WIN_MAIN_RENDERER_EVENT_NAME.write_local_metadata, async({ params }) => writeLocalMetadata(params))
+  mainHandle<string, LX.LocalMusic.Metadata>(WIN_MAIN_RENDERER_EVENT_NAME.read_local_metadata, async({ params }) => readMetadataWithBackend(params))
+  mainHandle<LX.LocalMusic.MetadataWriteRequest, LX.LocalMusic.Metadata>(WIN_MAIN_RENDERER_EVENT_NAME.write_local_metadata, async({ params }) => writeMetadataWithBackend(params))
   mainHandle<LX.LocalMusic.EmbeddedLyricsWriteRequest, string>(WIN_MAIN_RENDERER_EVENT_NAME.write_local_embedded_lyrics, async({ params }) => writeLocalEmbeddedLyrics(params))
   mainHandle<string, string>(WIN_MAIN_RENDERER_EVENT_NAME.read_local_embedded_lyrics, async({ params }) => readLocalEmbeddedLyrics(params))
   mainHandle<string, string>(WIN_MAIN_RENDERER_EVENT_NAME.read_local_cover_file, async({ params }) => readLocalCoverFile(params))
+  mainHandle<LX.LocalMusic.ArtworkVariantRequest, LX.LocalMusic.ArtworkHandle | null>(WIN_MAIN_RENDERER_EVENT_NAME.get_local_artwork_variant, async({ params }) => getArtworkVariant(params))
+  mainHandle<string>(WIN_MAIN_RENDERER_EVENT_NAME.invalidate_local_artwork, async({ params }) => invalidateArtwork(params))
 
   // =========================歌词=========================
   mainHandle<string, LX.Player.LyricInfo>(WIN_MAIN_RENDERER_EVENT_NAME.get_palyer_lyric, async({ params: id }) => {

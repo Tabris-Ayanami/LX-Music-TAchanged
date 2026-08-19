@@ -439,6 +439,7 @@ export default {
   flex: auto;
   display: flex;
   flex-flow: column nowrap;
+  padding: 8px 4px 6px;
 
   :global(.list-item) {
     &:hover {

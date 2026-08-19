@@ -67,6 +67,8 @@ export default {
   height: 100%;
   display: flex;
   position: relative;
+  padding: 16px 18px 18px;
+  box-sizing: border-box;
 }
 
 </style>

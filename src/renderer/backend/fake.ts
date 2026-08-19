@@ -145,7 +145,18 @@ export class FakeBackendAdapter implements BackendApi {
 
   readonly artwork: BackendApi['artwork'] = {
     readLocalFile: async(filePath, signal) => { throwIfAborted(signal); const value = this.artworkValues.get(filePath); if (!value) throw new BackendError('not_found', `No artwork for ${filePath}`); return value },
-    getLocalTrackArtwork: async(filePath, signal) => { throwIfAborted(signal); return this.artworkValues.get(filePath) ?? null },
+    getLocalTrackArtwork: async(request, signal) => {
+      throwIfAborted(signal)
+      const url = this.artworkValues.get(request.filePath)
+      return url ? { id: request.filePath, url, mimeType: 'image/jpeg', width: request.size, height: request.size, byteLength: 0, sourceFingerprint: 'fake' } : null
+    },
+    getExternalArtworkPreview: async(request, signal) => {
+      throwIfAborted(signal)
+      const url = this.artworkValues.get(request.artworkFilePath)
+      if (!url) throw new BackendError('not_found', `No artwork for ${request.artworkFilePath}`)
+      return { id: request.artworkFilePath, url, mimeType: 'image/jpeg', width: request.size, height: request.size, byteLength: 0, sourceFingerprint: 'fake' }
+    },
+    invalidate: async(_filePath, signal) => { throwIfAborted(signal) },
   }
 
   readonly download: BackendApi['download'] = {

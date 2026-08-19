@@ -7,6 +7,14 @@ const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     {
+      path: '/discover',
+      name: 'Discover',
+      component: async() => import(/* webpackChunkName: "view-discover" */ './views/Discover/index.vue'),
+      meta: {
+        name: 'Discover',
+      },
+    },
+    {
       path: '/search',
       name: 'Search',
       component: async() => import(/* webpackChunkName: "view-search" */ './views/Search/index.vue'),
@@ -78,7 +86,7 @@ const router = createRouter({
         name: 'Setting',
       },
     },
-    { path: '/:pathMatch(.*)*', redirect: '/search' },
+    { path: '/:pathMatch(.*)*', redirect: '/discover' },
   ],
   linkActiveClass: 'active-link',
   linkExactActiveClass: 'exact-active-link',

@@ -1,0 +1,15 @@
+pub mod artwork;
+pub mod error;
+pub mod metadata;
+pub mod protocol;
+
+pub const PROTOCOL_VERSION: &str = "1.0";
+pub const CORE_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const CAPABILITIES: &[&str] = &[
+    "metadata.read",
+    "metadata.write.safe",
+    "metadata.lyrics.read",
+    "artwork.variant",
+    "artwork.cache.lru",
+    "rpc.cancel",
+];

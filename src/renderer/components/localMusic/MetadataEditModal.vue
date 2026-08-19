@@ -100,6 +100,7 @@ const loading = ref(false)
 const saving = ref(false)
 const error = ref('')
 const coverChanged = ref(false)
+const coverSourcePath = ref('')
 const activeTab = ref<'metadata' | 'lyrics'>('metadata')
 
 const splitText = (value: string) => value.split(/[;；]/).map(item => item.trim()).filter(Boolean)
@@ -122,6 +123,7 @@ watch(() => props.show, async visible => {
   activeTab.value = 'metadata'
   error.value = ''
   coverChanged.value = false
+  coverSourcePath.value = ''
   try {
     metadata.value = await backend.metadata.read(props.musicInfo.meta.filePath)
   } catch (err) {
@@ -141,7 +143,13 @@ const selectCover = async() => {
   })
   if (result.canceled || !result.filePaths[0]) return
   try {
-    metadata.value.coverDataUrl = await backend.artwork.readLocalFile(result.filePaths[0])
+    const artwork = await backend.artwork.getExternalArtworkPreview({
+      mediaFilePath: props.musicInfo.meta.filePath,
+      artworkFilePath: result.filePaths[0],
+      size: 512,
+    })
+    metadata.value.coverDataUrl = artwork.url
+    coverSourcePath.value = result.filePaths[0]
     coverChanged.value = true
   } catch (err) {
     void dialog(err instanceof Error ? err.message : String(err))
@@ -150,6 +158,7 @@ const selectCover = async() => {
 
 const removeCover = () => {
   metadata.value.coverDataUrl = ''
+  coverSourcePath.value = ''
   coverChanged.value = true
 }
 
@@ -161,6 +170,7 @@ const save = async() => {
       filePath: props.musicInfo.meta.filePath,
       metadata: metadata.value,
       coverChanged: coverChanged.value,
+      coverSourcePath: coverSourcePath.value || undefined,
     })
     emit('saved', result)
     emit('update:show', false)

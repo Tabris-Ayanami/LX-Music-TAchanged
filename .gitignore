@@ -94,6 +94,8 @@ Thumbs.db
 *.deb
 *.rpm
 
+# Rust build output
+native-core/target/
+
 # Local app data / portable mode
 portable/
-

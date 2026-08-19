@@ -20,7 +20,7 @@ test('RG-052: renderer startup defers non-critical views and global components',
   )
   assert.equal(
     (routerSource.match(/component:\s*async\(\) => import\(/g) ?? []).length,
-    9,
+    10,
     'Each concrete route should be split into an on-demand chunk',
   )
   assert.match(

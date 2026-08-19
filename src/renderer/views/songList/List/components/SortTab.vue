@@ -1,11 +1,17 @@
 <template>
-  <base-tab :model-value="sortId" :class="$style.tab" :list="list" item-label="name" @change="handleToggle" />
+  <liquid-glass-segmented-nav
+    :model-value="sortId"
+    :class="$style.tab"
+    :items="items"
+    @change="handleToggle"
+  />
 </template>
 
 <script setup>
-import { watch, shallowReactive } from '@common/utils/vueTools'
+import { computed, watch, shallowReactive } from '@common/utils/vueTools'
 import { sortList } from '@renderer/store/songList/state'
 import { useRouter, useRoute } from '@common/utils/vueRouter'
+import LiquidGlassSegmentedNav from '@renderer/components/common/liquidGlass/LiquidGlassSegmentedNav.vue'
 
 const props = defineProps({
   source: {
@@ -27,6 +33,10 @@ const route = useRoute()
 
 const list = shallowReactive([])
 
+const items = computed(() => list.map(item => ({
+  label: item.name,
+  value: item.id,
+})))
 
 const handleToggle = (id) => {
   void router.replace({

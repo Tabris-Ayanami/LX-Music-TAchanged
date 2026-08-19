@@ -87,6 +87,9 @@ const defaultSetting: LX.AppSetting = {
   'playDetail.background': 'aura',
   'playDetail.backgroundBlur': 24,
   'playDetail.layoutStyle': 'classic',
+  'playDetail.coverType': 'static',
+  'playDetail.backgroundUseDynamicCover': false,
+  'playDetail.immersiveBackgroundUseDynamicCover': false,
 
   'desktopLyric.enable': false,
   'desktopLyric.isLock': false,
@@ -128,6 +131,10 @@ const defaultSetting: LX.AppSetting = {
 
   'localMusic.albumViewStyle': 'carousel',
   'localMusic.artistViewStyle': 'waterfall',
+
+  'backend.metadata': 'native-shadow',
+  'backend.metadataWrite': 'electron',
+  'backend.artwork': 'electron',
 
   'download.enable': false,
   'download.isSavePathGroupByListName': false,

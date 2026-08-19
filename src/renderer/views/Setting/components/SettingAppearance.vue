@@ -40,6 +40,26 @@ dd
       span(:class="$style.optionBody")
         strong {{ item.label }}
         small {{ item.description }}
+  h3#appearance_cover_setting(:class="$style.sectionTitle") {{ $t('setting__cover') }}
+  p(:class="$style.coverTip") {{ $t('setting__cover_tip') }}
+  div(:class="$style.viewOptions")
+    label(
+      v-for="item in coverStyles"
+      :key="item.id"
+      :class="[$style.viewOption, { [$style.active]: appSetting['playDetail.coverType'] == item.id }]"
+    )
+      base-checkbox(
+        :id="`setting_appearance_cover_${item.id}`"
+        name="setting_appearance_cover"
+        need
+        :model-value="appSetting['playDetail.coverType']"
+        :value="item.id"
+        :aria-label="item.label"
+        @update:model-value="updateSetting({ 'playDetail.coverType': $event })"
+      )
+      span(:class="$style.optionBody")
+        strong {{ item.label }}
+        small {{ item.description }}
 SettingPlayDetail(:embedded="true")
 </template>
 
@@ -89,6 +109,19 @@ const artistViewStyles: Array<ViewStyleOption<LX.AppSetting['localMusic.artistVi
     description: '在可自由拖动的二维行星画布中浏览歌手。',
   },
 ]
+
+const coverStyles: Array<ViewStyleOption<LX.AppSetting['playDetail.coverType']>> = [
+  {
+    id: 'static',
+    label: window.i18n.t('setting__cover_static'),
+    description: window.i18n.t('setting__cover_static_desc'),
+  },
+  {
+    id: 'dynamic',
+    label: window.i18n.t('setting__cover_dynamic'),
+    description: window.i18n.t('setting__cover_dynamic_desc'),
+  },
+]
 </script>
 
 <style lang="less" module>
@@ -102,6 +135,12 @@ const artistViewStyles: Array<ViewStyleOption<LX.AppSetting['localMusic.artistVi
 
 .sectionTitle {
   margin-top: 24px;
+}
+
+.coverTip {
+  margin: 5px 0 12px;
+  color: var(--color-font-label);
+  font-size: 12px;
 }
 
 .viewOption {

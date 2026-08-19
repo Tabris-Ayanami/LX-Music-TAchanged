@@ -1,33 +1,6 @@
 <template>
   <div :class="[$style.page, { [$style.reduceMotion]: !appSetting['common.isShowAnimation'] }]">
     <section ref="contentCardRef" :class="$style.contentCard">
-      <div :class="$style.searchRow">
-        <label :class="$style.searchBox">
-          <LiquidGlassLayer
-            variant="search"
-            :active="true"
-            :interactive="true"
-            :blur-amount="0.78"
-            :saturation="150"
-          />
-          <span :class="$style.searchIcon">
-            <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 425.2 425.2" width="16" height="16" space="preserve">
-              <use xlink:href="#icon-search-2" />
-            </svg>
-          </span>
-          <input
-            v-model="keyword"
-            type="text"
-            :placeholder="searchPlaceholder"
-          >
-          <button v-if="keyword" type="button" :class="$style.clearBtn" aria-label="清除搜索" @click="keyword = ''">
-            <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" width="14" height="14" space="preserve">
-              <use xlink:href="#icon-window-close" />
-            </svg>
-          </button>
-        </label>
-      </div>
-
       <div
         v-if="selectedAlbum && selectedAlbumDetailStyle == 'planet'"
         :style="planetPortalStyle"
@@ -512,7 +485,7 @@ const albumDetailVisible = ref(false)
 const planetDetailClosing = ref(false)
 const planetPortalOrigin = ref({ top: 24, right: 24, bottom: 24, left: 24 })
 const normalizedView = ref<LocalView>('albums')
-const keyword = ref('')
+const keyword = ref(typeof route.query.keyword == 'string' ? route.query.keyword : '')
 const albumPlanetPan = ref<SpatialPan>({ x: 0, y: 0 })
 const artistPlanetPan = ref<SpatialPan>({ x: 0, y: 0 })
 const songPlanetPan = ref<SpatialPan>({ x: 0, y: 0 })
@@ -810,17 +783,6 @@ const planetPortalStyle = computed<Record<string, string>>(() => ({
   '--planet-origin-bottom': `${planetPortalOrigin.value.bottom}px`,
   '--planet-origin-left': `${planetPortalOrigin.value.left}px`,
 }))
-
-const searchPlaceholder = computed(() => {
-  switch (normalizedView.value) {
-    case 'tracks':
-      return '搜索本地歌曲、歌手、专辑'
-    case 'artists':
-      return '搜索本地音乐家'
-    default:
-      return '搜索本地专辑或歌手'
-  }
-})
 
 const refreshTracks = async() => {
   if (!localListId.value) return
@@ -1422,9 +1384,10 @@ watch(tracks, () => {
   warmupDefaultGroups()
 }, { immediate: true })
 
-watch(() => [route.path, route.query.view] as const, ([path, view]) => {
+watch(() => [route.path, route.query.view, route.query.keyword] as const, ([path, view, kw]) => {
   if (path != '/local') return
   normalizedView.value = resolveLocalView(view)
+  keyword.value = typeof kw == 'string' ? kw : ''
 }, { immediate: true })
 
 watch(normalizedView, view => {
@@ -1506,18 +1469,10 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
   height: 100%;
   display: flex;
   flex-flow: column nowrap;
-  padding: 10px;
+  padding: 16px 18px 18px;
   box-sizing: border-box;
   color: var(--shell-text, var(--color-font));
   overflow: auto;
-}
-
-.contentCard {
-  border-radius: 14px;
-  border: 1px solid var(--shell-stroke, rgba(255, 255, 255, 0.18));
-  background: var(--shell-surface, rgba(255, 255, 255, 0.62));
-  backdrop-filter: blur(18px);
-  box-shadow: 0 12px 28px rgba(32, 50, 80, 0.06);
 }
 
 .contentCard {
@@ -1526,82 +1481,8 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
   min-height: 0;
   display: flex;
   flex-flow: column nowrap;
-  gap: 14px;
-  padding: 14px;
+  gap: 12px;
   overflow: hidden;
-}
-
-.searchRow {
-  flex: none;
-  display: flex;
-  align-items: center;
-}
-
-.searchBox {
-  position: relative;
-  flex: 1 1 auto;
-  min-width: 0;
-  width: 100%;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 10px 0 12px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--shell-search-border, rgba(255, 255, 255, 0.18)) 84%, rgba(255, 255, 255, 0.18));
-  background: transparent;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    0 8px 18px rgba(12, 16, 24, 0.08);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  overflow: hidden;
-  isolation: isolate;
-  transition: border-color @transition-fast, box-shadow @transition-fast, background-color @transition-fast;
-
-  &:focus-within {
-    border-color: color-mix(in srgb, var(--shell-accent, var(--color-primary)) 34%, rgba(255, 255, 255, 0.28));
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.18),
-      0 10px 22px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 8%, transparent);
-  }
-
-  input {
-    position: relative;
-    z-index: 1;
-    flex: 1 1 auto;
-    min-width: 0;
-    border: none;
-    outline: none;
-    background: transparent;
-    color: var(--shell-text, var(--color-font));
-    font-size: 14px;
-
-    &::placeholder {
-      color: var(--shell-muted, var(--color-font-label));
-    }
-  }
-}
-
-.searchIcon,
-.clearBtn {
-  position: relative;
-  z-index: 1;
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--shell-muted, var(--color-font-label));
-}
-
-.clearBtn {
-  width: 24px;
-  height: 24px;
-  border: none;
-  padding: 0;
-  border-radius: 8px;
-  background: transparent;
-  cursor: pointer;
 }
 
 .listShell,

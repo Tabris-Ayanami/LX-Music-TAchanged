@@ -2,7 +2,7 @@ import { updateListMusics } from '@renderer/store/list/action'
 import { saveLyric, saveMusicUrl } from '@renderer/utils/ipc'
 import { getLocalFilePath } from '@renderer/utils/music'
 import { encodePath } from '@common/utils/common'
-import { pathToFileURL } from 'node:url'
+import { backend } from '@renderer/backend'
 
 import {
   buildLyricInfo,
@@ -15,10 +15,6 @@ import {
   getOnlineOtherSourcePicUrl,
   getOtherSource,
 } from './utils'
-
-const normalizePicUrl = (pic: string) => {
-  return /^(?:https?:|data:|blob:|file:)/i.test(pic) ? pic : pathToFileURL(pic).href
-}
 
 const getOtherSourceByLocal = async<T>(musicInfo: LX.Music.MusicInfoLocal, handler: (infos: LX.Music.MusicInfoOnline[]) => Promise<T>) => {
   let result: LX.Music.MusicInfoOnline[] = []
@@ -109,8 +105,8 @@ export const getPicUrl = async({ musicInfo, listId, isRefresh, onToggleSource = 
   onToggleSource?: (musicInfo?: LX.Music.MusicInfoOnline) => void
 }): Promise<string> => {
   if (!isRefresh) {
-    const pic = await window.lx.worker.main.getMusicFilePic(musicInfo.meta.filePath)
-    if (pic) return normalizePicUrl(pic)
+    const artwork = await backend.artwork.getLocalTrackArtwork({ filePath: musicInfo.meta.filePath, size: 512 }).catch(() => null)
+    if (artwork) return artwork.url
 
     if (musicInfo.meta.picUrl) return musicInfo.meta.picUrl
   }

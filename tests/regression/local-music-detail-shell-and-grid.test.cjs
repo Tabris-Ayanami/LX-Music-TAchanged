@@ -54,13 +54,15 @@ test('RG-031: local album and artist pages share the artwork header while keepin
     /headerRow|播放全部|导入文件夹|导入文件/m,
     'The local library browsing page should not keep the old inline management header',
   )
-  const searchRowBlock = localIndexSource.match(/\.searchRow \{[\s\S]*?\n\}/m)
-  assert.ok(searchRowBlock, 'The local library page should keep a search row block')
-  assert.doesNotMatch(searchRowBlock[0], /position: absolute;/m, 'The local library search row should participate in layout instead of covering album cards')
+  assert.doesNotMatch(
+    localIndexSource,
+    /\.searchRow \{|v-model="keyword"/m,
+    'The local library should use the shared toolbar search instead of retaining a second embedded field',
+  )
   assert.match(
     localIndexSource,
-    /\.page \{[\s\S]*padding: 10px;[\s\S]*box-sizing: border-box;/m,
-    'The local library page should not carry a page-specific toolbar offset',
+    /watch\(\(\) => \[route\.path, route\.query\.view, route\.query\.keyword\][\s\S]*keyword\.value = typeof kw == 'string' \? kw : ''/m,
+    'The local library should consume the shared toolbar keyword from the route query',
   )
 })
 

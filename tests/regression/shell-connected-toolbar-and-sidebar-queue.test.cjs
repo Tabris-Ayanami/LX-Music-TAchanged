@@ -35,12 +35,12 @@ test('RG-039: shell uses a connected glass toolbar and compact search field', ()
   )
   assert.match(
     toolbarSearchSource,
-    /<material-search-input[\s\S]* small /m,
+    /<material-search-input[\s\S]*\n\s*small\s*\n/m,
     'Toolbar search should request the compact input variant',
   )
   assert.match(
     searchInputSource,
-    /\.small \{[\s\S]*\.form \{[\s\S]*height: 38px;/m,
+    /\.smallContainer \{[\s\S]*height: 43px;[\s\S]*\.small \{[\s\S]*& \.main \{[\s\S]*height: 43px;/m,
     'Compact input variant should reduce the field height',
   )
 })

@@ -63,6 +63,7 @@ const main = async() => {
   }
 
   const routes = [
+    ['discover', '#/discover'],
     ['search', '#/search?source=wy&type=music'],
     ['local-tracks', '#/local?view=tracks'],
     ['download', '#/download'],

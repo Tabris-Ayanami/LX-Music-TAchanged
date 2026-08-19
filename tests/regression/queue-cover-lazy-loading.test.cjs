@@ -12,8 +12,8 @@ const downloadMusicSource = fs.readFileSync(path.join(rootDir, 'src', 'renderer'
 test('RG-041: queue cover thumbnails keep lazy loading without leaving local covers broken', () => {
   assert.match(
     localMusicSource,
-    /pathToFileURL\(pic\)\.href/m,
-    'Local embedded/file covers should be converted to file URLs before reaching image tags',
+    /backend\.artwork\.getLocalTrackArtwork\(\{ filePath: musicInfo\.meta\.filePath, size: 512 \}\)[\s\S]*return artwork\.url/m,
+    'Local embedded artwork should reach image tags through an opaque ArtworkService URL',
   )
   assert.match(
     downloadMusicSource,

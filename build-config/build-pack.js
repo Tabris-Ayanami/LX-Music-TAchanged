@@ -1,8 +1,11 @@
 /* eslint-disable no-template-curly-in-string */
 
 const builder = require('electron-builder')
+const fs = require('node:fs')
+const path = require('node:path')
 const beforePack = require('./build-before-pack')
 const afterPack = require('./build-after-pack')
+const nativeCorePath = path.join(__dirname, '../native-core/target/release/lx-native-core.exe')
 
 /**
 * @type {import('electron-builder').Configuration}
@@ -283,6 +286,7 @@ const build = async(target, arch, packageType, publishType) => {
     return
   }
   const targetInfo = createTarget[target](arch, packageType)
+  const includeNativeCore = target == 'win' && ['x64', 'x86_64'].includes(arch) && fs.existsSync(nativeCorePath)
   // Promise is returned
   await builder.build({
     ...targetInfo.buildOptions,
@@ -291,7 +295,14 @@ const build = async(target, arch, packageType, publishType) => {
     ia32: arch == 'x86' || arch == 'x86_64',
     arm64: arch == 'arm64',
     armv7l: arch == 'armv7l',
-    config: { ...options, ...targetInfo.options },
+    config: {
+      ...options,
+      ...targetInfo.options,
+      extraResources: [
+        ...options.extraResources,
+        ...(includeNativeCore ? [{ from: nativeCorePath, to: 'native-core/lx-native-core.exe' }] : []),
+      ],
+    },
   })
   // .then((result) => {
   //   console.log(JSON.stringify(result))

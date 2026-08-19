@@ -1,6 +1,6 @@
 <template>
   <div :class="[$style.tagList, {[$style.active]: popupVisible}]">
-    <div ref="dom_btn" :class="$style.label" @click.stop="handleShow">
+    <div ref="dom_btn" data-taglist-btn :class="$style.label" @click.stop="handleShow">
       <span>{{ tagName }}</span>
       <div :class="$style.icon">
         <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" height="100%" viewBox="0 0 451.847 451.847" space="preserve">
@@ -94,7 +94,7 @@ const tagName = computed(() => {
 
 const popupStyle = reactive({
   width: '645px',
-  maxHeight: '250px',
+  maxHeight: 'none',
 })
 
 let setTagPopupWidthTimer = null
@@ -103,9 +103,13 @@ const setTagPopupWidth = () => {
   setTagPopupWidthTimer = window.setTimeout(() => {
     setTagPopupWidthTimer = null
     const dom_view = document.getElementById('view')
+    const dom_btn = document.querySelector('[data-taglist-btn]') ?? this?.$refs?.dom_btn
     if (!dom_view) return
-    popupStyle.width = dom_view.clientWidth * 0.96 + 'px'
-    popupStyle.maxHeight = dom_view.clientHeight * 0.65 + 'px'
+    const viewRect = dom_view.getBoundingClientRect()
+    const btnRect = dom_btn?.getBoundingClientRect()
+    const btnLeft = btnRect ? btnRect.left - viewRect.left : 0
+    // 宽度不超出 view 右边界，且以按钮为左起点，超出部分收缩
+    popupStyle.width = Math.max(320, viewRect.clientWidth - btnLeft - 16) + 'px'
   }, 50)
 }
 
@@ -216,7 +220,6 @@ onBeforeUnmount(() => {
   transform-origin: 0 0 0;
   transition: .25s ease;
   transition-property: transform, opacity;
-  max-height: 250px;
   z-index: 280;
   pointer-events: none;
   box-shadow: 0 18px 44px rgba(20, 29, 46, .18);
@@ -242,6 +245,8 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
   background: color-mix(in srgb, var(--color-content-background) 86%, transparent);
   border-radius: 8px;
+  max-height: 55vh;
+  overflow-y: auto;
 }
 
 .type {

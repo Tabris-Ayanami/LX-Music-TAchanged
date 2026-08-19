@@ -174,17 +174,28 @@
           </button>
         </div>
         <div v-if="appSetting['playDetail.immersiveBackground'] == 'blur'" :class="$style.rangeControl">
-          <label for="immersive_background_blur">
-            {{ $t('setting__play_detail_immersive_background_blur_amount', { value: appSetting['playDetail.immersiveBackgroundBlur'] }) }}
-          </label>
-          <base-slider-bar
-            id="immersive_background_blur"
-            :value="appSetting['playDetail.immersiveBackgroundBlur']"
-            :min="8"
-            :max="64"
-            :step="2"
-            @change="updateSetting({ 'playDetail.immersiveBackgroundBlur': $event })"
-          />
+          <div :class="$style.blurRow">
+            <label for="immersive_background_blur">
+              {{ $t('setting__play_detail_immersive_background_blur_amount', { value: appSetting['playDetail.immersiveBackgroundBlur'] }) }}
+            </label>
+            <base-slider-bar
+              id="immersive_background_blur"
+              :value="appSetting['playDetail.immersiveBackgroundBlur']"
+              :min="8"
+              :max="64"
+              :step="2"
+              @change="updateSetting({ 'playDetail.immersiveBackgroundBlur': $event })"
+            />
+          </div>
+          <div :class="$style.dynamicOption">
+            <base-checkbox
+              id="immersive_background_use_dynamic_cover"
+              :model-value="appSetting['playDetail.immersiveBackgroundUseDynamicCover']"
+              :label="$t('setting__play_detail_immersive_background_use_dynamic')"
+              @update:model-value="updateSetting({ 'playDetail.immersiveBackgroundUseDynamicCover': $event })"
+            />
+            <small>{{ $t('setting__play_detail_immersive_background_use_dynamic_tip') }}</small>
+          </div>
         </div>
       </section>
     </div>
@@ -946,6 +957,40 @@ const backgroundOptions = [
 
 .rangeControl :global(.base-slider-bar) {
   width: 100%;
+}
+
+.blurRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+
+  label {
+    margin-bottom: 0;
+    flex: none;
+  }
+
+  :global(.base-slider-bar) {
+    flex: 1;
+  }
+}
+
+.dynamicOption {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, .08);
+  color: rgba(222, 228, 238, .82);
+
+  small {
+    width: 100%;
+    color: rgba(203, 211, 224, .6);
+    font-size: 11px;
+    line-height: 1.4;
+  }
 }
 
 @media (max-width: 760px) {

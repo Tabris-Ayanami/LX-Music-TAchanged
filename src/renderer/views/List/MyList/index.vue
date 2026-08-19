@@ -252,18 +252,23 @@ export default {
 <style lang="less" module>
 @import '@renderer/assets/styles/layout.less';
 
-@lists-item-height: 36px;
+@lists-item-height: 38px;
 .lists {
   flex: none;
-  width: 16%;
+  width: 232px;
+  min-width: 190px;
+  max-width: 270px;
   display: flex;
   flex-flow: column nowrap;
+  border-right: 1px solid var(--shell-divider, rgba(73, 92, 122, 0.14));
+  padding-right: 12px;
 }
 .listHeader {
   position: relative;
   display: flex;
   flex-flow: row nowrap;
-  border-bottom: var(--color-list-header-border-bottom);
+  align-items: center;
+  padding: 2px 6px 10px;
   &:hover {
     .listsAdd {
       opacity: 1;
@@ -272,9 +277,11 @@ export default {
 }
 .listsTitle {
   flex: auto;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 700;
   line-height: 38px;
-  padding: 0 10px;
+  padding: 0 4px;
+  color: var(--shell-text, var(--color-font));
   .mixin-ellipsis-1();
 }
 .headerBtns {
@@ -282,16 +289,14 @@ export default {
   display: flex;
 }
 .listsAdd {
-  // position: absolute;
-  // right: 0;
-  margin-top: 6px;
+  margin-top: 4px;
   background: none;
   height: 30px;
   border: none;
   outline: none;
-  border-radius: @radius-border;
+  border-radius: 6px;
   cursor: pointer;
-  opacity: .1;
+  opacity: .3;
   transition: opacity @transition-normal;
   color: var(--color-button-font);
   svg {
@@ -301,14 +306,15 @@ export default {
     opacity: .7 !important;
   }
   &:hover {
-    opacity: .6 !important;
+    opacity: .9 !important;
   }
 }
 .listsContent {
   flex: auto;
   min-width: 0;
   overflow-y: scroll !important;
-  // border-right: 1px solid rgba(0, 0, 0, 0.12);
+  margin: 0 -6px;
+  padding: 0 6px;
 
   &.sortable {
     * {
@@ -328,21 +334,46 @@ export default {
 }
 .listsItem {
   position: relative;
-  transition: .3s ease;
+  margin-bottom: 2px;
+  border-radius: 6px;
+  overflow: hidden;
+  transition: .16s ease;
   transition-property: color, background-color, opacity;
   background-color: transparent;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 9px;
+    bottom: 9px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--color-primary);
+    opacity: 0;
+    transition: opacity @transition-fast;
+  }
+
   &:not(.active) {
     &:hover {
-      background-color: var(--color-primary-background-hover);
+      background-color: var(--shell-list-hover, var(--color-primary-background-hover));
       cursor: pointer;
     }
   }
   &.active {
-    // background-color:
-    color: var(--color-primary);
+    color: var(--color-primary-dark-100, var(--color-primary));
+    background-color: color-mix(in srgb, var(--color-primary) 9%, transparent);
+
+    &::before {
+      opacity: 1;
+    }
+
+    .listsLabel {
+      font-weight: 700;
+    }
   }
   &.selected {
-    background-color: var(--color-primary-font-active);
+    background-color: var(--color-primary-background-hover);
   }
   &.clicked {
     background-color: var(--color-primary-background-hover);
@@ -357,7 +388,7 @@ export default {
       display: none;
     }
     .listsInput {
-      display: block;
+      display: block !important;
     }
   }
 }
@@ -370,31 +401,32 @@ export default {
 .listsLabel {
   display: block;
   height: @lists-item-height;
-  padding: 0 10px;
+  padding: 0 12px;
   font-size: 13px;
   line-height: @lists-item-height;
+  color: var(--shell-text, var(--color-font));
   .mixin-ellipsis-1();
+}
+/* 用更高优先级隐藏 base-input，避免它因样式注入顺序残留成第二行 */
+.listsItem .listsInput,
+.listsNew .listsInput {
+  display: none;
 }
 .listsInput {
   width: 100%;
   height: @lists-item-height;
-  // border: none;
   padding: 0;
-  // padding-bottom: 1px;
   line-height: @lists-item-height;
   background: none !important;
   border-radius: 0;
-  // outline: none;
   font-size: 13px;
-  display: none;
-  // font-family: inherit;
 }
 
 .listsNew {
   padding: 0 10px;
   background-color: var(--color-primary-background-hover) !important;
   .listsInput {
-    display: block;
+    display: block !important;
   }
 }
 .newLeave {

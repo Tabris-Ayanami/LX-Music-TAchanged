@@ -1,5 +1,13 @@
 <template>
-  <material-search-input v-model="searchText" :list="tipList" :visible-list="visibleList" small @event="handleEvent" />
+  <material-search-input
+    v-model="searchText"
+    :list="tipList"
+    :visible-list="visibleList"
+    :is-loading="isLoading"
+    :placeholder="placeholder"
+    small
+    @event="handleEvent"
+  />
 </template>
 
 <script>
@@ -16,12 +24,16 @@ import { appSetting } from '@renderer/store/setting'
 import { searchText as _searchText } from '@renderer/store/search/state'
 import { setSearchText } from '@renderer/store/search/action'
 import { getSearchSetting } from '@renderer/utils/data'
+import { useI18n } from '@renderer/plugins/i18n'
 
 export default {
   setup() {
+    const t = useI18n()
+    const placeholder = t('search')
     const searchText = ref('')
     const visibleList = ref(false)
     const tipList = ref([])
+    const isLoading = ref(false)
     let isFocused = false
     let prevTempSearchSource = ''
     let routeWatchTimer = null
@@ -59,6 +71,7 @@ export default {
       const currentRequestId = ++tipRequestId
       if (searchText.value === '' && prevTempSearchSource) {
         tipList.value = []
+        isLoading.value = false
         music[prevTempSearchSource].tipSearch.cancelTipSearch()
         return
       }
@@ -66,12 +79,16 @@ export default {
       if (currentRequestId != tipRequestId) return
       prevTempSearchSource ||= temp_source
       const keyword = searchText.value
+      isLoading.value = true
       music[prevTempSearchSource].tipSearch.search(keyword).then(list => {
         if (currentRequestId != tipRequestId) return
         if (keyword != searchText.value) return
         if (!isFocused) return
         tipList.value = list
-      }).catch(() => {})
+        isLoading.value = false
+      }).catch(() => {
+        if (currentRequestId == tipRequestId) isLoading.value = false
+      })
     }, 50)
 
     const handleTipSearch = () => {
@@ -85,11 +102,24 @@ export default {
         setSearchText('')
         return
       }
+      const keyword = searchText.value
       setTimeout(() => {
-        router.push({
+        // 在本地音乐页时，搜索走本地过滤（/local?keyword=xxx）
+        if (route.name == 'LocalMusic') {
+          const view = typeof route.query.view == 'string' ? route.query.view : 'albums'
+          void router.push({
+            path: '/local',
+            query: {
+              view,
+              keyword,
+            },
+          }).catch(_ => _)
+          return
+        }
+        void router.push({
           path: '/search',
           query: {
-            text: searchText.value,
+            text: keyword,
           },
         }).catch(_ => _)
       }, searchText.value ? 200 : 0)
@@ -108,6 +138,7 @@ export default {
           break
         case 'blur':
           isFocused = false
+          isLoading.value = false
           if (blurTimer) clearTimeout(blurTimer)
           blurTimer = setTimeout(() => {
             blurTimer = null
@@ -135,6 +166,8 @@ export default {
       searchText,
       visibleList,
       tipList,
+      isLoading,
+      placeholder,
       handleEvent,
     }
   },

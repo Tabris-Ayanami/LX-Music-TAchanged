@@ -393,6 +393,21 @@ declare global {
        */
       'playDetail.layoutStyle': 'classic' | 'record' | 'pixel'
 
+      /**
+       * 播放详情页封面类型：静态封面 / 动态封面（Apple Music 动态封面）
+       */
+      'playDetail.coverType': 'static' | 'dynamic'
+
+      /**
+       * 播放详情页模糊背景是否使用动态封面
+       */
+      'playDetail.backgroundUseDynamicCover': boolean
+
+      /**
+       * 沉浸模式模糊背景是否使用动态封面
+       */
+      'playDetail.immersiveBackgroundUseDynamicCover': boolean
+
 
       /**
        * 是否启用桌面歌词
@@ -583,6 +598,11 @@ declare global {
        * 本地音乐歌手页的浏览样式
        */
       'localMusic.artistViewStyle': 'waterfall' | 'carousel' | 'planet'
+
+      /** Stage 1 backend switches. Native metadata write remains separately gated. */
+      'backend.metadata': 'electron' | 'native-shadow' | 'native'
+      'backend.metadataWrite': 'electron' | 'native'
+      'backend.artwork': 'electron' | 'native'
 
       /**
        * 是否启用下载功能

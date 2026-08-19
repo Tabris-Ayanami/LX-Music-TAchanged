@@ -18,22 +18,7 @@
       :class="$style.pill"
       :style="pillStyle"
       aria-hidden="true"
-    >
-      <div v-if="lowPerformance" :class="$style.fallbackGlass">
-        <span :class="$style.fallbackTint" />
-        <span :class="$style.fallbackEdge" />
-      </div>
-      <LiquidGlassLayer
-        v-else
-        variant="capsule"
-        active
-        interactive
-        :highlight="false"
-        :displacement-scale="pillFloating ? 28 : 22"
-        :blur-amount="pillFloating ? 1.25 : 1"
-        corner-radius="inherit"
-      />
-    </div>
+    />
 
     <button
       v-for="(item, index) in items"
@@ -67,7 +52,6 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { PropType } from 'vue'
 import type { LiquidGlassSegmentedNavItem } from './types'
-import LiquidGlassLayer from './LiquidGlassLayer.vue'
 
 defineOptions({
   name: 'LiquidGlassSegmentedNav',
@@ -254,14 +238,11 @@ onBeforeUnmount(() => {
   gap: 4px;
   min-height: 34px;
   padding: 4px;
-  border: 1px solid color-mix(in srgb, var(--shell-control-border, rgba(255, 255, 255, .22)) 86%, rgba(255, 255, 255, .12));
   border-radius: 999px;
   background:
-    radial-gradient(120% 160% at 8% 0%, rgba(255, 255, 255, .18), rgba(255, 255, 255, 0) 58%),
-    color-mix(in srgb, var(--shell-surface-strong, rgba(42, 48, 60, .86)) 78%, rgba(255, 255, 255, .1));
+    color-mix(in srgb, var(--color-primary) 8%, rgba(128, 140, 156, 0.14));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .18),
-    0 10px 24px rgba(18, 28, 44, .12);
+    inset 0 1px 2px rgba(20, 28, 44, 0.1);
   isolation: isolate;
   overflow: hidden;
   user-select: none;
@@ -298,20 +279,18 @@ onBeforeUnmount(() => {
     filter var(--motion-duration-normal) var(--motion-ease-out),
     box-shadow var(--motion-duration-normal) var(--motion-ease-out);
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 84%, #fff 16%), color-mix(in srgb, var(--color-primary) 68%, #2c5fc7 32%));
-  filter: saturate(1.12);
+    linear-gradient(180deg, #ffffff, color-mix(in srgb, var(--color-primary) 14%, #f2f5f8));
   box-shadow:
-    0 12px 28px color-mix(in srgb, var(--color-primary) 26%, rgba(16, 26, 44, .2)),
-    inset 0 1px 0 rgba(255, 255, 255, .34),
-    inset 0 -1px 0 rgba(0, 0, 0, .14);
+    inset 0 1px 0 rgba(255, 255, 255, .98),
+    inset 0 -1px 0 rgba(0, 0, 0, .04),
+    0 4px 12px rgba(20, 28, 44, .16);
 }
 
 .floating .pill {
-  filter: saturate(1.18);
   box-shadow:
-    0 18px 38px color-mix(in srgb, var(--color-primary) 30%, rgba(13, 23, 42, .22)),
-    inset 0 1px 0 rgba(255, 255, 255, .36),
-    inset 0 -1px 0 rgba(0, 0, 0, .14);
+    inset 0 1px 0 rgba(255, 255, 255, .98),
+    inset 0 -1px 0 rgba(0, 0, 0, .04),
+    0 8px 18px rgba(20, 28, 44, .2);
 }
 
 .item {
@@ -345,8 +324,8 @@ onBeforeUnmount(() => {
 }
 
 .active {
-  color: #fff;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, .28);
+  color: var(--color-primary-dark-100, var(--color-primary));
+  font-weight: 700;
 }
 
 .disabled {
@@ -357,46 +336,6 @@ onBeforeUnmount(() => {
 .label {
   position: relative;
   z-index: 1;
-}
-
-.fallbackGlass {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  border-radius: inherit;
-  background: rgba(255, 255, 255, .2);
-  backdrop-filter: blur(14px) saturate(1.18);
-  -webkit-backdrop-filter: blur(14px) saturate(1.18);
-}
-
-.fallbackTint,
-.fallbackEdge,
-.fallbackGloss {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-}
-
-.fallbackTint {
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .06));
-}
-
-.fallbackEdge {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .76),
-    inset 0 -1px 0 rgba(0, 0, 0, .13),
-    inset 1px 0 0 rgba(255, 255, 255, .34),
-    inset -1px 0 0 rgba(255, 255, 255, .18);
-}
-
-.fallbackGloss {
-  opacity: .62;
-  background:
-    linear-gradient(100deg, rgba(255, 255, 255, .38), rgba(255, 255, 255, 0) 34% 72%, rgba(255, 255, 255, .24)),
-    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, .72), rgba(255, 255, 255, 0) 70%);
-  mix-blend-mode: screen;
 }
 
 @media (prefers-reduced-motion: reduce) {
