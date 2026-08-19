@@ -12,6 +12,7 @@ const { connectRenderer } = require('../../scripts/performance/stage2/cdp-client
 const { installProbe, collectRendererMetrics, getProbeSource } = require('../../scripts/performance/stage2/renderer-probe.cjs')
 const { collectProcessTree } = require('../../scripts/performance/stage2/sample.cjs')
 const { captureSample } = require('../../scripts/performance/stage2/sample.cjs')
+const { completeStage2Sample } = require('../helpers/stage2-sample-fixture.cjs')
 
 const processTreeFixture = JSON.stringify({
   processes: [
@@ -158,11 +159,12 @@ test('process sampler accepts literal PowerShell JSON and captureSample validate
       phase: 'stable',
       temperature: 'warm',
       variant: 'electron-control',
+      attribution: { variant: 'electron-control', measurable: true, effectiveControls: [] },
       runIndex: 2,
       elapsedMs: 12000,
       workspaceManifest: { nativeCachePath },
       outputPath,
-      collectRenderer: async() => ({ liveObjectUrls: 1, workers: { live: 2 }, contexts: { webgl: 1 } }),
+      collectRenderer: async() => completeStage2Sample().renderer,
       collectProcesses: async() => tree,
     })
 
@@ -174,7 +176,8 @@ test('process sampler accepts literal PowerShell JSON and captureSample validate
     })
     assert.equal(sample.renderer.liveObjectUrls, 1)
     assert.equal(sample.renderer.workers.live, 2)
-    assert.equal(sample.renderer.contexts.webgl, 1)
+    assert.equal(sample.renderer.contexts.webgl, 2)
+    assert.deepEqual(sample.attribution, { variant: 'electron-control', measurable: true, effectiveControls: [] })
     assert.deepEqual(sample.nativeCache, { path: nativeCachePath, files: 2, bytes: 8 })
     assert.deepEqual(JSON.parse(await fs.readFile(outputPath, 'utf8')), sample)
   } finally {

@@ -27,7 +27,7 @@ const summarizeRuns = (samples, metricPaths) => {
   if (samples.length < 5) throw new Error('summarizeRuns requires at least five samples')
   if (!Array.isArray(metricPaths) || metricPaths.length === 0) throw new Error('metricPaths must not be empty')
   samples.forEach(assertSample)
-  const identity = ['scenario', 'temperature', 'variant']
+  const identity = ['scenario', 'phase', 'temperature', 'variant']
   const expected = Object.fromEntries(identity.map(key => [key, samples[0][key]]))
   for (const sample of samples.slice(1)) {
     for (const key of identity) if (sample[key] !== expected[key]) throw new Error(`sample ${key} differs across runs`)
