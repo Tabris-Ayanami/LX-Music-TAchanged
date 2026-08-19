@@ -37,6 +37,8 @@ export interface DynamicCoverResult {
 
 interface SearchSong {
   id: string
+  resourceType: 'song' | 'album'
+  storefront: string
   name: string
   artistName: string
   albumName: string
@@ -114,6 +116,8 @@ const albumSearch = async(term: string, token: string): Promise<SearchSong[]> =>
         const albumId = song.relationships?.albums?.data?.[0]?.id ?? null
         list.push({
           id: song.id,
+          resourceType: 'song',
+          storefront,
           name: attrs.name ?? '',
           artistName: attrs.artistName ?? '',
           albumName: attrs.albumName ?? albumMap.get(albumId) ?? '',
@@ -125,6 +129,8 @@ const albumSearch = async(term: string, token: string): Promise<SearchSong[]> =>
         const attrs = album.attributes ?? {}
         list.push({
           id: album.id,
+          resourceType: 'album',
+          storefront,
           name: attrs.name ?? '',
           artistName: attrs.artistName ?? '',
           albumName: attrs.name ?? '',
@@ -205,9 +211,24 @@ const pickBestSearch = (list: SearchSong[], query: { title: string, artist: stri
   return bestScore >= 2 ? best : (list.find(item => item.albumId) ?? null)
 }
 
-const getEditorialVideoUrl = async(albumId: string): Promise<{ videoUrl: string, posterUrl: string | null, storefront: string } | null> => {
-  const token = await getAppleMusicWebToken()
-  for (const storefront of STOREFRONTS) {
+const resolveAlbumReference = async(match: SearchSong, token: string): Promise<{ albumId: string, storefront: string } | null> => {
+  if (match.resourceType == 'album') return { albumId: match.id, storefront: match.storefront }
+  if (match.albumId) return { albumId: match.albumId, storefront: match.storefront }
+
+  try {
+    const url = `${AMP_API_BASE}/${match.storefront}/songs/${match.id}?include=albums`
+    const data = await fetchJson(url, token)
+    const albumId = data?.data?.[0]?.relationships?.albums?.data?.[0]?.id
+    return albumId ? { albumId, storefront: match.storefront } : null
+  } catch (err) {
+    console.warn('[appleDynamicCover] song album relationship failed', match.storefront, err)
+    return null
+  }
+}
+
+const getEditorialVideoUrl = async(albumId: string, preferredStorefront: string, token: string): Promise<{ videoUrl: string, posterUrl: string | null, storefront: string } | null> => {
+  const storefronts = [preferredStorefront, ...STOREFRONTS.filter(storefront => storefront != preferredStorefront)]
+  for (const storefront of storefronts) {
     try {
       const url = `${AMP_API_BASE}/${storefront}/albums/${albumId}?extend=editorialVideo`
       const data = await fetchJson(url, token)
@@ -298,17 +319,18 @@ export const getAppleDynamicCover = async(info: AppleDynamicCoverQuery): Promise
         artist: info.singer,
         album: info.album,
       })
-      const albumId = best?.albumId ?? best?.id
-      if (!albumId) return null
+      if (!best) return null
+      const albumRef = await queueRequest(async() => resolveAlbumReference(best, token))
+      if (!albumRef) return null
 
-      const result = await queueRequest(async() => getEditorialVideoUrl(albumId))
+      const result = await queueRequest(async() => getEditorialVideoUrl(albumRef.albumId, albumRef.storefront, token))
       if (!result) return null
 
       const videoUrl = await resolvePlayableVideoUrl(result.videoUrl)
       const finalResult: DynamicCoverResult = {
         videoUrl,
         posterUrl: result.posterUrl,
-        albumId,
+        albumId: albumRef.albumId,
         storefront: result.storefront,
       }
       cacheSet(key, finalResult)

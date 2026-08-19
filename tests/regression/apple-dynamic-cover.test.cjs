@@ -138,6 +138,55 @@ test('dynamic-cover lookup continues across storefronts without editorial video'
   assert.equal(result?.storefront, 'hk')
 })
 
+test('song search hits resolve their album relationship in the matching storefront', async() => {
+  const requestedUrls = []
+  const httpFetch = url => {
+    requestedUrls.push(url)
+    if (url.includes('/cn/search?')) {
+      return { promise: Promise.resolve({ statusCode: 200, body: {
+        results: { songs: { data: [{
+          id: '1193701392',
+          type: 'songs',
+          attributes: { name: 'Shape of You', artistName: 'Ed Sheeran', albumName: '÷ (Deluxe)' },
+        }] } },
+      } }) }
+    }
+    if (url.includes('/cn/songs/1193701392?include=albums')) {
+      return { promise: Promise.resolve({ statusCode: 200, body: { data: [{
+        id: '1193701392',
+        type: 'songs',
+        relationships: { albums: { data: [{ id: '1193701079', type: 'albums' }] } },
+      }] } }) }
+    }
+    if (url.includes('/cn/albums/1193701079?extend=editorialVideo')) {
+      return { promise: Promise.resolve({ statusCode: 200, body: { data: [{ attributes: {
+        editorialVideo: { motionDetailSquare: {
+          video: 'https://example.test/shape-master.m3u8',
+          previewFrame: { url: 'https://example.test/shape/{w}x{h}.jpg' },
+        } },
+      } }] } }) }
+    }
+    if (url == 'https://example.test/shape-master.m3u8') {
+      return { promise: Promise.resolve({ statusCode: 200, raw: Buffer.from('#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1000000,CODECS="avc1.64001f",RESOLUTION=640x640\nshape-avc.m3u8') }) }
+    }
+    throw new Error(`unexpected URL ${url}`)
+  }
+  const cover = loadTs('src/renderer/utils/appleDynamicCover/index.ts', {
+    '@renderer/utils/request': { httpFetch },
+    './token': { getAppleMusicWebToken: async() => 'token', clearCachedToken: () => {} },
+    './hls': loadTs('src/renderer/utils/appleDynamicCover/hls.ts'),
+  })
+
+  const result = await cover.getAppleDynamicCover({ name: 'Shape of You', singer: 'Ed Sheeran', album: '÷ (Deluxe)' })
+
+  assert.equal(result?.albumId, '1193701079')
+  assert.equal(result?.storefront, 'cn')
+  assert.equal(result?.videoUrl, 'https://example.test/shape-avc.m3u8')
+  assert.ok(requestedUrls.some(url => url.includes('/cn/songs/1193701392?include=albums')))
+  assert.ok(requestedUrls.some(url => url.includes('/cn/albums/1193701079?extend=editorialVideo')))
+  assert.ok(!requestedUrls.some(url => url.includes('/albums/1193701392')))
+})
+
 test('play detail probes on open and remembers every prompted track', () => {
   const source = fs.readFileSync(path.join(root, 'src/renderer/components/layout/PlayDetail/index.vue'), 'utf8')
   assert.doesNotMatch(source, /if \(!needDynamic\) return/)
