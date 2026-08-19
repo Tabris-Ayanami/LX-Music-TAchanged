@@ -71,6 +71,7 @@
     "test:native-core": "node scripts/native-core/run-integration-tests.cjs",
     "check:backend-boundaries": "node scripts/quality/check-backend-boundaries.cjs",
     "baseline:capture": "node scripts/performance/capture-electron-baseline.cjs",
+    "memory:stage2:prepare": "node scripts/performance/stage2/prepare-workspace.cjs",
     "smoke:renderer": "node scripts/quality/smoke-electron-renderer.cjs",
     "smoke:native-media": "node scripts/quality/smoke-native-media.cjs",
     "test:bili": "node scripts/quality/test-bili-source.cjs",
