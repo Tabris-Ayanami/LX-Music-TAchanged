@@ -283,7 +283,7 @@ export default {
 @import '@renderer/assets/styles/layout.less';
 
 /* ========== 尺寸 ========== */
-/* small（顶栏）：整体高 43px，胶囊 43px，圆球 38px，展开间距 16px，折叠宽 150px */
+/* small（顶栏）：整体高 41px，胶囊 41px，圆球 38px，展开间距 16px，折叠宽 150px */
 /* 默认：整体高 50px，胶囊 50px，圆球 46px，展开间距 18px，折叠宽 170px */
 
 .container {
@@ -295,7 +295,7 @@ export default {
 }
 
 .smallContainer {
-  height: 43px;
+  height: 41px;
 }
 
 .gooFilter {
@@ -435,8 +435,14 @@ export default {
 
 .clearBtn {
   flex: none;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: none;
+  border-left: 0;
   background: transparent;
+  box-shadow: none;
   outline: none;
   cursor: pointer;
   height: 100%;
@@ -589,10 +595,10 @@ export default {
   transform: translateY(-4px) scale(.96);
 }
 
-/* 聚焦指示：凹陷加深 + 淡主色描边，不使用主色外发光（避免 gooey 下的竖线 artifact） */
+/* 聚焦指示：凹陷加深并保持中性描边，避免清除按钮旁出现主题色竖线 */
 .goo.active .main,
 .goo.expanded .main {
-  border-color: color-mix(in srgb, var(--shell-accent, var(--color-primary)) 42%, transparent);
+  border-color: var(--shell-divider, color-mix(in srgb, var(--shell-text, #182236) 18%, transparent));
   box-shadow:
     inset 0 3px 7px color-mix(in srgb, var(--shell-text, #182236) 22%, transparent),
     inset 0 -1px 1px rgba(255, 255, 255, .7),
@@ -625,11 +631,11 @@ export default {
   }
 
   & .main {
-    height: 43px;
+    height: 41px;
   }
 
   .main {
-    border-radius: 21.5px;
+    border-radius: 20.5px;
   }
 
   .collapseLabel {
@@ -639,8 +645,8 @@ export default {
   }
 
   .gooLayerMain {
-    height: 43px;
-    border-radius: 21.5px;
+    height: 41px;
+    border-radius: 20.5px;
   }
 
   .gooLayerButton {
@@ -664,7 +670,7 @@ export default {
   }
 
   .list {
-    top: 49px;
+    top: 47px;
     width: calc(100% - 54px); /* 胶囊宽 = 容器 - 圆球38 - 间距16 */
 
     li {
@@ -718,7 +724,7 @@ export default {
 
   .goo.active .main,
   .goo.expanded .main {
-    border-color: color-mix(in srgb, var(--shell-accent, var(--color-primary)) 52%, rgba(255, 255, 255, .12));
+    border-color: rgba(255, 255, 255, .16);
     box-shadow:
       inset 0 3px 7px rgba(0, 0, 0, .5),
       inset 0 -1px 1px rgba(255, 255, 255, .05);

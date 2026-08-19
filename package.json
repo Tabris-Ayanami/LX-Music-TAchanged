@@ -1,6 +1,6 @@
 {
   "name": "lx-music-desktop",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "一个免费的音乐查找助手",
   "main": "./dist/main.js",
   "scripts": {
@@ -206,6 +206,7 @@
     "electron-log": "^5.4.3",
     "font-list": "^2.0.2",
     "framer-motion": "^12.43.0",
+    "hls.js": "^1.6.19",
     "html2canvas": "^1.4.1",
     "i18next": "^26.3.6",
     "iconv-lite": "^0.7.2",

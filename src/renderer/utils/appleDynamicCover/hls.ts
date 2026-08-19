@@ -55,22 +55,25 @@ export const pickBestVariant = (content: string, _masterUrl: string): HlsVariant
   if (!variants.length) return null
 
   const avcList = variants.filter(variant => isAvc(variant.codecs))
-  const pool = avcList.length ? avcList : variants
+  if (avcList.length) {
+    // 动态封面按此前确认的 640px 上限取最高可用档，避免在大图层重复解码 1080p。
+    const withResolution = avcList.filter(variant => variant.width > 0 && variant.height > 0)
+    const withinTarget = withResolution.filter(variant => Math.max(variant.width, variant.height) <= 640)
+    const sorted = [...(withinTarget.length ? withinTarget : withResolution)].sort((a, b) => {
+      const edgeDiff = Math.max(b.width, b.height) - Math.max(a.width, a.height)
+      if (edgeDiff) return withinTarget.length ? edgeDiff : -edgeDiff
+      return b.bandwidth - a.bandwidth
+    })
+    return sorted[0] ?? avcList[0]
+  }
 
-  // 排序：分辨率优先，其次带宽
-  const sorted = [...pool].sort((a, b) => {
+  // 没有 AVC 时保留原来的中等分辨率降级策略。
+  const sorted = [...variants].sort((a, b) => {
     const areaDiff = (b.width * b.height) - (a.width * a.height)
     if (areaDiff) return areaDiff
     return b.bandwidth - a.bandwidth
   })
-
-  const target = sorted[0]
-  if (!isAvc(target.codecs)) {
-    // 全是 HEVC 时，选一个中等分辨率，降低解码压力
-    const median = sorted[Math.floor(sorted.length / 2)] ?? target
-    return median
-  }
-  return target
+  return sorted[Math.floor(sorted.length / 2)] ?? sorted[0]
 }
 
 /** 将变体 URI 解析为完整地址 */
@@ -80,4 +83,79 @@ export const resolveVariantMediaUrl = (variant: HlsVariant, masterUrl: string): 
   } catch (_) {
     return variant.uri
   }
+}
+
+interface HlsEngine {
+  loadSource: (source: string) => void
+  attachMedia: (video: HTMLVideoElement) => void
+  on: (...args: any[]) => void
+  destroy: () => void
+}
+
+interface HlsEngineConstructor {
+  new (config?: Record<string, unknown>): HlsEngine
+  isSupported: () => boolean
+  Events: { ERROR: string }
+}
+
+interface DynamicArtworkPlaybackOptions {
+  loadHls?: () => Promise<HlsEngineConstructor | { default: HlsEngineConstructor }>
+  onFatalError?: () => void
+}
+
+const isHlsSource = (source: string): boolean => /\.m3u8(?:$|[?#])/i.test(source)
+
+const clearVideoSource = (video: HTMLVideoElement) => {
+  video.removeAttribute('src')
+  video.load()
+}
+
+/**
+ * Attach one dynamic-artwork source to a video element.
+ *
+ * Chromium's native HLS support varies by platform. Prefer it when advertised,
+ * otherwise lazy-load hls.js and feed the stream through Media Source Extensions.
+ * The returned release function must be called when the artwork becomes inactive.
+ */
+export const attachDynamicArtworkSource = async(
+  video: HTMLVideoElement,
+  source: string,
+  options: DynamicArtworkPlaybackOptions = {},
+): Promise<() => void> => {
+  let engine: HlsEngine | null = null
+  let released = false
+  const release = () => {
+    if (released) return
+    released = true
+    engine?.destroy()
+    engine = null
+    clearVideoSource(video)
+  }
+
+  const nativeHls = video.canPlayType('application/vnd.apple.mpegurl') || video.canPlayType('application/x-mpegURL')
+  if (!isHlsSource(source) || nativeHls) {
+    video.src = source
+    return release
+  }
+
+  const loaded = await (options.loadHls?.() ?? import('hls.js'))
+  if (released) return release
+  const Hls = ('default' in loaded ? loaded.default : loaded) as HlsEngineConstructor
+  if (!Hls.isSupported()) {
+    video.src = source
+    return release
+  }
+
+  const instance = new Hls({
+    capLevelToPlayerSize: true,
+    maxBufferLength: 12,
+    backBufferLength: 0,
+  })
+  engine = instance
+  instance.on(Hls.Events.ERROR, (_event: string, data: { fatal?: boolean }) => {
+    if (data.fatal) options.onFatalError?.()
+  })
+  instance.loadSource(source)
+  instance.attachMedia(video)
+  return release
 }

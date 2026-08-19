@@ -55,6 +55,65 @@ test('dynamic-cover HLS resolves parent-relative variant URLs using URL semantic
   )
 })
 
+test('dynamic artwork caps AVC selection at the approved 640px target', () => {
+  const hls = loadTs('src/renderer/utils/appleDynamicCover/hls.ts')
+  const master = [
+    '#EXTM3U',
+    '#EXT-X-STREAM-INF:BANDWIDTH=300000,CODECS="avc1.64001f",RESOLUTION=320x320',
+    'shape-320.m3u8',
+    '#EXT-X-STREAM-INF:BANDWIDTH=900000,CODECS="avc1.64001f",RESOLUTION=640x640',
+    'shape-640.m3u8',
+    '#EXT-X-STREAM-INF:BANDWIDTH=2200000,CODECS="avc1.64001f",RESOLUTION=1080x1080',
+    'shape-1080.m3u8',
+  ].join('\n')
+
+  assert.equal(hls.pickBestVariant(master, 'https://example.test/master.m3u8')?.uri, 'shape-640.m3u8')
+})
+
+test('dynamic artwork uses an HLS engine when Electron cannot play m3u8 natively and releases it', async() => {
+  const hls = loadTs('src/renderer/utils/appleDynamicCover/hls.ts')
+  assert.equal(typeof hls.attachDynamicArtworkSource, 'function')
+
+  const calls = []
+  const listeners = new Map()
+  class FakeHls {
+    static isSupported() { return true }
+    static Events = { ERROR: 'error' }
+    loadSource(source) { calls.push(['loadSource', source]) }
+    attachMedia(video) { calls.push(['attachMedia', video]) }
+    on(event, listener) { listeners.set(event, listener) }
+    destroy() { calls.push(['destroy']) }
+  }
+  const video = {
+    src: '',
+    canPlayType: () => '',
+    removeAttribute: name => calls.push(['removeAttribute', name]),
+    load: () => calls.push(['load']),
+  }
+  let fatalErrors = 0
+
+  const release = await hls.attachDynamicArtworkSource(video, 'https://example.test/shape.m3u8', {
+    loadHls: async() => FakeHls,
+    onFatalError: () => { fatalErrors++ },
+  })
+
+  assert.deepEqual(calls.slice(0, 2), [
+    ['loadSource', 'https://example.test/shape.m3u8'],
+    ['attachMedia', video],
+  ])
+  listeners.get('error')?.('error', { fatal: false })
+  assert.equal(fatalErrors, 0)
+  listeners.get('error')?.('error', { fatal: true })
+  assert.equal(fatalErrors, 1)
+
+  release()
+  assert.deepEqual(calls.slice(-3), [
+    ['destroy'],
+    ['removeAttribute', 'src'],
+    ['load'],
+  ])
+})
+
 test('clearing the Apple token cache also invalidates the in-memory token', async() => {
   const originalStorage = global.localStorage
   global.localStorage = createStorage()

@@ -788,9 +788,11 @@ onBeforeUnmount(deactivateDiscoverResources)
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  height: 100%;
   gap: 6px;
-  line-height: 1;
+  line-height: normal;
   white-space: nowrap;
+  transform: translateY(1px);
 
   svg {
     fill: currentColor;
