@@ -15,6 +15,6 @@
 
 Native LibraryService 当前不成立。Stage 2C 的触发条件没有被本轮验证满足，也没有被否定；它仍需正式的完整库 5 次冷/热基线和单变量归因数据。
 
-用户已明确要求缩小本轮测试范围，因此本次停在 Stage 2A 的代表性验证结果，不补造统计，不进入 Stage 2B/2C。
+用户随后批准继续 Stage 2B。Stage 2B-1 已完成 Discover 非活动资源生命周期实验；冷热样本方向相反，不能声称总体内存收益。详细数据见 [stage-2b-discover-lifecycle.md](stage-2b-discover-lifecycle.md)。Stage 2C 仍不进入。
 
 详细条件、单次数据和原始证据哈希见 [stage-2a-memory-baseline.md](stage-2a-memory-baseline.md)。
