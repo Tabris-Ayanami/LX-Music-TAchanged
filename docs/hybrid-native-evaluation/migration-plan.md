@@ -62,7 +62,9 @@ WinUI 全量迁移已停止，不继续 Slice 2。实验成果保留在 `winui-p
 
 read 回退旧 reader；write 在任何异常时保留原文件并报告稳定错误；cache 可安全丢弃重建。
 
-## Stage 2 — Native LibraryService：扫描、监听、索引、SQLite
+## Stage 2 — Memory-First 归因与 LibraryService 决策门
+
+Stage 1 的全应用数据没有证明明显内存下降，且旧搜索页已扩展成不可直接对比的 Discover 页面。因此 Stage 2 先按 [stage-2-memory-first-handoff.md](stage-2-memory-first-handoff.md) 建立功能等价基线、定位内存来源并做证据驱动优化；只有整库常驻、数据复制或扫描峰值被证明是主要来源时，才进入下面的 Native LibraryService 工作。
 
 ### 为什么第二批
 
