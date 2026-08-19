@@ -84,26 +84,92 @@ const createScenarioActions = ({
     'Timed out waiting for rendered Discover content',
   )
 
-  const scrollPage = async() => runEvaluation(
-    'scroll-page',
-    { passes: 8 },
-    async({ passes }) => {
-      const urls = new Set()
-      const collect = () => {
-        for (const image of document.images) {
-          const url = image.currentSrc || image.src
-          if (url) urls.add(url)
+  const scrollPage = async() => {
+    const result = await runEvaluation(
+      'scroll-page',
+      { passes: 8 },
+      async({ passes }) => {
+        const view = document.querySelector('#view')
+        if (!view) return { error: 'Discover #view root was not found' }
+        const directChildren = new Set(Array.from(view.children || []))
+        const visible = element => {
+          const style = window.getComputedStyle(element)
+          const rect = element.getBoundingClientRect()
+          return style.display != 'none' && style.visibility != 'hidden' &&
+            element.getClientRects().length > 0 && rect.width > 0 && rect.height > 0
         }
-      }
-      collect()
-      for (let index = 0; index < passes; index++) {
-        window.scrollBy(0, Math.max(1, Math.floor(window.innerHeight * 0.8)))
-        await new Promise(resolve => setTimeout(resolve, 100))
-        collect()
-      }
-      return Array.from(urls)
-    },
-  )
+        const candidates = [...new Set([...directChildren, ...Array.from(view.querySelectorAll('*'))])]
+          .filter(element => {
+            const style = window.getComputedStyle(element)
+            return visible(element) && /(auto|scroll)/.test(style.overflowY) && element.scrollHeight > element.clientHeight
+          })
+        const score = element => {
+          const className = typeof element.className == 'string' ? element.className : ''
+          const classTokens = className.split(/\s+/)
+          const activeView = directChildren.has(element) && classTokens.includes('view-container') ? 1_000_000 : 0
+          const discoverPage = /(?:^|[_\s-])page(?:$|[_\s-])/i.test(className) ? 100_000 : 0
+          return activeView + discoverPage + element.scrollHeight - element.clientHeight
+        }
+        const container = candidates.sort((a, b) => score(b) - score(a))[0]
+        if (!container) return { error: 'No visible scrollable Discover page container was found' }
+
+        container.scrollTop = 0
+        await new Promise(resolve => setTimeout(resolve, 50))
+        const initialArtwork = new Set()
+        const artwork = new Set()
+        const collect = target => {
+          const viewport = container.getBoundingClientRect()
+          for (const element of container.querySelectorAll('img, [style*="background"]')) {
+            if (!visible(element)) continue
+            const rect = element.getBoundingClientRect()
+            if (rect.bottom <= viewport.top || rect.top >= viewport.bottom || rect.right <= viewport.left || rect.left >= viewport.right) continue
+            const imageUrl = element.currentSrc || element.src
+            if (imageUrl) target.add(imageUrl)
+            const background = window.getComputedStyle(element).backgroundImage
+            const match = background?.match(/^url\(["']?(.*?)["']?\)$/)
+            if (match?.[1]) target.add(match[1])
+          }
+        }
+        collect(initialArtwork)
+        for (const url of initialArtwork) artwork.add(url)
+        const before = container.scrollTop
+        const maximum = Math.max(0, container.scrollHeight - container.clientHeight)
+        let completedPasses = 0
+        for (let index = 0; index < passes && container.scrollTop < maximum; index++) {
+          const previous = container.scrollTop
+          container.scrollTop = Math.min(maximum, previous + Math.max(1, Math.floor(container.clientHeight * 0.8)))
+          await new Promise(resolve => setTimeout(resolve, 100))
+          collect(artwork)
+          if (container.scrollTop <= previous) break
+          completedPasses++
+        }
+        const after = container.scrollTop
+        const newArtworkIdentities = Array.from(artwork).filter(url => !initialArtwork.has(url))
+        return {
+          artworkIdentities: Array.from(artwork),
+          newArtworkIdentities,
+          scroll: {
+            before,
+            after,
+            maximum,
+            passes: completedPasses,
+            container: {
+              id: container.id || '',
+              className: typeof container.className == 'string' ? container.className : '',
+            },
+          },
+        }
+      },
+    )
+    if (result?.error) throw new Error(result.error)
+    if (!result?.scroll || result.scroll.after <= result.scroll.before) {
+      throw new Error(`Discover page did not make scroll progress: ${JSON.stringify(result?.scroll ?? null)}`)
+    }
+    if (!Array.isArray(result.newArtworkIdentities) || result.newArtworkIdentities.length == 0) {
+      throw new Error('Discover scroll did not collect any newly reached artwork identities')
+    }
+    return result
+  }
 
   const collectArtworkIdentities = async minimum => {
     const identities = await runEvaluation(

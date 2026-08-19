@@ -18,6 +18,8 @@ const SCENARIO_NAMES = Object.freeze([
 ])
 
 const REQUIRED_CHECKPOINTS = Object.freeze([10_000, 30_000, 60_000])
+const MAX_WINDOW_DIMENSION = 8_192
+const SUPPORTED_THEME = 'follow-profile'
 const PLAYBACK_SETTING_KEYS = Object.freeze([
   'playDetail.immersiveBackground',
   'playDetail.immersiveEffect',
@@ -37,6 +39,15 @@ const cloneAndFreeze = value => {
 
 const resolveScenarioConfig = config => {
   if (config == null || typeof config != 'object' || Array.isArray(config)) throw new TypeError('config must be an object')
+  for (const dimension of ['width', 'height']) {
+    const value = config.window?.[dimension]
+    if (!Number.isInteger(value) || value < 1 || value > MAX_WINDOW_DIMENSION) {
+      throw new RangeError(`window.${dimension} must be a positive integer no greater than ${MAX_WINDOW_DIMENSION}`)
+    }
+  }
+  if (config.theme != SUPPORTED_THEME) {
+    throw new RangeError(`theme must be the supported value ${SUPPORTED_THEME}`)
+  }
   assertNonEmptyString(config.search?.source, 'search.source')
   assertNonEmptyString(config.search?.keyword, 'search.keyword')
   if (!Number.isInteger(config.search?.expectedMinimumResults) || config.search.expectedMinimumResults < 1) {
@@ -92,18 +103,26 @@ const createActionContract = (stabilizeMs, run, cleanup = async() => {}) => Obje
   cleanup,
 })
 
-const createContract = (readiness, actions, checkpoints = []) => ({
+const createContract = (readiness, actions, recovery = null) => Object.freeze({
   readiness,
   actions,
-  checkpoints: Object.freeze([...checkpoints]),
+  checkpoints: Object.freeze([...(recovery?.checkpointsMs ?? [])]),
+  recovery,
 })
 
 const createScenarioDrivers = options => {
   const config = resolveScenarioConfig(options?.config)
   const copiedMedia = resolveCopiedMedia(options?.copiedMedia)
   const page = createScenarioActions(options)
+  const now = options?.now ?? Date.now
+  if (typeof now != 'function') throw new TypeError('now must be a function')
   const searchRoute = `#/search?source=${encodeURIComponent(config.search.source.trim())}&type=music&page=1&text=${encodeURIComponent(config.search.keyword.trim())}`
   const playbackRoute = `#/local?view=tracks&keyword=${encodeURIComponent(copiedMedia.playbackTrack)}`
+  const navigationRecovery = Object.freeze({
+    origin: 'actions-complete',
+    checkpointsMs: Object.freeze([...config.recoveryCheckpointsMs]),
+    stableCheckpointMs: config.stabilizeMs,
+  })
 
   const stabilize = async() => page.stabilize(config.stabilizeMs)
   const routeReadiness = (route, ready) => async() => {
@@ -151,7 +170,7 @@ const createScenarioDrivers = options => {
     ),
     'discover-scroll': () => createContract(
       routeReadiness('#/discover', async() => ({ renderedSections: await page.waitForDiscoverContent() })),
-      stableAction(async() => ({ artworkIdentities: await page.scrollPage() })),
+      stableAction(async() => page.scrollPage()),
     ),
     'search-results': () => createContract(
       routeReadiness(searchRoute, async() => ({
@@ -199,10 +218,13 @@ const createScenarioDrivers = options => {
             await waitUntilRendered()
           }
         }
-        await stabilize()
-        return { loops: config.navigationLoops, routes: routes.map(([route]) => route) }
+        return {
+          loops: config.navigationLoops,
+          routes: routes.map(([route]) => route),
+          recoveryStartedAtMs: now(),
+        }
       }),
-      config.recoveryCheckpointsMs,
+      navigationRecovery,
     ),
     'library-scan': () => createContract(
       async() => {
