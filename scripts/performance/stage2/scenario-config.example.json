@@ -1,0 +1,8 @@
+{
+  "window": { "width": 1280, "height": 800 },
+  "theme": "follow-profile",
+  "search": { "source": "wy", "keyword": "周杰伦", "expectedMinimumResults": 10 },
+  "stabilizeMs": 10000,
+  "navigationLoops": 10,
+  "recoveryCheckpointsMs": [10000, 30000, 60000]
+}
