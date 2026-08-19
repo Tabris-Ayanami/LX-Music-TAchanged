@@ -25,6 +25,23 @@ test('RG-023: search suggestions expand the toolbar shell into a blurred glass p
   )
   assert.match(
     searchInputSource,
+    /\$style\.gooLayer/m,
+    'The goo filter should be isolated in a decorative layer',
+  )
+  assert.match(
+    searchInputSource,
+    /\.gooLayer\s*\{[\s\S]*?filter:\s*url\(#lx-search-goo\);/m,
+    'Only the decorative background layer should receive the SVG goo filter',
+  )
+  const gooRootBlock = searchInputSource.match(/\.goo\s*\{([^}]*)\}/m)?.[1] ?? ''
+  assert.doesNotMatch(gooRootBlock, /filter:/, 'The interactive shell must not filter its border, input, or icon')
+  assert.equal(
+    (searchInputSource.match(/d="M10 6\.5C10 8\.433/g) ?? []).length,
+    1,
+    'Collapsed and expanded states should share one search-icon source',
+  )
+  assert.match(
+    searchInputSource,
     /\.list \{[\s\S]*z-index: 10;[\s\S]*background: var\(--search-panel-bg,[\s\S]*border: 1px solid var\(--shell-divider,/m,
     'The suggestion list should render as a separate readable surface above the goo layer',
   )

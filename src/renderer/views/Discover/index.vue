@@ -566,6 +566,17 @@ onBeforeUnmount(deactivateDiscoverResources)
     0 0 0 1px rgba(255, 255, 255, .3);
 }
 
+/* 下一首保持右侧锚点，展开时只向内收缩而不横穿卡片 */
+.npTabNext .npCover {
+  right: 0;
+  left: auto;
+}
+
+.npTabNext.expanded .npCover {
+  right: 14px;
+  left: auto;
+}
+
 /* 信息区：默认隐藏，展开时从封面右侧浮现 */
 .npMeta {
   position: absolute;
@@ -600,6 +611,13 @@ onBeforeUnmount(deactivateDiscoverResources)
   opacity: 1;
   transform: translateX(0);
   pointer-events: auto;
+}
+
+.npTabNext.expanded .npMeta {
+  right: 90px;
+  left: 54px;
+  text-align: right;
+  transform: translateX(0);
 }
 
 .npLabel {
@@ -645,6 +663,11 @@ onBeforeUnmount(deactivateDiscoverResources)
   svg {
     fill: currentColor;
   }
+}
+
+.npTabNext .npPlay {
+  right: auto;
+  left: 14px;
 }
 
 .npTab.expanded .npPlay {

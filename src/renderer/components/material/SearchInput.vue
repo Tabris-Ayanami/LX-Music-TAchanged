@@ -19,6 +19,10 @@
       ]"
       @click="handleMainClick"
     >
+      <div :class="$style.gooLayer" aria-hidden="true">
+        <div :class="$style.gooLayerMain" />
+        <div :class="$style.gooLayerButton" />
+      </div>
       <!-- 胶囊型搜索框：折叠时是按钮，点击展开；展开后承载输入框 + 清空钮 -->
       <div
         :class="$style.main"
@@ -30,20 +34,6 @@
       >
         <!-- 折叠态文案 -->
         <span v-show="!expanded" :class="$style.collapseLabel">{{ text || placeholder }}</span>
-
-        <!-- 折叠态搜索图标：位于胶囊内部右侧，展开时淡出（分离给外部圆球） -->
-        <transition name="icon-fade">
-          <div v-show="!expanded" :class="$style.innerIcon" aria-hidden="true">
-            <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 15 15" space="preserve">
-              <path
-                d="M10 6.5C10 8.433 8.433 10 6.5 10C4.567 10 3 8.433 3 6.5C3 4.567 4.567 3 6.5 3C8.433 3 10 4.567 10 6.5ZM9.30884 10.0159C8.53901 10.6318 7.56251 11 6.5 11C4.01472 11 2 8.98528 2 6.5C2 4.01472 4.01472 2 6.5 2C8.98528 2 11 4.01472 11 6.5C11 7.56251 10.6318 8.53901 10.0159 9.30884L12.8536 12.1464C13.0488 12.3417 13.0488 12.6583 12.8536 12.8536C13.0488 13.0488 12.3417 13.0488 12.1464 12.8536L9.30884 10.0159Z"
-                fill="currentColor"
-                fillRule="evenodd"
-                clipRule="evenodd"
-              />
-            </svg>
-          </div>
-        </transition>
 
         <input
           ref="dom_input"
@@ -327,7 +317,6 @@ export default {
   width: 170px;
   cursor: pointer;
   transition: width .5s var(--motion-ease-out), gap .5s var(--motion-ease-out);
-  filter: url(#lx-search-goo);
 
   /* 展开：胶囊撑满容器，圆球液态分离到右侧 */
   &:not(.collapsed) {
@@ -337,9 +326,50 @@ export default {
   }
 }
 
+.gooLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  pointer-events: none;
+  filter: url(#lx-search-goo);
+  transition: gap .5s var(--motion-ease-out);
+}
+
+.gooLayerMain {
+  flex: 1;
+  min-width: 0;
+  height: 50px;
+  border-radius: 25px;
+  background: var(--shell-surface-strong, rgba(255, 255, 255, .95));
+}
+
+.gooLayerButton {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  opacity: 0;
+  transform: translateX(-58px) scale(.4);
+  transition: opacity .15s ease, transform .55s var(--motion-ease-out);
+}
+
+.goo:not(.collapsed) .gooLayer {
+  gap: 18px;
+}
+
+.goo:not(.collapsed) .gooLayerButton {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
 /* ===== 胶囊型搜索框 ===== */
 .main {
   position: relative;
+  z-index: 1;
   flex: 1;
   min-width: 0;
   height: 50px;
@@ -374,30 +404,6 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   pointer-events: none;
-}
-
-/* 折叠态内部搜索图标：胶囊内部右侧 */
-.innerIcon {
-  position: absolute;
-  right: 14px;
-  top: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  color: var(--shell-muted, var(--color-button-font));
-  transition: opacity .2s ease, transform .2s ease;
-  pointer-events: none;
-
-  svg {
-    width: 15px;
-    height: 15px;
-  }
-}
-
-/* 展开时内部图标淡出，让位给外部圆球 */
-.goo:not(.collapsed) .innerIcon {
-  opacity: 0;
-  transform: scale(.5);
 }
 
 .input {
@@ -451,6 +457,7 @@ export default {
 /* ===== 圆形搜索钮：折叠时藏于胶囊内部右端，展开时从胶囊内滑出 + 液态分离 ===== */
 .searchBtn {
   position: relative;
+  z-index: 1;
   flex: none;
   width: 46px;
   height: 46px;
@@ -460,15 +467,12 @@ export default {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  background: linear-gradient(135deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 78%, #0b6e4a 22%));
-  color: #fff;
-  box-shadow:
-    0 6px 16px var(--color-primary-alpha-600),
-    inset 0 1px 0 rgba(255, 255, 255, .4),
-    inset 0 -1px 2px rgba(0, 0, 0, .12);
+  background: transparent;
+  color: var(--shell-muted, var(--color-button-font));
+  box-shadow: none;
   /* 折叠：球藏在胶囊右端内侧（向左偏移），快速显形后随 translateX/gap 滑出分离 */
-  transform: translateX(-58px) scale(.4);
-  opacity: 0;
+  transform: translateX(-58px);
+  opacity: 1;
   pointer-events: none;
   transition: opacity .15s ease, transform .55s var(--motion-ease-out);
 
@@ -481,18 +485,23 @@ export default {
 
 .goo:not(.collapsed) .searchBtn {
   transform: translateX(0) scale(1);
-  opacity: 1;
   pointer-events: auto;
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 78%, #0b6e4a 22%));
+  box-shadow:
+    0 6px 16px var(--color-primary-alpha-600),
+    inset 0 1px 0 rgba(255, 255, 255, .4),
+    inset 0 -1px 2px rgba(0, 0, 0, .12);
 }
 
-.searchBtn:hover {
+.goo:not(.collapsed) .searchBtn:hover {
   box-shadow:
     0 8px 22px var(--color-primary-alpha-600),
     inset 0 1px 0 rgba(255, 255, 255, .45),
     inset 0 -1px 2px rgba(0, 0, 0, .12);
   transform: translateX(0) scale(1.06);
 }
-.searchBtn:active {
+.goo:not(.collapsed) .searchBtn:active {
   transform: translateX(0) scale(.92);
 }
 
@@ -611,6 +620,10 @@ export default {
     gap: 16px;
   }
 
+  &.goo:not(.collapsed) .gooLayer {
+    gap: 16px;
+  }
+
   & .main {
     height: 43px;
   }
@@ -625,13 +638,14 @@ export default {
     padding-right: 42px;
   }
 
-  .innerIcon {
-    right: 13px;
+  .gooLayerMain {
+    height: 43px;
+    border-radius: 21.5px;
+  }
 
-    svg {
-      width: 14px;
-      height: 14px;
-    }
+  .gooLayerButton {
+    width: 38px;
+    height: 38px;
   }
 
   .input {
@@ -661,9 +675,10 @@ export default {
 
 @media (prefers-reduced-motion: reduce) {
   .goo,
+  .gooLayer,
+  .gooLayerButton,
   .main,
   .searchBtn,
-  .innerIcon,
   .list,
   .list::before,
   .list ul,
