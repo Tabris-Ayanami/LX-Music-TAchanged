@@ -34,7 +34,9 @@ WinUI 全量迁移已停止，不继续 Slice 2。实验成果保留在 `winui-p
 
 没有行为切换；只需撤回 adapter 注入。Stage 0 不删除旧路径。
 
-## Stage 1 — Native MetadataService + ArtworkService
+## Stage 1 — Native MetadataService + ArtworkService（已完成，2026-08-19）
+
+实际实现、差异与性能见 [stage-1-status.md](stage-1-status.md)、[stage-1-metadata-shadow-report.md](stage-1-metadata-shadow-report.md) 和 [stage-1-performance.md](stage-1-performance.md)。读取保持 shadow，Native write 和 artwork 默认未接管；这不表示 Library、Download 或 Player 已 Native 化。
 
 ### 为什么先做
 
@@ -43,7 +45,7 @@ WinUI 全量迁移已停止，不继续 Slice 2。实验成果保留在 `winui-p
 ### 工作
 
 - 建立 Rust sidecar 骨架、named pipe 握手、版本/capability、日志和 supervision。
-- 通过窄 FFI 直接调用 TagLib；覆盖现有 15 类扩展名和字段映射。
+- 使用 Rust Lofty 主路径与 FFmpeg 只读 fallback；覆盖批准的 15 类/16 扩展名和字段映射，不引入 Qt/fooyin。
 - 先做 metadata read shadow mode：旧/新同时读取，记录差异但使用旧结果。
 - 实现 artwork 提取、方向/色彩处理、64/128/256/512 变体、原子 cache、LRU 与总字节预算。
 - UI 改用 artwork handle/URL/二进制，不接收 base64。

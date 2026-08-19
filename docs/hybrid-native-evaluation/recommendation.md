@@ -166,10 +166,13 @@ Chromium/WebView renderer、Vue/React、DOM/CSS、Folia、Three.js、WebGL textu
 
 ## 当前状态与下一决策
 
-Stage 0 已于 2026-08-11 完成：统一 Backend API、Electron adapter、fake/contract tests、依赖守卫、主要入口迁移和基线均已落地。当前应停止并审阅 [stage-0-status.md](stage-0-status.md)；Stage 1 尚未开始。现在不应：
+Stage 1 已于 2026-08-19 完成本轮限定范围：Rust sidecar、真实媒体 corpus、Native Metadata shadow、安全写入、Native Artwork variants/cache、feature flag 与 Electron 回退均已落地。详见 [stage-1-status.md](stage-1-status.md)。
 
-- 实现 Native Core；
-- 修改 Electron 行为；
+下一步建议可以进入 Stage 2，但 Metadata read 继续 shadow、Native write 继续 opt-in；先修复 MP3 comment/WV year promotion blocker，并让新 LibraryService 使用独立 shadow index。当前仍不应：
+
+- 默认启用 Native metadata write；
+- 让两套实现同时写 metadata 或数据库；
+- 把现有 SQLite 所有权直接交给 sidecar；
 - 继续 WinUI Slice 2；
 - Fork fooyin；
 - 先写 WASAPI 播放器；
