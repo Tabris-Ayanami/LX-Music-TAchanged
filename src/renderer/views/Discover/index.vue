@@ -7,7 +7,7 @@ div(:class="$style.page")
       :style="prevStyle"
       @mouseenter="hoverTab = 'prev'" @mouseleave="hoverTab = 'cur'"
     )
-      img(v-if="prevSong && songPic(prevSong)" :class="$style.npCover" :src="songPic(prevSong)" loading="lazy" @load="imgLoad" @error="imgError")
+      img(v-if="discoverActive && prevSong && songPic(prevSong)" :class="$style.npCover" :src="songPic(prevSong)" loading="lazy" @load="imgLoad" @error="imgError")
       div(v-else :class="[$style.npCover, $style.npCoverFallback]")
         svg(viewBox="0 0 24 24" width="24" height="24" aria-hidden="true")
           use(xlink:href="#icon-lx-note")
@@ -24,7 +24,7 @@ div(:class="$style.page")
       :style="curStyle"
       @mouseenter="hoverTab = 'cur'" @mouseleave="hoverTab = 'cur'"
     )
-      img(v-if="musicInfo.pic" :class="$style.npCover" :src="musicInfo.pic" loading="lazy" @load="imgLoad" @error="imgError")
+      img(v-if="discoverActive && musicInfo.pic" :class="$style.npCover" :src="musicInfo.pic" loading="lazy" @load="imgLoad" @error="imgError")
       div(v-else :class="[$style.npCover, $style.npCoverFallback]")
         svg(viewBox="0 0 24 24" width="24" height="24" aria-hidden="true")
           use(xlink:href="#icon-lx-note")
@@ -43,7 +43,7 @@ div(:class="$style.page")
       :style="nextStyle"
       @mouseenter="hoverTab = 'next'" @mouseleave="hoverTab = 'cur'"
     )
-      img(v-if="nextSong && songPic(nextSong)" :class="$style.npCover" :src="songPic(nextSong)" loading="lazy" @load="imgLoad" @error="imgError")
+      img(v-if="discoverActive && nextSong && songPic(nextSong)" :class="$style.npCover" :src="songPic(nextSong)" loading="lazy" @load="imgLoad" @error="imgError")
       div(v-else :class="[$style.npCover, $style.npCoverFallback]")
         svg(viewBox="0 0 24 24" width="24" height="24" aria-hidden="true")
           use(xlink:href="#icon-lx-note")
@@ -76,7 +76,7 @@ div(:class="$style.page")
       div(v-else-if="dailyList.length" ref="dailyRailRef" :class="$style.dailyRail" @wheel="handleRailWheel")
         button(v-for="(item, index) in dailyList" :key="item.id" type="button" :class="$style.dailyCard" @click="playDaily(index)")
           div(:class="$style.dailyCoverWrap")
-            img(:class="$style.dailyCover" :src="item.meta.picUrl" loading="lazy" @load="imgLoad" @error="imgError")
+            img(v-if="discoverActive" :class="$style.dailyCover" :src="item.meta.picUrl" loading="lazy" @load="imgLoad" @error="imgError")
             div(:class="$style.dailyOverlay")
               span(:class="$style.dailyIndex") {{ String(index + 1).padStart(2, '0') }}
           div(:class="$style.dailyMeta")
@@ -130,6 +130,7 @@ div(:class="$style.page")
 
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from '@common/utils/vueTools'
+import { onActivated, onDeactivated } from 'vue'
 import { useRouter } from '@common/utils/vueRouter'
 import OriginChip from '@renderer/components/common/OriginChip.vue'
 import { appSetting } from '@renderer/store/setting'
@@ -144,9 +145,14 @@ import { sourceNames } from '@renderer/store'
 import { playMusicInDefaultList, playMusicsInDefaultList } from '@renderer/utils/playDefaultList'
 import { toNewMusicInfo } from '@common/utils/tools'
 import music from '@renderer/utils/musicSdk'
+import resourceLifecycleModule from './resourceLifecycle.cjs'
+
+const { createDiscoverResourceLifecycle } = resourceLifecycleModule
 
 const router = useRouter()
 const dailyRailRef = ref(null)
+const discoverActive = ref(false)
+const resourceLifecycle = createDiscoverResourceLifecycle()
 
 const handleRailWheel = event => {
   const el = dailyRailRef.value
@@ -259,7 +265,7 @@ const adjustColor = (r, g, b) => {
 }
 
 const getSolidColor = url => {
-  if (!url) return FALLBACK_BG
+  if (!discoverActive.value || !url) return FALLBACK_BG
   if (colorCache.has(url)) return colorCache.get(url)
   colorCache.set(url, FALLBACK_BG)
 
@@ -283,21 +289,22 @@ const getSolidColor = url => {
   }
 
   // 方案1：直接 <img crossOrigin> 加载（图床带 CORS 头即可成功）
-  const img = new Image()
-  img.crossOrigin = 'anonymous'
-  img.onload = () => {
-    tryExtractFromImage(img)
-  }
-  img.onerror = () => {
+  resourceLifecycle.loadImage({
+    url,
+    crossOrigin: 'anonymous',
+    onLoad: img => {
+      tryExtractFromImage(img)
+    },
+    onError: () => {
     // 方案2：<img> 不带 crossOrigin 加载（能显示，但 canvas 会污染，仅尝试）
-    const img2 = new Image()
-    img2.onload = () => {
-      tryExtractFromImage(img2)
-    }
-    img2.onerror = () => {}
-    img2.src = url
-  }
-  img.src = url
+      resourceLifecycle.loadImage({
+        url,
+        onLoad: img => {
+          tryExtractFromImage(img)
+        },
+      })
+    },
+  })
 
   return FALLBACK_BG
 }
@@ -329,19 +336,23 @@ const nextStyle = computed(() => versionedTabStyle(coverOf(nextSong.value), colo
 
 // ===== 每日推荐 =====
 const loadDaily = async() => {
-  if (!hasWYCookie.value) return
+  if (!discoverActive.value || !hasWYCookie.value) return
   dailyLoading.value = true
   dailyError.value = false
-  try {
-    const list = await music.wy.account.getDailyRecommend()
-    dailyList.value = list.map(item => toNewMusicInfo(item))
-  } catch (err) {
-    console.log(err)
-    dailyList.value = []
-    dailyError.value = true
-  } finally {
-    dailyLoading.value = false
-  }
+  await resourceLifecycle.runWhileActive({
+    task: () => music.wy.account.getDailyRecommend(),
+    onSuccess: list => {
+      dailyList.value = list.map(item => toNewMusicInfo(item))
+    },
+    onError: err => {
+      console.log(err)
+      dailyList.value = []
+      dailyError.value = true
+    },
+    onSettled: () => {
+      dailyLoading.value = false
+    },
+  })
 }
 
 const playDaily = async(index) => {
@@ -428,7 +439,7 @@ const handleSearch = text => {
 }
 
 watch(hasWYCookie, value => {
-  if (value) {
+  if (value && discoverActive.value) {
     void loadDaily()
   } else {
     dailyList.value = []
@@ -438,13 +449,30 @@ watch(hasWYCookie, value => {
 
 onMounted(() => {
   void getHistoryList()
-  void loadHot()
-  if (hasWYCookie.value) void loadDaily()
 })
 
-onBeforeUnmount(() => {
+const activateDiscoverResources = () => {
+  if (discoverActive.value) return
+  resourceLifecycle.activate()
+  discoverActive.value = true
+  if (!hotList.value.length) void loadHot()
+  if (hasWYCookie.value) void loadDaily()
+}
+
+const deactivateDiscoverResources = () => {
+  if (!discoverActive.value) return
+  discoverActive.value = false
+  resourceLifecycle.deactivate()
+  dailyList.value = []
+  dailyLoading.value = false
+  dailyError.value = false
   colorCache.clear()
-})
+  hoverTab.value = 'cur'
+}
+
+onActivated(activateDiscoverResources)
+onDeactivated(deactivateDiscoverResources)
+onBeforeUnmount(deactivateDiscoverResources)
 </script>
 
 <style lang="less" module>
