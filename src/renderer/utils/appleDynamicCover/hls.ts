@@ -95,12 +95,13 @@ interface HlsEngine {
 interface HlsEngineConstructor {
   new (config?: Record<string, unknown>): HlsEngine
   isSupported: () => boolean
-  Events: { ERROR: string }
+  Events: { ERROR: string, MANIFEST_PARSED: string }
 }
 
 interface DynamicArtworkPlaybackOptions {
   loadHls?: () => Promise<HlsEngineConstructor | { default: HlsEngineConstructor }>
   onFatalError?: () => void
+  onPlaybackError?: () => void
 }
 
 const isHlsSource = (source: string): boolean => /\.m3u8(?:$|[?#])/i.test(source)
@@ -132,9 +133,17 @@ export const attachDynamicArtworkSource = async(
     clearVideoSource(video)
   }
 
+  const startPlayback = () => {
+    if (released || !video.paused) return
+    void video.play().catch(() => {
+      if (!released) options.onPlaybackError?.()
+    })
+  }
+
   const nativeHls = video.canPlayType('application/vnd.apple.mpegurl') || video.canPlayType('application/x-mpegURL')
   if (!isHlsSource(source) || nativeHls) {
     video.src = source
+    startPlayback()
     return release
   }
 
@@ -143,6 +152,7 @@ export const attachDynamicArtworkSource = async(
   const Hls = ('default' in loaded ? loaded.default : loaded) as HlsEngineConstructor
   if (!Hls.isSupported()) {
     video.src = source
+    startPlayback()
     return release
   }
 
@@ -155,6 +165,7 @@ export const attachDynamicArtworkSource = async(
   instance.on(Hls.Events.ERROR, (_event: string, data: { fatal?: boolean }) => {
     if (data.fatal) options.onFatalError?.()
   })
+  instance.on(Hls.Events.MANIFEST_PARSED, startPlayback)
   instance.loadSource(source)
   instance.attachMedia(video)
   return release

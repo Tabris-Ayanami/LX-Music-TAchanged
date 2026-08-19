@@ -8,7 +8,7 @@
     playsinline
     loop
     autoplay
-    preload="metadata"
+    preload="auto"
     disablepictureinpicture
     @error="handleError"
   />
@@ -53,7 +53,10 @@ const attachVideo = async() => {
   if (!props.active || !video || !source) return
 
   try {
-    const release = await attachDynamicArtworkSource(video, source, { onFatalError: handleError })
+    const release = await attachDynamicArtworkSource(video, source, {
+      onFatalError: handleError,
+      onPlaybackError: handleError,
+    })
     if (generation != attachGeneration || video != videoRef.value || source != props.src || !props.active) {
       release()
       return

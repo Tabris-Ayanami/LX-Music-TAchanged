@@ -67,8 +67,6 @@ div(:class="$style.page")
         )
           span(:class="$style.playAllFill" :style="playAllFillStyle")
           span(:class="$style.playAllLabel")
-            svg(viewBox="0 0 24 24" width="14" height="14" aria-hidden="true")
-              use(xlink:href="#icon-play")
             span {{ $t('discover__play_all') }}
     template(v-if="hasWYCookie")
       div(v-if="dailyLoading" :class="$style.dailyEmpty" role="status" aria-live="polite")
@@ -789,15 +787,8 @@ onBeforeUnmount(deactivateDiscoverResources)
   align-items: center;
   justify-content: center;
   height: 100%;
-  gap: 6px;
-  line-height: normal;
+  line-height: 1;
   white-space: nowrap;
-  transform: translateY(1px);
-
-  svg {
-    fill: currentColor;
-    flex: none;
-  }
 }
 
 // ===== 每日推荐：横向滚动 =====

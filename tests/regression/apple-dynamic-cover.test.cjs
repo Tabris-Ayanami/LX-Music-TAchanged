@@ -78,7 +78,7 @@ test('dynamic artwork uses an HLS engine when Electron cannot play m3u8 natively
   const listeners = new Map()
   class FakeHls {
     static isSupported() { return true }
-    static Events = { ERROR: 'error' }
+    static Events = { ERROR: 'error', MANIFEST_PARSED: 'manifestParsed' }
     loadSource(source) { calls.push(['loadSource', source]) }
     attachMedia(video) { calls.push(['attachMedia', video]) }
     on(event, listener) { listeners.set(event, listener) }
@@ -86,7 +86,9 @@ test('dynamic artwork uses an HLS engine when Electron cannot play m3u8 natively
   }
   const video = {
     src: '',
+    paused: true,
     canPlayType: () => '',
+    play: async() => { calls.push(['play']) },
     removeAttribute: name => calls.push(['removeAttribute', name]),
     load: () => calls.push(['load']),
   }
@@ -101,6 +103,9 @@ test('dynamic artwork uses an HLS engine when Electron cannot play m3u8 natively
     ['loadSource', 'https://example.test/shape.m3u8'],
     ['attachMedia', video],
   ])
+  listeners.get('manifestParsed')?.('manifestParsed')
+  await new Promise(resolve => setImmediate(resolve))
+  assert.ok(calls.some(call => call[0] == 'play'), 'HLS playback must be started after its manifest is ready')
   listeners.get('error')?.('error', { fatal: false })
   assert.equal(fatalErrors, 0)
   listeners.get('error')?.('error', { fatal: true })
@@ -112,6 +117,58 @@ test('dynamic artwork uses an HLS engine when Electron cannot play m3u8 natively
     ['removeAttribute', 'src'],
     ['load'],
   ])
+})
+
+test('released dynamic artwork ignores a late play rejection', async() => {
+  const hls = loadTs('src/renderer/utils/appleDynamicCover/hls.ts')
+  const listeners = new Map()
+  class FakeHls {
+    static isSupported() { return true }
+    static Events = { ERROR: 'error', MANIFEST_PARSED: 'manifestParsed' }
+    loadSource() {}
+    attachMedia() {}
+    on(event, listener) { listeners.set(event, listener) }
+    destroy() {}
+  }
+  let rejectPlay
+  const playResult = new Promise((_resolve, reject) => { rejectPlay = reject })
+  const video = {
+    paused: true,
+    canPlayType: () => '',
+    play: () => playResult,
+    removeAttribute: () => {},
+    load: () => {},
+  }
+  let playbackErrors = 0
+  const release = await hls.attachDynamicArtworkSource(video, 'https://example.test/late.m3u8', {
+    loadHls: async() => FakeHls,
+    onPlaybackError: () => { playbackErrors++ },
+  })
+
+  listeners.get('manifestParsed')?.('manifestParsed')
+  release()
+  rejectPlay(new Error('released'))
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(playbackErrors, 0)
+})
+
+test('failed dynamic-cover lookup can be retried for the same track', async() => {
+  let callCount = 0
+  const dynamicCover = loadTs('src/renderer/store/player/dynamicCover.ts', {
+    '@common/utils/vueTools': { ref: value => ({ value }) },
+    '@renderer/utils/appleDynamicCover': {
+      getAppleDynamicCover: async() => {
+        callCount++
+        return callCount == 1 ? null : { videoUrl: 'https://example.test/retry.m3u8', posterUrl: null }
+      },
+      clearAppleDynamicCoverCache: () => {},
+    },
+  })
+  const info = { id: 'track-retry', name: 'Song', singer: 'Artist', album: 'Album' }
+
+  assert.equal(await dynamicCover.loadDynamicCover(info), false)
+  assert.equal(await dynamicCover.loadDynamicCover(info), true)
+  assert.equal(callCount, 2)
 })
 
 test('clearing the Apple token cache also invalidates the in-memory token', async() => {
@@ -257,5 +314,6 @@ test('play detail gates lookup on the appearance switch and delegates video life
   assert.ok((playDetail.match(/DynamicArtworkVideo/g) ?? []).length >= 3)
   assert.match(immersive, /DynamicArtworkVideo/)
   assert.match(dynamicVideo, /v-if="active && src"/)
-  assert.match(dynamicVideo, /preload="metadata"/)
+  assert.match(dynamicVideo, /preload="auto"/)
+  assert.match(playDetail, /if \(!loaded && lazyLoadKey == musicId\) lazyLoadKey = ''/)
 })

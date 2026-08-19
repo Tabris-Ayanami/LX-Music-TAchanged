@@ -14,3 +14,11 @@ test('Discover next-song expansion keeps artwork anchored on the right', () => {
   assert.match(source, /\.npTabNext\.expanded\s+\.npMeta\s*\{[\s\S]*?text-align:\s*right;/m)
   assert.match(source, /\.npTabNext\s+\.npPlay\s*\{[\s\S]*?left:\s*14px;/m)
 })
+
+test('Discover play-all centers its text without an invisible play-icon slot', () => {
+  const label = source.match(/span\(:class="\$style\.playAllLabel"\)([\s\S]*?)\n\s*template\(v-if=/)?.[1] ?? ''
+  const labelStyle = source.match(/\.playAllLabel\s*\{([^}]*)\}/)?.[1] ?? ''
+  assert.doesNotMatch(label, /svg|icon-play/)
+  assert.match(label, /span \{\{ \$t\('discover__play_all'\) \}\}/)
+  assert.doesNotMatch(labelStyle, /transform:\s*translateY/)
+})

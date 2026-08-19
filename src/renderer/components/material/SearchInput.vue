@@ -458,6 +458,12 @@ export default {
   &:hover {
     color: var(--color-primary-font-hover);
   }
+
+  /* 全局 button:focus-visible 使用 !important；在 overflow 胶囊内会只剩左侧竖线。 */
+  &:focus-visible {
+    outline: none !important;
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  }
 }
 
 /* ===== 圆形搜索钮：折叠时藏于胶囊内部右端，展开时从胶囊内滑出 + 液态分离 ===== */

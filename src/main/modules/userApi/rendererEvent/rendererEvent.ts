@@ -4,6 +4,7 @@ import USER_API_RENDERER_EVENT_NAME from './name'
 import { createWindow, getProxy, openDevTools, sendEvent } from '../main'
 import { getUserApis } from '../utils'
 import { sendShowUpdateAlert, sendStatusChange } from '@main/modules/winMain'
+import { shouldOpenUserApiDevTools } from '../devTools'
 
 let userApi: LX.UserApi.UserApiInfo
 let apiStatus: LX.UserApi.UserApiStatus = { status: true }
@@ -60,6 +61,7 @@ export const init = () => {
     }
   }
   const handleOpenDevTools = () => {
+    if (!shouldOpenUserApiDevTools(process.env.NODE_ENV, global.envParams.cmdParams)) return
     openDevTools()
   }
   const handleShowUpdateAlert = ({ params: { data } }: UpdateInfoParams) => {

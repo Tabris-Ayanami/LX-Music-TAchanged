@@ -787,7 +787,8 @@ export default {
       if (lazyLoadKey == musicId) return
       lazyLoadKey = musicId
 
-      await loadDynamicCover(musicInfo)
+      const loaded = await loadDynamicCover(musicInfo)
+      if (!loaded && lazyLoadKey == musicId) lazyLoadKey = ''
     }
 
     // 切歌时重置动态封面状态

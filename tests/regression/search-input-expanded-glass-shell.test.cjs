@@ -77,3 +77,11 @@ test('RG-027: focusing the toolbar search alone does not force-open the expanded
     'Focus handling should preserve the compact shell when the input is still empty',
   )
 })
+
+test('RG-028: the clear action replaces the clipped global focus ring with an internal focus treatment', () => {
+  assert.match(
+    searchInputSource,
+    /\.clearBtn\s*\{[\s\S]*?&:focus-visible\s*\{[\s\S]*?outline:\s*none\s*!important;/m,
+    'The global button focus ring is clipped by the search capsule and otherwise appears as a theme-color divider',
+  )
+})
