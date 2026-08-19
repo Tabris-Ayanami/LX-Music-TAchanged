@@ -398,6 +398,9 @@ declare global {
        */
       'playDetail.coverType': 'static' | 'dynamic'
 
+      /** 是否自动使用 Apple Music 动态封面 */
+      'playDetail.appleDynamicCover': boolean
+
       /**
        * 播放详情页模糊背景是否使用动态封面
        */

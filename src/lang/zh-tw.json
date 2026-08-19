@@ -595,6 +595,8 @@
   "setting__cover_dynamic": "動態封面",
   "setting__cover_dynamic_desc": "使用 Apple Music 動態封面，未取得時自動回退靜態封面",
   "setting__cover_dynamic_unavailable": "目前歌曲暫無可用的動態封面，已回退為靜態封面",
+  "setting__apple_dynamic_cover": "Apple Music 動態封面",
+  "setting__apple_dynamic_cover_tip": "有動態封面時自動使用，沒有時回退為靜態封面。",
   "setting__play_detail_background_dynamic_cover": "動態封面",
   "setting__play_detail_background_dynamic_cover_tip": "開啟後使用動態封面作為模糊背景，未取得時回退專輯封面",
   "setting__play_detail_immersive_background_use_dynamic": "動態封面背景",

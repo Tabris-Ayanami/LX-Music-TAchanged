@@ -595,6 +595,8 @@
   "setting__cover_dynamic": "Dynamic cover",
   "setting__cover_dynamic_desc": "Use the Apple Music animated artwork; falls back to the static cover when unavailable",
   "setting__cover_dynamic_unavailable": "No dynamic cover available for the current song, fell back to the static cover",
+  "setting__apple_dynamic_cover": "Apple Music dynamic artwork",
+  "setting__apple_dynamic_cover_tip": "Automatically use animated artwork when available; otherwise use the static cover.",
   "setting__play_detail_background_dynamic_cover": "Dynamic cover",
   "setting__play_detail_background_dynamic_cover_tip": "Use the dynamic cover as the blurred background when available",
   "setting__play_detail_immersive_background_use_dynamic": "Dynamic cover background",

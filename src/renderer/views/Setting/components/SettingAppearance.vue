@@ -41,25 +41,15 @@ dd
         strong {{ item.label }}
         small {{ item.description }}
   h3#appearance_cover_setting(:class="$style.sectionTitle") {{ $t('setting__cover') }}
-  p(:class="$style.coverTip") {{ $t('setting__cover_tip') }}
-  div(:class="$style.viewOptions")
-    label(
-      v-for="item in coverStyles"
-      :key="item.id"
-      :class="[$style.viewOption, { [$style.active]: appSetting['playDetail.coverType'] == item.id }]"
+  div(:class="$style.switchRow")
+    span(:class="$style.optionBody")
+      strong {{ $t('setting__apple_dynamic_cover') }}
+      small {{ $t('setting__apple_dynamic_cover_tip') }}
+    base-switch(
+      :model-value="appSetting['playDetail.appleDynamicCover']"
+      :label="$t('setting__apple_dynamic_cover')"
+      @update:model-value="updateSetting({ 'playDetail.appleDynamicCover': $event })"
     )
-      base-checkbox(
-        :id="`setting_appearance_cover_${item.id}`"
-        name="setting_appearance_cover"
-        need
-        :model-value="appSetting['playDetail.coverType']"
-        :value="item.id"
-        :aria-label="item.label"
-        @update:model-value="updateSetting({ 'playDetail.coverType': $event })"
-      )
-      span(:class="$style.optionBody")
-        strong {{ item.label }}
-        small {{ item.description }}
 SettingPlayDetail(:embedded="true")
 </template>
 
@@ -110,18 +100,6 @@ const artistViewStyles: Array<ViewStyleOption<LX.AppSetting['localMusic.artistVi
   },
 ]
 
-const coverStyles: Array<ViewStyleOption<LX.AppSetting['playDetail.coverType']>> = [
-  {
-    id: 'static',
-    label: window.i18n.t('setting__cover_static'),
-    description: window.i18n.t('setting__cover_static_desc'),
-  },
-  {
-    id: 'dynamic',
-    label: window.i18n.t('setting__cover_dynamic'),
-    description: window.i18n.t('setting__cover_dynamic_desc'),
-  },
-]
 </script>
 
 <style lang="less" module>
@@ -141,6 +119,19 @@ const coverStyles: Array<ViewStyleOption<LX.AppSetting['playDetail.coverType']>>
   margin: 5px 0 12px;
   color: var(--color-font-label);
   font-size: 12px;
+}
+
+.switchRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 72px;
+  padding: 14px 16px;
+  border: 1px solid var(--shell-control-border, rgba(127, 145, 170, .2));
+  border-radius: 12px;
+  background: var(--shell-control, var(--color-button-background));
+  box-sizing: border-box;
 }
 
 .viewOption {
