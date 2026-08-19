@@ -3,18 +3,12 @@ transition(@before-enter="handleBeforeEnter" @enter="handleEnter" @after-enter="
   div(v-show="isShowPlayerDetail" :class="[$style.container, $style[`layout-${layoutStyle}`], { fullscreen: isFullscreen, [$style.isPlaying]: isPlay }]" :style="detailStyle" @contextmenu="handleContextMenu")
     FluidBackground(v-if="layoutStyle != 'pixel' && backgroundType == 'aura'" :class="$style.bg" :cover="musicInfo.pic" :colors="detailColors" :active="visibled")
     div(v-else-if="layoutStyle != 'pixel'" :class="$style.bgBlur" :style="blurBackgroundStyle" aria-hidden="true")
-      video(
-        v-if="showBlurDynamicCover && dynamicCoverUrl"
-        ref="bgBlurVideoRef"
+      DynamicArtworkVideo(
+        v-if="showBlurDynamicCover"
         :class="$style.bgBlurVideo"
         :src="dynamicCoverUrl"
         :poster="dynamicCoverPoster || musicInfo.pic || undefined"
-        muted
-        playsinline
-        loop
-        autoplay
-        preload="auto"
-        disablepictureinpicture
+        :active="dynamicArtworkActive"
         @error="bgBlurVideoFailed = true"
       )
     div(:class="$style.bgTint")
@@ -27,18 +21,12 @@ transition(@before-enter="handleBeforeEnter" @enter="handleEnter" @after-enter="
       section.left(:class="$style.left")
         div(:class="$style.leftInner")
           button(type="button" :class="$style.artworkWrap" data-play-detail-artwork="true" aria-label="Close play detail" @click.stop="hide")
-            video(
-              v-if="showDynamicCoverArtwork && dynamicCoverUrl"
-              ref="artworkVideoRef"
+            DynamicArtworkVideo(
+              v-if="showDynamicCoverArtwork"
               :class="$style.img"
               :src="dynamicCoverUrl"
               :poster="dynamicCoverPoster || musicInfo.pic || undefined"
-              muted
-              playsinline
-              loop
-              autoplay
-              preload="auto"
-              disablepictureinpicture
+              :active="dynamicArtworkActive"
               @error="artworkVideoFailed = true"
             )
             img(v-else-if="musicInfo.pic" :class="$style.img" :src="musicInfo.pic")
@@ -93,10 +81,10 @@ import MusicComment from './components/MusicComment/index.vue'
 import PlayQueueBtn from './components/PlayQueueBtn.vue'
 import ControlBtnsRightHeader from './ControlBtnsRightHeader.vue'
 import ImmersiveLyrics from './ImmersiveLyrics.vue'
+import DynamicArtworkVideo from '@renderer/components/player/DynamicArtworkVideo.vue'
 import { registerAutoHideMounse, unregisterAutoHideMounse } from './autoHideMounse'
-import { appSetting, updateSetting } from '@renderer/store/setting'
+import { appSetting } from '@renderer/store/setting'
 import { backend } from '@renderer/backend'
-import { dialog } from '@renderer/plugins/Dialog'
 import { clearPlayDetailOrigin, getPlayDetailOrigin } from '@renderer/utils/playDetailTransition'
 import { dynamicCoverUrl, dynamicCoverPoster, loadDynamicCover, resetDynamicCover } from '@renderer/store/player/dynamicCover'
 
@@ -642,6 +630,7 @@ export default {
     FluidBackground,
     MusicComment,
     PlayQueueBtn,
+    DynamicArtworkVideo,
   },
   setup() {
     const visibled = ref(false)
@@ -649,8 +638,6 @@ export default {
     const pixelControlsVisible = ref(false)
     const artworkVideoFailed = ref(false)
     const bgBlurVideoFailed = ref(false)
-    const artworkVideoRef = ref(null)
-    const bgBlurVideoRef = ref(null)
     const detailColors = ref(DEFAULT_DETAIL_COLORS)
 
     let clickTime = 0
@@ -770,56 +757,38 @@ export default {
     const pixelEchoStyle = computed(() => ({
       backgroundImage: musicInfo.pic ? `url("${String(musicInfo.pic).replace(/"/g, '\\"')}")` : undefined,
     }))
+    const dynamicArtworkActive = computed(() => (
+      !!appSetting['playDetail.appleDynamicCover'] &&
+      isShowPlayerDetail.value &&
+      visibled.value &&
+      !!musicInfo.id
+    ))
     const showDynamicCoverArtwork = computed(() => (
-      appSetting['playDetail.coverType'] == 'dynamic' &&
+      dynamicArtworkActive.value &&
       !!dynamicCoverUrl.value &&
       !artworkVideoFailed.value
     ))
     const showBlurDynamicCover = computed(() => (
+      dynamicArtworkActive.value &&
       backgroundType.value == 'blur' &&
       !!appSetting['playDetail.backgroundUseDynamicCover'] &&
       !!dynamicCoverUrl.value &&
       !bgBlurVideoFailed.value
     ))
 
-    // 记录已经询问过动态封面的歌曲，避免重复弹窗
-    const promptedMusicIds = new Set()
     // 记录详情页打开时已经触发过的动态封面加载 key
     let lazyLoadKey = ''
 
     // 在详情页打开时，惰性检查并加载动态封面。
     // 避免在应用启动（恢复播放）时立即联网，导致初始化变慢。
     const tryLoadDynamicCover = async() => {
-      if (!musicInfo.id) return
+      if (!appSetting['playDetail.appleDynamicCover'] || !isShowPlayerDetail.value || !musicInfo.id) return
       const musicId = String(musicInfo.id)
       if (lazyLoadKey == musicId) return
       lazyLoadKey = musicId
 
-      const found = await loadDynamicCover(musicInfo)
-      if (!found) return
-
-      // 如果当前还没启用动态封面，且这首歌成功找到了动态封面，弹窗询问是否切换
-      if (appSetting['playDetail.coverType'] != 'dynamic' && !promptedMusicIds.has(musicId)) {
-        promptedMusicIds.add(musicId)
-        const confirm = await dialog.confirm({
-          message: window.i18n.t('setting__play_detail_dynamic_cover_prompt'),
-          cancelButtonText: window.i18n.t('setting__play_detail_dynamic_cover_prompt_no'),
-          confirmButtonText: window.i18n.t('setting__play_detail_dynamic_cover_prompt_yes'),
-        })
-        if (confirm) {
-          updateSetting({ 'playDetail.coverType': 'dynamic' })
-        }
-      }
+      await loadDynamicCover(musicInfo)
     }
-
-    // 播放容器从隐藏切到可见时，确保视频继续播放（autoplay 在隐藏元素上可能被浏览器拦截）
-    watch(visibled, visible => {
-      if (!visible) return
-      window.setTimeout(() => {
-        artworkVideoRef.value?.play?.().catch(() => {})
-        bgBlurVideoRef.value?.play?.().catch(() => {})
-      }, 320)
-    })
 
     // 切歌时重置动态封面状态
     watch(() => musicInfo.id, async() => {
@@ -830,12 +799,12 @@ export default {
       artworkVideoFailed.value = false
       bgBlurVideoFailed.value = false
       // 详情页已打开或处于沉浸模式时，切歌后自动加载新歌的动态封面
-      if (isShowPlayerDetail.value || isImmersive.value) {
+      if (appSetting['playDetail.appleDynamicCover'] && (isShowPlayerDetail.value || isImmersive.value)) {
         void tryLoadDynamicCover()
       }
     }, { immediate: true })
 
-    // 打开播放详情页时，惰性检查动态封面并可能弹窗询问
+    // 打开播放详情页时，惰性检查动态封面。
     watch(() => isShowPlayerDetail.value, show => {
       if (!show) return
       window.setTimeout(() => {
@@ -843,20 +812,18 @@ export default {
       }, 800)
     }, { immediate: true })
 
-    // 播放中切换设置时按需加载动态封面（例如：开启“动态封面背景”开关）
-    watch([
-      () => appSetting['playDetail.coverType'],
-      () => appSetting['playDetail.backgroundUseDynamicCover'],
-      () => appSetting['playDetail.immersiveBackgroundUseDynamicCover'],
-    ], () => {
-      if (!musicInfo.id) return
-      const needDynamic = appSetting['playDetail.coverType'] == 'dynamic' ||
-        appSetting['playDetail.backgroundUseDynamicCover'] ||
-        appSetting['playDetail.immersiveBackgroundUseDynamicCover']
-      if (needDynamic && !dynamicCoverUrl.value) {
+    watch(() => appSetting['playDetail.appleDynamicCover'], enabled => {
+      if (!enabled) {
+        lazyLoadKey = ''
+        resetDynamicCover()
         artworkVideoFailed.value = false
         bgBlurVideoFailed.value = false
-        void loadDynamicCover(musicInfo)
+        return
+      }
+      if (musicInfo.id && isShowPlayerDetail.value && !dynamicCoverUrl.value) {
+        artworkVideoFailed.value = false
+        bgBlurVideoFailed.value = false
+        void tryLoadDynamicCover()
       }
     })
 
@@ -877,10 +844,9 @@ export default {
       musicInfo,
       dynamicCoverUrl,
       dynamicCoverPoster,
+      dynamicArtworkActive,
       showDynamicCoverArtwork,
       showBlurDynamicCover,
-      artworkVideoRef,
-      bgBlurVideoRef,
       hide,
       toggleComment,
       showImmersive,

@@ -187,9 +187,16 @@ test('song search hits resolve their album relationship in the matching storefro
   assert.ok(!requestedUrls.some(url => url.includes('/albums/1193701392')))
 })
 
-test('play detail probes on open and remembers every prompted track', () => {
-  const source = fs.readFileSync(path.join(root, 'src/renderer/components/layout/PlayDetail/index.vue'), 'utf8')
-  assert.doesNotMatch(source, /if \(!needDynamic\) return/)
-  assert.match(source, /const promptedMusicIds = new Set\(\)/)
-  assert.match(source, /promptedMusicIds\.has\(musicId\)/)
+test('play detail gates lookup on the appearance switch and delegates video lifecycle', () => {
+  const playDetail = fs.readFileSync(path.join(root, 'src/renderer/components/layout/PlayDetail/index.vue'), 'utf8')
+  const immersive = fs.readFileSync(path.join(root, 'src/renderer/components/layout/PlayDetail/ImmersiveLyrics.vue'), 'utf8')
+  const dynamicVideo = fs.readFileSync(path.join(root, 'src/renderer/components/player/DynamicArtworkVideo.vue'), 'utf8')
+
+  assert.doesNotMatch(playDetail, /setting__play_detail_dynamic_cover_prompt/)
+  assert.doesNotMatch(playDetail, /dialog\.confirm/)
+  assert.match(playDetail, /appSetting\['playDetail\.appleDynamicCover'\]/)
+  assert.ok((playDetail.match(/DynamicArtworkVideo/g) ?? []).length >= 3)
+  assert.match(immersive, /DynamicArtworkVideo/)
+  assert.match(dynamicVideo, /v-if="active && src"/)
+  assert.match(dynamicVideo, /preload="metadata"/)
 })

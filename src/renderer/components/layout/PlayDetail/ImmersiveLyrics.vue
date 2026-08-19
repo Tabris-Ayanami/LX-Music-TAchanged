@@ -39,17 +39,12 @@
       :style="blurBackgroundStyle"
       aria-hidden="true"
     >
-      <video
-        v-if="showBlurDynamicCover && dynamicCoverUrl"
+      <DynamicArtworkVideo
+        v-if="showBlurDynamicCover"
         :class="$style.blurBackgroundVideo"
         :src="dynamicCoverUrl"
         :poster="dynamicCoverPoster || musicInfo.pic || undefined"
-        muted
-        playsinline
-        loop
-        autoplay
-        preload="auto"
-        disablepictureinpicture
+        :active="showBlurDynamicCover"
         @error="blurVideoFailed = true"
       />
     </div>
@@ -166,6 +161,7 @@ import { isPlay, musicInfo, playMusicInfo } from '@renderer/store/player/state'
 import { setMusicInfo } from '@renderer/store/player/action'
 import { appSetting } from '@renderer/store/setting'
 import { dynamicCoverUrl, dynamicCoverPoster } from '@renderer/store/player/dynamicCover'
+import DynamicArtworkVideo from '@renderer/components/player/DynamicArtworkVideo.vue'
 import { biliSearch, getBiliLyricSource, getBiliVideoUrl } from '@renderer/utils/ipc'
 
 defineEmits(['close'])
@@ -212,6 +208,7 @@ const blurBackgroundStyle = computed(() => ({
   backgroundImage: musicInfo.pic ? `url("${String(musicInfo.pic).replace(/"/g, '\\"')}")` : undefined,
 }))
 const showBlurDynamicCover = computed(() => (
+  !!appSetting['playDetail.appleDynamicCover'] &&
   !!appSetting['playDetail.immersiveBackgroundUseDynamicCover'] &&
   !!dynamicCoverUrl.value &&
   !blurVideoFailed.value
