@@ -170,30 +170,32 @@ const terminateRecordedPids = async pids => {
 
 const killRootTree = pid => new Promise((resolve, reject) => treeKill(pid, 'SIGKILL', error => error ? reject(error) : resolve()))
 
-const shutdownOwnedProcessTree = async({ rootPid, client, child, listProcessIds = listOwnedProcessIds, terminate = terminateRecordedPids }) => {
+const shutdownOwnedProcessTree = async({ rootPid, client, rendererClient = client, child, listProcessIds = listOwnedProcessIds, terminate = terminateRecordedPids }) => {
   let ownedPids
   try {
     ownedPids = await listProcessIds(rootPid)
   } catch (error) {
     await killRootTree(rootPid).catch(() => {})
     client.close()
+    if (rendererClient !== client) rendererClient.close()
     throw new Error('Could not snapshot the runner-owned process tree before shutdown', { cause: error })
   }
   try {
-    await client.call('Browser.close').catch(() => child.kill())
+    await client.call('Runtime.evaluate', { expression: 'window.close()', returnByValue: true }).catch(() => child.kill())
     await waitForExit(child, 5_000)
     await terminate(ownedPids)
     return ownedPids
   } finally {
     client.close()
+    if (rendererClient !== client) rendererClient.close()
   }
 }
 
-const connectWithRetry = async(port, attempts = 120) => {
+const connectWithRetry = async(port, connector, attempts = 120) => {
   let lastError
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
-      return await connectRenderer(port)
+      return await connector(port)
     } catch (error) {
       lastError = error
       await delay(250)
@@ -219,8 +221,9 @@ const launchElectron = async context => {
   if (!child.pid) throw new Error('Electron launch did not return a PID')
   let client
   try {
-    client = await connectWithRetry(cdpPort)
+    client = await connectWithRetry(cdpPort, connectRenderer)
   } catch (error) {
+    client?.close()
     if (child.exitCode == null) await killRootTree(child.pid).catch(() => {})
     throw error
   }
@@ -260,20 +263,30 @@ const createEvaluator = client => async expression => {
   return response.result?.value
 }
 
-const applyRunConfiguration = async(client, config) => {
+const applyRunConfiguration = async(rendererClient, config) => {
   const requested = config.window
   if (!requested || !Number.isInteger(requested.width) || !Number.isInteger(requested.height)) throw new Error('Resolved scenario config has invalid window dimensions')
-  const targetResult = await client.call('Browser.getWindowForTarget', client.target?.id ? { targetId: client.target.id } : {})
-  await client.call('Browser.setWindowBounds', { windowId: targetResult.windowId, bounds: { width: requested.width, height: requested.height, windowState: 'normal' } })
-  const observed = await client.call('Browser.getWindowBounds', { windowId: targetResult.windowId })
-  if (observed.bounds?.width != requested.width || observed.bounds?.height != requested.height) {
-    throw new Error(`Electron window bounds differ from requested ${requested.width}x${requested.height}`)
-  }
-  const theme = await client.call('Runtime.evaluate', {
-    expression: `({ documentTheme: document.documentElement.dataset.theme || document.documentElement.className, prefersDark: matchMedia('(prefers-color-scheme: dark)').matches })`,
+  const observed = await rendererClient.call('Runtime.evaluate', {
+    expression: `(async() => {
+      window.resizeTo(${requested.width}, ${requested.height})
+      await new Promise(resolve => setTimeout(resolve, 100))
+      return {
+        width: window.outerWidth,
+        height: window.outerHeight,
+        effectiveTheme: {
+          documentTheme: document.documentElement.dataset.theme || document.documentElement.className,
+          prefersDark: matchMedia('(prefers-color-scheme: dark)').matches,
+        },
+      }
+    })()`,
+    awaitPromise: true,
     returnByValue: true,
   })
-  return { window: { width: observed.bounds.width, height: observed.bounds.height }, requestedTheme: config.theme, effectiveTheme: theme.result?.value ?? null }
+  const bounds = observed.result?.value
+  if (bounds?.width != requested.width || bounds?.height != requested.height) {
+    throw new Error(`Electron window bounds differ from requested ${requested.width}x${requested.height}`)
+  }
+  return { window: { width: bounds.width, height: bounds.height }, requestedTheme: config.theme, effectiveTheme: bounds.effectiveTheme ?? null }
 }
 
 const prepareLaunch = async context => {

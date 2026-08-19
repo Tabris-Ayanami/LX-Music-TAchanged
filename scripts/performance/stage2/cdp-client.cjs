@@ -11,15 +11,9 @@ const defaultFetchJson = async(port, pathname) => {
 const selectRendererTarget = targets => targets.find(target => target.type === 'page' && /\/dist\/index\.html|\\dist\\index\.html/i.test(decodeURIComponent(target.url))) ??
   targets.find(target => target.type === 'page' && target.title !== 'User api')
 
-const connectRenderer = async(port, options = {}) => {
-  if (!Number.isInteger(port) || port <= 0) throw new TypeError('CDP port must be a positive integer')
-  const fetchJson = options.fetchJson ?? defaultFetchJson
-  const WebSocketClass = options.WebSocketClass ?? WebSocket
-  const targets = await fetchJson(port, '/json')
-  const target = selectRendererTarget(targets)
-  if (!target?.webSocketDebuggerUrl) throw new Error('LX-TA renderer target was not found')
-
-  const socket = new WebSocketClass(target.webSocketDebuggerUrl)
+const connectWebSocket = async(webSocketDebuggerUrl, target, WebSocketClass) => {
+  if (!webSocketDebuggerUrl) throw new Error('CDP websocket endpoint was not found')
+  const socket = new WebSocketClass(webSocketDebuggerUrl)
   await new Promise((resolve, reject) => {
     socket.once('open', resolve)
     socket.once('error', reject)
@@ -49,7 +43,7 @@ const connectRenderer = async(port, options = {}) => {
     message.error ? waiter.reject(new Error(message.error.message)) : waiter.resolve(message.result)
   })
   socket.on('error', error => rejectPending(error))
-  socket.on('close', () => rejectPending(new Error('CDP renderer connection closed')))
+  socket.on('close', () => rejectPending(new Error('CDP connection closed')))
 
   return {
     target,
@@ -68,7 +62,7 @@ const connectRenderer = async(port, options = {}) => {
       }
     },
     call(method, params = {}) {
-      if (closed) return Promise.reject(new Error('CDP renderer connection is closed'))
+      if (closed) return Promise.reject(new Error('CDP connection is closed'))
       return new Promise((resolve, reject) => {
         const id = ++sequence
         pending.set(id, { resolve, reject })
@@ -82,9 +76,19 @@ const connectRenderer = async(port, options = {}) => {
     close() {
       if (closed) return
       socket.close()
-      rejectPending(new Error('CDP renderer connection closed'))
+      rejectPending(new Error('CDP connection closed'))
     },
   }
+}
+
+const connectRenderer = async(port, options = {}) => {
+  if (!Number.isInteger(port) || port <= 0) throw new TypeError('CDP port must be a positive integer')
+  const fetchJson = options.fetchJson ?? defaultFetchJson
+  const WebSocketClass = options.WebSocketClass ?? WebSocket
+  const targets = await fetchJson(port, '/json')
+  const target = selectRendererTarget(targets)
+  if (!target?.webSocketDebuggerUrl) throw new Error('LX-TA renderer target was not found')
+  return connectWebSocket(target.webSocketDebuggerUrl, target, WebSocketClass)
 }
 
 module.exports = { connectRenderer, selectRendererTarget }

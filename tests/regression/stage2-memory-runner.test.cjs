@@ -146,11 +146,12 @@ test('Fetch attribution is active before the probe reload and its controls reach
   const listeners = new Map()
   const client = {
     on(method, handler) { listeners.set(method, handler); return () => listeners.delete(method) },
-    async call(method) {
+    async call(method, params = {}) {
       calls.push(method)
+      if (method == 'Runtime.evaluate' && params.expression?.includes('window.resizeTo')) {
+        return { result: { value: { width: 1280, height: 800, effectiveTheme: { documentTheme: '', prefersDark: false } } } }
+      }
       if (method == 'Runtime.evaluate') return { result: { value: { readyState: 'complete', probeReady: true } } }
-      if (method == 'Browser.getWindowForTarget') return { windowId: 7, bounds: { width: 1280, height: 800 } }
-      if (method == 'Browser.getWindowBounds') return { bounds: { width: 1280, height: 800 } }
       return {}
     },
   }
@@ -231,7 +232,7 @@ test('shutdown snapshots owned descendants before graceful browser exit and term
     terminate: async pids => events.push(`terminate-${pids.join('-')}`),
   })
   assert.deepEqual(owned, [100, 101, 102])
-  assert.deepEqual(events, ['snapshot-100', 'Browser.close', 'terminate-100-101-102', 'client-close'])
+  assert.deepEqual(events, ['snapshot-100', 'Runtime.evaluate', 'terminate-100-101-102', 'client-close'])
 })
 
 test('report keeps navigation recovery checkpoints and runner refuses under-sized formal runs', async() => {
