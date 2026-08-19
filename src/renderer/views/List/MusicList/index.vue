@@ -100,13 +100,19 @@
     <music-sort-modal v-model:show="isShowMusicSortModal" :music-info="selectedSortMusicInfo" :selected-num="selectedNum" @confirm="sortMusic" />
     <music-toggle-modal v-model:show="isShowMusicToggleModal" :music-info="selectedToggleMusicInfo" @toggle="toggleSource" />
     <base-menu v-model="isShowItemMenu" :menus="displayMenus" :xy="menuLocation" item-name="name" @menu-click="handleMenuClick" />
-    <LocalTrackActions ref="localTrackActionsRef" :list-id="listId" />
+    <LocalTrackActions
+      ref="localTrackActionsRef"
+      with-menu
+      :list-id="listId"
+      :can-remove-from-list="listId != LOCAL_MUSIC_LIST_ID"
+      @remove="handleLocalRemove"
+    />
   </div>
 </template>
 
 <script>
 import { clipboardWriteText } from '@common/utils/electron'
-import { computed, ref, watch } from '@common/utils/vueTools'
+import { ref, watch } from '@common/utils/vueTools'
 import { assertApiSupport } from '@renderer/store/utils'
 import listActionRunner from '@renderer/utils/listActionRunner.cjs'
 import SearchList from './components/SearchList.vue'
@@ -125,6 +131,7 @@ import useListScroll from './useListScroll'
 import useMusicToggle from './useMusicToggle'
 import { appSetting } from '@renderer/store/setting'
 import LocalTrackActions from '@renderer/components/localMusic/LocalTrackActions.vue'
+import { LOCAL_MUSIC_LIST_ID } from '@renderer/utils/localMusic'
 
 const { runListAction } = listActionRunner
 export default {
@@ -284,16 +291,7 @@ export default {
       hideMenu()
     }
 
-    const displayMenus = computed(() => {
-      const current = list.value[rightClickSelectedIndex.value]
-      if (current?.source != 'local') return menus.value
-      const localActions = [
-        { name: '编辑歌曲信息', action: 'editMetadata' },
-        { name: '匹配歌词', action: 'matchLyrics' },
-        { name: '重新匹配歌词', action: 'rematchLyrics' },
-      ]
-      return [menus.value[0], ...localActions, ...menus.value.slice(1)]
-    })
+    const displayMenus = menus
 
     watch(isShowItemMenu, (visible) => {
       if (!visible) rightClickSelectedIndex.value = -1
@@ -309,24 +307,23 @@ export default {
       doubleClickPlay(index)
     }
     const handleListItemRightClick = (event, index) => {
+      const current = list.value[index]
+      if (current?.source == 'local') {
+        emit('show-menu')
+        localTrackActionsRef.value?.showMenu(event, current)
+        return
+      }
       rightClickSelectedIndex.value = index
-      showMenu(event, list.value[index], index)
+      showMenu(event, current, index)
     }
     const handleMenuClick = (action) => {
       let index = rightClickSelectedIndex.value
-      const current = list.value[index]
       closeItemMenu()
-      if (current?.source == 'local') {
-        if (action?.action == 'editMetadata') {
-          localTrackActionsRef.value?.openMetadata(current)
-          return
-        }
-        if (action?.action == 'matchLyrics' || action?.action == 'rematchLyrics') {
-          localTrackActionsRef.value?.openLyrics(action.action == 'rematchLyrics', current)
-          return
-        }
-      }
       menuClick(action, index)
+    }
+    const handleLocalRemove = (track) => {
+      const index = list.value.findIndex(item => item.id == track.id)
+      if (index > -1) void handleRemoveMusic(index, true)
     }
     const handleListRightClick = (event) => {
       if (!event.target.classList.contains('select')) return
@@ -383,6 +380,8 @@ export default {
       menus,
       displayMenus,
       localTrackActionsRef,
+      LOCAL_MUSIC_LIST_ID,
+      handleLocalRemove,
       isShowItemMenu,
       menuLocation,
       handleMenuClick,

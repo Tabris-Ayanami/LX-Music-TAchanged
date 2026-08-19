@@ -1,5 +1,12 @@
 <template>
   <base-menu v-if="withMenu" v-model="menuVisible" :menus="menus" :xy="menuLocation" item-name="name" @menu-click="handleMenuClick" />
+  <common-list-add-modal
+    v-if="track"
+    v-model:show="addVisible"
+    :music-info="track"
+    :from-list-id="listId"
+    teleport="#view"
+  />
   <MetadataEditModal
     v-if="track"
     v-model:show="metadataVisible"
@@ -13,28 +20,35 @@
 
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref } from '@common/utils/vueTools'
+import { clipboardWriteText } from '@common/utils/electron'
 import { playSingleLocalTrack, setCachedLocalTracks, getCachedLocalTracks, LOCAL_MUSIC_LIST_ID } from '@renderer/utils/localMusic'
 import { getLyricRaw } from '@renderer/utils/ipc'
 import { updateListMusics } from '@renderer/store/list/action'
-import { setMusicInfo } from '@renderer/store/player/action'
+import { addTempPlayList, setMusicInfo } from '@renderer/store/player/action'
 import { playMusicInfo } from '@renderer/store/player/state'
+import { backend } from '@renderer/backend'
 import MetadataEditModal from './MetadataEditModal.vue'
 import LyricsMatchModal from './LyricsMatchModal.vue'
+import { buildLocalTrackMenuItems, type LocalTrackMenuItem } from './localTrackMenu'
 
-const props = withDefaults(defineProps<{ withMenu?: boolean, listId?: string }>(), { withMenu: false, listId: LOCAL_MUSIC_LIST_ID })
-const emit = defineEmits<{ updated: [track: LX.Music.MusicInfoLocal] }>()
+const props = withDefaults(defineProps<{ withMenu?: boolean, listId?: string, canRemoveFromList?: boolean }>(), {
+  withMenu: false,
+  listId: LOCAL_MUSIC_LIST_ID,
+  canRemoveFromList: false,
+})
+const emit = defineEmits<{
+  updated: [track: LX.Music.MusicInfoLocal]
+  remove: [track: LX.Music.MusicInfoLocal]
+}>()
 const track = ref<LX.Music.MusicInfoLocal | null>(null)
 const menuVisible = ref(false)
 const metadataVisible = ref(false)
 const lyricsVisible = ref(false)
+const addVisible = ref(false)
 const hasLyrics = ref(false)
 const menuLocation = reactive({ x: 0, y: 0 })
 const lyricStatus = computed(() => hasLyrics.value ? '已匹配 / 已缓存' : '未匹配')
-const menus = computed(() => [
-  { name: '播放', action: 'play' },
-  { name: '编辑歌曲信息', action: 'editMetadata' },
-  { name: hasLyrics.value ? '重新匹配歌词' : '匹配歌词', action: 'matchLyrics' },
-])
+const menus = computed(() => buildLocalTrackMenuItems({ hasLyrics: hasLyrics.value, canRemoveFromList: props.canRemoveFromList }))
 
 const refreshLyricStatus = async() => {
   if (!track.value) return
@@ -47,6 +61,7 @@ const refreshLyricStatus = async() => {
 
 const setTrack = (value: LX.Music.MusicInfoLocal) => {
   track.value = value
+  hasLyrics.value = false
   void refreshLyricStatus()
 }
 
@@ -68,12 +83,35 @@ const openLyrics = (_force = false, value?: LX.Music.MusicInfoLocal) => {
   if (value) setTrack(value)
   if (track.value) lyricsVisible.value = true
 }
-const handleMenuClick = (item: { action: string } | null) => {
+const handleMenuClick = (item: LocalTrackMenuItem | null) => {
   menuVisible.value = false
   if (!item || !track.value) return
-  if (item.action == 'play') void playSingleLocalTrack(track.value)
-  if (item.action == 'editMetadata') openMetadata()
-  if (item.action == 'matchLyrics') openLyrics(true)
+  switch (item.action) {
+    case 'play':
+      void playSingleLocalTrack(track.value)
+      break
+    case 'playLater':
+      addTempPlayList([{ listId: props.listId, musicInfo: track.value }])
+      break
+    case 'addTo':
+      addVisible.value = true
+      break
+    case 'editMetadata':
+      openMetadata()
+      break
+    case 'matchLyrics':
+      openLyrics(true)
+      break
+    case 'revealFile':
+      backend.platform.revealInFileManager(track.value.meta.filePath)
+      break
+    case 'copyName':
+      clipboardWriteText(`${track.value.name} - ${track.value.singer}`)
+      break
+    case 'remove':
+      emit('remove', track.value)
+      break
+  }
 }
 
 const handleSaved = async(metadata: LX.LocalMusic.Metadata) => {
