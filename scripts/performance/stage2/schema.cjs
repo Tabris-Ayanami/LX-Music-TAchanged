@@ -9,6 +9,9 @@ const assertSample = sample => {
   if (!Number.isInteger(sample.processTotals.processCount) || sample.processTotals.processCount <= 0) {
     throw new Error('sample has no process tree')
   }
+  if (!Array.isArray(sample.processes) || sample.processes.length === 0 || sample.processes.length !== sample.processTotals.processCount) {
+    throw new Error('sample processes do not match process tree count')
+  }
   for (const identity of ['scenario', 'temperature', 'variant']) {
     if (typeof sample[identity] !== 'string' || sample[identity].length === 0) throw new Error(`sample is missing ${identity}`)
   }

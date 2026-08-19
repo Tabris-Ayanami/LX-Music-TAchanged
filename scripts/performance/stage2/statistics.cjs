@@ -24,6 +24,7 @@ const readPath = (value, path) => path.split('.').reduce((current, key) => curre
 
 const summarizeRuns = (samples, metricPaths) => {
   if (!Array.isArray(samples) || samples.length === 0) throw new Error('samples must not be empty')
+  if (samples.length < 5) throw new Error('summarizeRuns requires at least five samples')
   if (!Array.isArray(metricPaths) || metricPaths.length === 0) throw new Error('metricPaths must not be empty')
   samples.forEach(assertSample)
   const identity = ['scenario', 'temperature', 'variant']

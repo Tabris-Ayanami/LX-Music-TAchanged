@@ -12,7 +12,7 @@ const samples = [100, 110, 110, 120, 130].map((privateBytesMiB, index) => ({
   temperature: 'cold',
   variant: 'control',
   processTotals: { processCount: 2, privateBytesMiB },
-  processTree: [{ pid: 100 + index, privateBytesMiB }],
+  processes: [{ pid: 100 + index, privateBytesMiB }, { pid: 200 + index, privateBytesMiB }],
 }))
 
 test('median sorts odd-sized values and averages even middle values', () => {
@@ -37,10 +37,21 @@ test('assertSample rejects an empty process tree', () => {
 
 test('summarizeRuns rejects mismatched sample identity fields', () => {
   const mismatched = samples.map(sample => ({ ...sample, variant: 'test' }))
-  assert.throws(() => summarizeRuns([samples[0], mismatched[1]], ['processTotals.privateBytesMiB']), /scenario|temperature|variant/i)
+  assert.throws(() => summarizeRuns([samples[0], ...mismatched.slice(1)], ['processTotals.privateBytesMiB']), /scenario|temperature|variant/i)
 })
 
 test('summarizeRuns rejects missing and non-finite metric values', () => {
-  assert.throws(() => summarizeRuns([samples[0]], ['processTotals.missing']), /missing/i)
-  assert.throws(() => summarizeRuns([{ ...samples[0], processTotals: { ...samples[0].processTotals, privateBytesMiB: Infinity } }], ['processTotals.privateBytesMiB']), /finite/i)
+  assert.throws(() => summarizeRuns(samples.map(sample => ({ ...sample, processTotals: { ...sample.processTotals } })), ['processTotals.missing']), /missing/i)
+  assert.throws(() => summarizeRuns(samples.map(sample => ({ ...sample, processTotals: { ...sample.processTotals, privateBytesMiB: Infinity } })), ['processTotals.privateBytesMiB']), /finite/i)
+})
+
+test('summarizeRuns requires five runs for one identity group', () => {
+  assert.throws(() => summarizeRuns(samples.slice(0, 4), ['processTotals.privateBytesMiB']), /five|5/i)
+  assert.doesNotThrow(() => summarizeRuns(samples, ['processTotals.privateBytesMiB']))
+})
+
+test('assertSample requires process rows matching processCount', () => {
+  assert.throws(() => assertSample({ ...samples[0], processes: undefined }), /processes/i)
+  assert.throws(() => assertSample({ ...samples[0], processes: [] }), /processes/i)
+  assert.throws(() => assertSample({ ...samples[0], processTotals: { ...samples[0].processTotals, processCount: 2 }, processes: [samples[0].processes[0]] }), /processes|count/i)
 })
