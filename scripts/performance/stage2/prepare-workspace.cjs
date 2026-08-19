@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 'use strict'
 
-const path = require('node:path')
 const { spawnSync } = require('node:child_process')
 
 const { prepareWorkspace } = require('./workspace.cjs')
+const { collectActiveProfilePaths, excludeInvokerProcessChain } = require('./process-discovery.cjs')
 
 const parseArguments = argumentsList => {
   const parsed = { mediaRoots: [], copyBrowserCaches: false }
@@ -21,36 +21,44 @@ const parseArguments = argumentsList => {
   return parsed
 }
 
-const extractUserDataPaths = commandLine => {
-  const paths = []
-  const pattern = /(?:^|\s)--user-data-dir(?:=|\s+)(?:"([^"]+)"|'([^']+)'|([^\s]+))/gi
-  let match
-  while ((match = pattern.exec(commandLine)) !== null) paths.push(path.resolve(match[1] ?? match[2] ?? match[3]))
-  return paths
-}
-
-const getActiveProfilePaths = () => {
+const getProcessRecords = () => {
   if (process.platform !== 'win32') throw new Error('active profile detection requires Windows')
-  const script = '(Get-CimInstance Win32_Process | Where-Object CommandLine | Select-Object -ExpandProperty CommandLine) | ConvertTo-Json -Compress'
+  const script = 'Get-CimInstance Win32_Process | Where-Object CommandLine | Select-Object ProcessId, ParentProcessId, CommandLine | ConvertTo-Json -Compress'
   const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
     encoding: 'utf8',
     windowsHide: true,
   })
   if (result.status !== 0) throw new Error(`unable to inspect active profiles: ${(result.stderr || '').trim()}`)
   const decoded = result.stdout.trim() === '' ? [] : JSON.parse(result.stdout)
-  const commandLines = Array.isArray(decoded) ? decoded : [decoded]
-  const activePaths = commandLines.flatMap(commandLine => extractUserDataPaths(String(commandLine)))
-  return [...new Map(activePaths.map(activePath => [activePath.toLowerCase(), activePath])).values()]
+  return Array.isArray(decoded) ? decoded : [decoded]
+}
+
+const buildPreparationOptions = ({ argumentsList, processRecords, currentProcessId }) => {
+  const options = parseArguments(argumentsList)
+  const eligibleProcesses = excludeInvokerProcessChain(processRecords, currentProcessId)
+  options.activeProfilePaths = collectActiveProfilePaths(eligibleProcesses, options.profileSource)
+  options.activityEvidenceMethod = 'windows-process-command-lines'
+  return options
+}
+
+const runPreparation = async ({ argumentsList, processRecords, currentProcessId }) => {
+  return prepareWorkspace(buildPreparationOptions({ argumentsList, processRecords, currentProcessId }))
 }
 
 const main = async () => {
-  const options = parseArguments(process.argv.slice(2))
-  options.activeProfilePaths = getActiveProfilePaths()
-  const manifest = await prepareWorkspace(options)
+  const manifest = await runPreparation({
+    argumentsList: process.argv.slice(2),
+    processRecords: getProcessRecords(),
+    currentProcessId: process.pid,
+  })
   process.stdout.write(`${manifest.manifestPath}\n`)
 }
 
-main().catch(error => {
-  process.stderr.write(`${error.message}\n`)
-  process.exitCode = 1
-})
+if (require.main === module) {
+  main().catch(error => {
+    process.stderr.write(`${error.message}\n`)
+    process.exitCode = 1
+  })
+}
+
+module.exports = { buildPreparationOptions, getProcessRecords, main, parseArguments, runPreparation }

@@ -5,17 +5,58 @@ const crypto = require('node:crypto')
 const fs = require('node:fs/promises')
 const os = require('node:os')
 const path = require('node:path')
+const { spawn, spawnSync } = require('node:child_process')
 const test = require('node:test')
-
-const Database = require('better-sqlite3')
 
 const { prepareWorkspace } = require('../../scripts/performance/stage2/workspace.cjs')
 
+const electronPath = require('electron')
+const sqliteFixturePath = path.resolve(__dirname, '..', 'helpers', 'stage2-sqlite-fixture.cjs')
 const sha256 = data => crypto.createHash('sha256').update(data).digest('hex')
+
+const electronNodeEnvironment = () => ({ ...process.env, ELECTRON_RUN_AS_NODE: '1' })
+
+const startWalFixture = async (databasePath, configPath) => {
+  const child = spawn(electronPath, [sqliteFixturePath, 'hold-wal', databasePath, configPath], {
+    env: electronNodeEnvironment(),
+    stdio: ['pipe', 'pipe', 'pipe'],
+    windowsHide: true,
+  })
+  let stderr = ''
+  child.stderr.setEncoding('utf8')
+  child.stderr.on('data', chunk => { stderr += chunk })
+  await new Promise((resolve, reject) => {
+    let stdout = ''
+    const onData = chunk => {
+      stdout += chunk
+      if (!stdout.includes('READY\n')) return
+      child.stdout.off('data', onData)
+      child.off('exit', onExit)
+      resolve()
+    }
+    const onExit = code => reject(new Error(`SQLite fixture exited before READY (${code}): ${stderr}`))
+    child.stdout.setEncoding('utf8')
+    child.stdout.on('data', onData)
+    child.once('exit', onExit)
+    child.once('error', reject)
+  })
+  return child
+}
+
+const stopFixture = child => new Promise((resolve, reject) => {
+  if (!child || child.exitCode != null) return resolve()
+  child.once('error', reject)
+  child.once('exit', code => code === 0 ? resolve() : reject(new Error(`SQLite fixture exited with ${code}`)))
+  child.stdin.end()
+})
 
 const makeFixture = async (t, { outsideLocalPath } = {}) => {
   const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'lx-stage2-workspace-'))
-  t.after(() => fs.rm(fixtureRoot, { recursive: true, force: true }))
+  let databaseProcess
+  t.after(async() => {
+    await stopFixture(databaseProcess)
+    await fs.rm(fixtureRoot, { recursive: true, force: true })
+  })
 
   const profileSource = path.join(fixtureRoot, 'profile-source')
   const mediaRoot = path.join(fixtureRoot, 'media-source')
@@ -47,27 +88,19 @@ const makeFixture = async (t, { outsideLocalPath } = {}) => {
   const localMetaB = { filePath: sourceTrackB }
   const unrelatedMeta = JSON.stringify({ filePath: 'https://example.invalid/remote.mp3', untouched: true })
 
-  const db = new Database(databasePath)
-  db.exec(`
-    CREATE TABLE my_list_music_info (
-      id TEXT NOT NULL,
-      listId TEXT NOT NULL,
-      name TEXT NOT NULL,
-      singer TEXT NOT NULL,
-      source TEXT NOT NULL,
-      interval TEXT,
-      meta TEXT NOT NULL,
-      UNIQUE(id, listId)
-    )
-  `)
-  const insert = db.prepare(`
-    INSERT INTO my_list_music_info (id, listId, name, singer, source, interval, meta)
-    VALUES (?, 'default', ?, 'fixture', ?, '1:00', ?)
-  `)
-  insert.run('local-a', 'Local A', 'local', JSON.stringify(localMetaA))
-  insert.run('local-b', 'Local B', 'local', JSON.stringify(localMetaB))
-  insert.run('remote-a', 'Remote A', 'kw', unrelatedMeta)
-  db.close()
+  const walOnlyMeta = JSON.stringify({ marker: 'committed-in-source-wal' })
+  const databaseConfigPath = path.join(fixtureRoot, 'database-config.json')
+  await fs.writeFile(databaseConfigPath, JSON.stringify({
+    walOnlyRowId: 'wal-only',
+    rows: [
+      { id: 'local-a', name: 'Local A', source: 'local', meta: JSON.stringify(localMetaA) },
+      { id: 'local-b', name: 'Local B', source: 'local', meta: JSON.stringify(localMetaB) },
+      { id: 'remote-a', name: 'Remote A', source: 'kw', meta: unrelatedMeta },
+      { id: 'wal-only', name: 'WAL Only', source: 'kw', meta: walOnlyMeta },
+    ],
+  }))
+  databaseProcess = await startWalFixture(databasePath, databaseConfigPath)
+  assert.ok((await fs.stat(`${databasePath}-wal`)).size > 0)
 
   return {
     fixtureRoot,
@@ -78,16 +111,18 @@ const makeFixture = async (t, { outsideLocalPath } = {}) => {
     sourceTrackA,
     sourceTrackB,
     unrelatedMeta,
+    walOnlyMeta,
   }
 }
 
 const readRows = databasePath => {
-  const db = new Database(databasePath, { readonly: true })
-  try {
-    return db.prepare('SELECT id, source, meta FROM my_list_music_info ORDER BY id').all()
-  } finally {
-    db.close()
-  }
+  const result = spawnSync(electronPath, [sqliteFixturePath, 'read', databasePath], {
+    env: electronNodeEnvironment(),
+    encoding: 'utf8',
+    windowsHide: true,
+  })
+  assert.equal(result.status, 0, result.stderr)
+  return JSON.parse(result.stdout)
 }
 
 test('preparer never aliases, mutates, or leaves references to real music files', async t => {
@@ -99,6 +134,7 @@ test('preparer never aliases, mutates, or leaves references to real music files'
       profileSource: fixture.profileSource,
       outputRoot: fixture.profileSource,
       mediaRoots: [fixture.mediaRoot],
+      activeProfilePaths: [],
     }),
     /destination.*source/i,
   )
@@ -141,6 +177,7 @@ test('preparer never aliases, mutates, or leaves references to real music files'
   assert.ok(rewrittenMeta.lyricInfo.path.startsWith(manifest.mediaPath))
   assert.equal(rewrittenMeta.custom, 'preserved')
   assert.equal(copiedRows.find(row => row.id === 'remote-a').meta, fixture.unrelatedMeta)
+  assert.equal(copiedRows.find(row => row.id === 'wal-only').meta, fixture.walOnlyMeta)
   assert.equal(copiedRows.some(row => row.meta.includes(fixture.mediaRoot)), false)
 
   assert.deepEqual(await fs.readFile(fixture.databasePath), sourceDatabaseBefore)
@@ -159,6 +196,37 @@ test('preparer never aliases, mutates, or leaves references to real music files'
   for (const copiedFile of persistedManifest.copiedMedia) {
     assert.equal(copiedFile.sha256, sha256(await fs.readFile(copiedFile.destinationPath)))
   }
+})
+
+test('preparation requires explicit completed profile-activity evidence', async t => {
+  const fixture = await makeFixture(t)
+
+  await assert.rejects(
+    prepareWorkspace({
+      profileSource: fixture.profileSource,
+      outputRoot: fixture.outputRoot,
+      mediaRoots: [fixture.mediaRoot],
+    }),
+    /activity|process scan|evidence/i,
+  )
+  await assert.rejects(fs.stat(fixture.outputRoot), { code: 'ENOENT' })
+})
+
+test('an output path below a junction ancestor cannot physically alias a source', async t => {
+  const fixture = await makeFixture(t)
+  const outputAlias = path.join(fixture.fixtureRoot, 'output-alias')
+  await fs.symlink(fixture.mediaRoot, outputAlias, process.platform === 'win32' ? 'junction' : 'dir')
+
+  await assert.rejects(
+    prepareWorkspace({
+      profileSource: fixture.profileSource,
+      outputRoot: path.join(outputAlias, 'nested-workspace'),
+      mediaRoots: [fixture.mediaRoot],
+      activeProfilePaths: [],
+    }),
+    /destination.*source|ancestor.*(?:symbolic link|junction|reparse)|physical alias/i,
+  )
+  await assert.rejects(fs.stat(path.join(fixture.mediaRoot, 'nested-workspace')), { code: 'ENOENT' })
 })
 
 test('a local database path outside declared media roots aborts without leaving an output', async t => {

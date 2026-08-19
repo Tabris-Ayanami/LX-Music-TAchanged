@@ -3,11 +3,11 @@
 const crypto = require('node:crypto')
 const fs = require('node:fs/promises')
 const path = require('node:path')
-const { execFileSync } = require('node:child_process')
-
-const Database = require('better-sqlite3')
+const { execFileSync, spawn } = require('node:child_process')
 
 const REPOSITORY_ROOT = path.resolve(__dirname, '..', '..', '..')
+const SQLITE_WORKER_PATH = path.join(__dirname, 'sqlite-worker.cjs')
+const ELECTRON_PATH = require('electron')
 const BROWSER_CACHE_DIRECTORIES = new Set([
   'cache',
   'code cache',
@@ -29,6 +29,53 @@ const isWithin = (parentPath, candidatePath) => {
 }
 
 const isSamePath = (left, right) => normalizeForComparison(left) === normalizeForComparison(right)
+
+const getPathAncestors = targetPath => {
+  const absolutePath = path.resolve(targetPath)
+  const root = path.parse(absolutePath).root
+  const relative = path.relative(root, absolutePath)
+  const ancestors = [root]
+  let current = root
+  for (const segment of relative.split(path.sep).filter(Boolean)) {
+    current = path.join(current, segment)
+    ancestors.push(current)
+  }
+  return ancestors
+}
+
+const assertNoLinkedAncestors = async (targetPath, label) => {
+  for (const ancestor of getPathAncestors(targetPath)) {
+    let stats
+    try {
+      stats = await fs.lstat(ancestor)
+    } catch (error) {
+      if (error.code === 'ENOENT') break
+      throw error
+    }
+    if (stats.isSymbolicLink()) {
+      throw new Error(`${label} ancestor is a symbolic link, junction, or reparse point: ${ancestor}`)
+    }
+  }
+}
+
+const canonicalizePath = async (targetPath, label) => {
+  const absolutePath = path.resolve(targetPath)
+  let existingAncestor = absolutePath
+  while (true) {
+    try {
+      await fs.lstat(existingAncestor)
+      break
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error
+      const parent = path.dirname(existingAncestor)
+      if (parent === existingAncestor) throw error
+      existingAncestor = parent
+    }
+  }
+  await assertNoLinkedAncestors(existingAncestor, label)
+  const physicalAncestor = await fs.realpath(existingAncestor)
+  return path.resolve(physicalAncestor, path.relative(existingAncestor, absolutePath))
+}
 
 const requireDirectoryWithoutLinks = async (rootPath, label) => {
   const visit = async currentPath => {
@@ -104,15 +151,19 @@ const resolveOptions = options => {
   if (!Array.isArray(options.mediaRoots) || options.mediaRoots.length === 0 || options.mediaRoots.some(root => typeof root !== 'string' || root.length === 0)) {
     throw new TypeError('at least one media root is required')
   }
-  if (options.activeProfilePaths != null && !Array.isArray(options.activeProfilePaths)) {
-    throw new TypeError('activeProfilePaths must be an array')
+  if (!Object.prototype.hasOwnProperty.call(options, 'activeProfilePaths') || !Array.isArray(options.activeProfilePaths)) {
+    throw new Error('completed profile activity evidence is required in activeProfilePaths')
+  }
+  if (options.activeProfilePaths.some(activePath => typeof activePath !== 'string' || activePath.length === 0)) {
+    throw new TypeError('activeProfilePaths must contain paths')
   }
 
   return {
     profileSource: path.resolve(options.profileSource),
     outputRoot: path.resolve(options.outputRoot),
     mediaRoots: options.mediaRoots.map(root => path.resolve(root)),
-    activeProfilePaths: (options.activeProfilePaths ?? []).map(activePath => path.resolve(activePath)),
+    activeProfilePaths: options.activeProfilePaths.map(activePath => path.resolve(activePath)),
+    activityEvidenceMethod: options.activityEvidenceMethod ?? 'injected-active-profile-paths',
     copyBrowserCaches: options.copyBrowserCaches === true,
   }
 }
@@ -133,6 +184,13 @@ const validatePathBoundaries = ({ profileSource, outputRoot, mediaRoots, activeP
     }
   }
 }
+
+const canonicalizeSafetyPaths = async resolved => ({
+  profileSource: await canonicalizePath(resolved.profileSource, 'profile source'),
+  outputRoot: await canonicalizePath(resolved.outputRoot, 'destination'),
+  mediaRoots: await Promise.all(resolved.mediaRoots.map(mediaRoot => canonicalizePath(mediaRoot, 'media root'))),
+  activeProfilePaths: await Promise.all(resolved.activeProfilePaths.map(activePath => canonicalizePath(activePath, 'active profile'))),
+})
 
 const findMediaRoot = (filePath, mediaRoots) => {
   if (typeof filePath !== 'string' || filePath.length === 0 || !path.isAbsolute(filePath)) return null
@@ -160,9 +218,40 @@ const atomicWriteJson = async (filePath, value) => {
   }
 }
 
+const runSqliteWorker = async (outputRoot, request) => {
+  const token = `${process.pid}.${crypto.randomBytes(8).toString('hex')}`
+  const requestPath = path.join(outputRoot, `.sqlite-request.${token}.json`)
+  const responsePath = path.join(outputRoot, `.sqlite-response.${token}.json`)
+  try {
+    await fs.writeFile(requestPath, JSON.stringify(request), { encoding: 'utf8', flag: 'wx' })
+    await new Promise((resolve, reject) => {
+      const child = spawn(ELECTRON_PATH, [SQLITE_WORKER_PATH, requestPath, responsePath], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+        stdio: ['ignore', 'ignore', 'pipe'],
+        windowsHide: true,
+      })
+      let stderr = ''
+      child.stderr.setEncoding('utf8')
+      child.stderr.on('data', chunk => { stderr += chunk })
+      child.once('error', reject)
+      child.once('exit', code => {
+        if (code === 0) resolve()
+        else reject(new Error(`copied database worker failed (${code}): ${stderr.trim()}`))
+      })
+    })
+    return JSON.parse(await fs.readFile(responsePath, 'utf8'))
+  } finally {
+    await Promise.all([
+      fs.rm(requestPath, { force: true }),
+      fs.rm(responsePath, { force: true }),
+    ])
+  }
+}
+
 const prepareWorkspace = async options => {
   const resolved = resolveOptions(options)
-  validatePathBoundaries(resolved)
+  const physicalPaths = await canonicalizeSafetyPaths(resolved)
+  validatePathBoundaries(physicalPaths)
   await requireDirectoryWithoutLinks(resolved.profileSource, 'profile source')
   for (const mediaRoot of resolved.mediaRoots) await requireDirectoryWithoutLinks(mediaRoot, 'media root')
 
@@ -224,13 +313,12 @@ const prepareWorkspace = async options => {
       return mapping
     }
 
-    const db = new Database(databasePath)
-    try {
-      db.pragma('wal_checkpoint(TRUNCATE)')
-      const rows = db.prepare("SELECT rowid AS workspaceRowId, meta FROM my_list_music_info WHERE source = 'local' ORDER BY rowid").all()
-      const update = db.prepare('UPDATE my_list_music_info SET meta = ? WHERE rowid = ?')
-      const rewrittenRows = []
-      for (const row of rows) {
+    const { rows } = await runSqliteWorker(resolved.outputRoot, {
+      operation: 'checkpoint-read-local',
+      databasePath,
+    })
+    const rewrittenRows = []
+    for (const row of rows) {
         let meta
         try {
           meta = JSON.parse(row.meta)
@@ -259,16 +347,13 @@ const prepareWorkspace = async options => {
           }
         }
         await rewriteOptionalPaths(meta)
-        rewrittenRows.push([JSON.stringify(meta), row.workspaceRowId])
-      }
-      const commitRows = db.transaction(() => {
-        for (const [meta, rowId] of rewrittenRows) update.run(meta, rowId)
-      })
-      commitRows()
-      db.pragma('wal_checkpoint(TRUNCATE)')
-    } finally {
-      db.close()
+        rewrittenRows.push({ meta: JSON.stringify(meta), workspaceRowId: row.workspaceRowId })
     }
+    await runSqliteWorker(resolved.outputRoot, {
+      operation: 'rewrite-local',
+      databasePath,
+      rows: rewrittenRows,
+    })
 
     copiedMedia.sort((left, right) => left.destinationPath.localeCompare(right.destinationPath))
     const databaseSha256 = await hashFile(databasePath)
@@ -309,6 +394,10 @@ const prepareWorkspace = async options => {
       electronVersion,
       gitCommit,
       sourceProfileWasInactive: true,
+      profileActivityEvidence: {
+        completed: true,
+        method: resolved.activityEvidenceMethod,
+      },
     }
     await atomicWriteJson(manifestPath, manifest)
     return manifest
