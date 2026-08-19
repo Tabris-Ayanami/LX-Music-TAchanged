@@ -7,7 +7,7 @@ div(:class="$style.page")
       :style="prevStyle"
       @mouseenter="hoverTab = 'prev'" @mouseleave="hoverTab = 'cur'"
     )
-      img(v-if="discoverActive && prevSong && songPic(prevSong)" :class="$style.npCover" :src="songPic(prevSong)" loading="lazy" @load="imgLoad" @error="imgError")
+      img(v-if="discoverActive && prevSong && songPic(prevSong)" :class="$style.npCover" :src="discoverArtwork(songPic(prevSong))" loading="lazy" @load="imgLoad" @error="imgError")
       div(v-else :class="[$style.npCover, $style.npCoverFallback]")
         svg(viewBox="0 0 24 24" width="24" height="24" aria-hidden="true")
           use(xlink:href="#icon-lx-note")
@@ -24,7 +24,7 @@ div(:class="$style.page")
       :style="curStyle"
       @mouseenter="hoverTab = 'cur'" @mouseleave="hoverTab = 'cur'"
     )
-      img(v-if="discoverActive && musicInfo.pic" :class="$style.npCover" :src="musicInfo.pic" loading="lazy" @load="imgLoad" @error="imgError")
+      img(v-if="discoverActive && musicInfo.pic" :class="$style.npCover" :src="discoverArtwork(musicInfo.pic)" loading="lazy" @load="imgLoad" @error="imgError")
       div(v-else :class="[$style.npCover, $style.npCoverFallback]")
         svg(viewBox="0 0 24 24" width="24" height="24" aria-hidden="true")
           use(xlink:href="#icon-lx-note")
@@ -43,7 +43,7 @@ div(:class="$style.page")
       :style="nextStyle"
       @mouseenter="hoverTab = 'next'" @mouseleave="hoverTab = 'cur'"
     )
-      img(v-if="discoverActive && nextSong && songPic(nextSong)" :class="$style.npCover" :src="songPic(nextSong)" loading="lazy" @load="imgLoad" @error="imgError")
+      img(v-if="discoverActive && nextSong && songPic(nextSong)" :class="$style.npCover" :src="discoverArtwork(songPic(nextSong))" loading="lazy" @load="imgLoad" @error="imgError")
       div(v-else :class="[$style.npCover, $style.npCoverFallback]")
         svg(viewBox="0 0 24 24" width="24" height="24" aria-hidden="true")
           use(xlink:href="#icon-lx-note")
@@ -76,7 +76,7 @@ div(:class="$style.page")
       div(v-else-if="dailyList.length" ref="dailyRailRef" :class="$style.dailyRail" @wheel="handleRailWheel")
         button(v-for="(item, index) in dailyList" :key="item.id" type="button" :class="$style.dailyCard" @click="playDaily(index)")
           div(:class="$style.dailyCoverWrap")
-            img(v-if="discoverActive" :class="$style.dailyCover" :src="item.meta.picUrl" loading="lazy" @load="imgLoad" @error="imgError")
+            img(v-if="discoverActive" :class="$style.dailyCover" :src="discoverArtwork(item.meta.picUrl)" loading="lazy" @load="imgLoad" @error="imgError")
             div(:class="$style.dailyOverlay")
               span(:class="$style.dailyIndex") {{ String(index + 1).padStart(2, '0') }}
           div(:class="$style.dailyMeta")
@@ -146,13 +146,16 @@ import { playMusicInDefaultList, playMusicsInDefaultList } from '@renderer/utils
 import { toNewMusicInfo } from '@common/utils/tools'
 import music from '@renderer/utils/musicSdk'
 import resourceLifecycleModule from './resourceLifecycle.cjs'
+import artworkUrlModule from './artworkUrl.cjs'
 
 const { createDiscoverResourceLifecycle } = resourceLifecycleModule
+const { toDiscoverArtworkUrl } = artworkUrlModule
 
 const router = useRouter()
 const dailyRailRef = ref(null)
 const discoverActive = ref(false)
 const resourceLifecycle = createDiscoverResourceLifecycle()
+const discoverArtwork = url => toDiscoverArtworkUrl(url)
 
 const handleRailWheel = event => {
   const el = dailyRailRef.value
@@ -268,6 +271,7 @@ const getSolidColor = url => {
   if (!discoverActive.value || !url) return FALLBACK_BG
   if (colorCache.has(url)) return colorCache.get(url)
   colorCache.set(url, FALLBACK_BG)
+  const artworkUrl = discoverArtwork(url)
 
   const commitColor = (r, g, b) => {
     colorCache.set(url, adjustColor(r, g, b))
@@ -290,7 +294,7 @@ const getSolidColor = url => {
 
   // 方案1：直接 <img crossOrigin> 加载（图床带 CORS 头即可成功）
   resourceLifecycle.loadImage({
-    url,
+    url: artworkUrl,
     crossOrigin: 'anonymous',
     onLoad: img => {
       tryExtractFromImage(img)
@@ -298,7 +302,7 @@ const getSolidColor = url => {
     onError: () => {
     // 方案2：<img> 不带 crossOrigin 加载（能显示，但 canvas 会污染，仅尝试）
       resourceLifecycle.loadImage({
-        url,
+        url: artworkUrl,
         onLoad: img => {
           tryExtractFromImage(img)
         },
