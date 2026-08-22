@@ -84,6 +84,11 @@ declare global {
       'common.showChangeLog': boolean
 
       /**
+       * 发现新版本时是否弹出更新提示
+       */
+      'common.isShowUpdateAlert': boolean
+
+      /**
        * B站账号 Cookie
        */
       'account.bili.cookie': string

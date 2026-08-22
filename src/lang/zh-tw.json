@@ -758,6 +758,7 @@
   "setting__update_open_version_modal_btn": "開啟更新視窗",
   "setting__update_progress": "狀態：",
   "setting__update_show_change_log": "更新版本後的首次啟動時顯示更新日誌",
+  "setting__update_show_update_alert": "發現新版本時彈出更新提醒",
   "setting__update_try_auto_update": "發現新版本時嘗試自動下載更新",
   "setting__update_unknown": "未知",
   "setting__update_unknown_tip": "❓ 獲取最新版本資訊失敗，建議在「關於」頁面開啟項目發布位址查看目前版本是否最新",

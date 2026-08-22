@@ -758,6 +758,7 @@
   "setting__update_open_version_modal_btn": "更新ウィンドウを開く",
   "setting__update_progress": "状態：",
   "setting__update_show_change_log": "更新後の初回起動時に更新ログを表示",
+  "setting__update_show_update_alert": "新しいバージョン発見時に更新通知を表示",
   "setting__update_try_auto_update": "新しいバージョン発見時に自動ダウンロードを試行",
   "setting__update_unknown": "不明",
   "setting__update_unknown_tip": "❓ 最新バージョン情報の取得に失敗しました。「バージョン情報」ページからプロジェクトのリリースページを開いて最新かどうか確認してください",

@@ -22,6 +22,7 @@ const defaultSetting: LX.AppSetting = {
   'common.transparentWindow': false,
   'common.tryAutoUpdate': true,
   'common.showChangeLog': true,
+  'common.isShowUpdateAlert': true,
 
   'account.bili.cookie': '',
   'account.wy.cookie': '',

@@ -6,6 +6,8 @@ dd
   .gap-top
     base-checkbox(id="setting__update_showChangeLog" :model-value="appSetting['common.showChangeLog']" :label="$t('setting__update_show_change_log')" @update:model-value="updateSetting({'common.showChangeLog': $event})")
   .gap-top
+    base-checkbox(id="setting__update_showUpdateAlert" :model-value="appSetting['common.isShowUpdateAlert']" :label="$t('setting__update_show_update_alert')" @update:model-value="updateSetting({'common.isShowUpdateAlert': $event})")
+  .gap-top
     .gap-top
       .p.small(@click="handleOpenDevTools") {{ $t('setting__update_current_label') }}{{ versionInfo.version }}
       .p.small(v-if="commit_id")

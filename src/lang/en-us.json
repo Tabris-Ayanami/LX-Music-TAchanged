@@ -758,6 +758,7 @@
   "setting__update_open_version_modal_btn": "Open Update Window",
   "setting__update_progress": "Status: ",
   "setting__update_show_change_log": "Show changelog on first startup after update",
+  "setting__update_show_update_alert": "Show update alert when a new version is found",
   "setting__update_try_auto_update": "Automatically attempt to download updates when a new version is found",
   "setting__update_unknown": "unknown",
   "setting__update_unknown_tip": "❓ Failed to fetch the latest version information. it is recommended to go to the About page to open the project release address to check whether the current version is the latest",

@@ -25,6 +25,7 @@ export default () => {
       updateTimeout = window.setTimeout(() => {
         updateTimeout = null
         void nextTick(() => {
+          if (!appSetting['common.isShowUpdateAlert']) return
           showUpdateModal()
           setTimeout(() => {
             void dialog({
@@ -155,9 +156,11 @@ export default () => {
       versionInfo.status = 'downloading'
       startUpdateTimeout()
     }
-    void nextTick(() => {
-      showUpdateModal()
-    })
+    if (appSetting['common.isShowUpdateAlert']) {
+      void nextTick(() => {
+        showUpdateModal()
+      })
+    }
   })
   const rUpdateNotAvailable = onUpdateNotAvailable(({ params: info }) => {
     clearUpdateTimeout()
@@ -176,7 +179,9 @@ export default () => {
     clearUpdateTimeout()
     // versionInfo.status = 'error'
     void nextTick(() => {
-      showUpdateModal('error')
+      if (appSetting['common.isShowUpdateAlert']) {
+        showUpdateModal('error')
+      }
     })
   })
   const rUpdateProgress = onUpdateProgress(({ params: progress }) => {
@@ -186,7 +191,9 @@ export default () => {
     clearUpdateTimeout()
     // versionInfo.status = 'downloaded'
     void nextTick(() => {
-      showUpdateModal('downloaded')
+      if (appSetting['common.isShowUpdateAlert']) {
+        showUpdateModal('downloaded')
+      }
     })
   })
 
