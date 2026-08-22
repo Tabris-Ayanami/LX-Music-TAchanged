@@ -135,6 +135,7 @@ export default {
 
 .progress {
   --progress-thumb-size: 10px;
+  --progress-thumb-width: 12px;
   --progress-thumb-color: rgba(255, 255, 255, .96);
   --progress-thumb-ring: rgba(0, 0, 0, .14);
   --progress-thumb-shadow: 0 1px 3px rgba(0, 0, 0, .22), 0 0 0 .5px var(--progress-thumb-ring);
@@ -202,19 +203,19 @@ export default {
   position: absolute;
   left: 0;
   top: 50%;
-  width: var(--progress-thumb-size);
+  width: var(--progress-thumb-width);
   height: var(--progress-thumb-size);
-  border-radius: 50%;
+  border-radius: 999px;
   opacity: 0;
   background: var(--progress-thumb-color);
   box-shadow: var(--progress-thumb-shadow);
-  transform: translateX(calc(var(--progress-ratio, 0) * (100cqw - var(--progress-thumb-size)))) translateY(-50%) scale(.74);
+  transform: translateX(calc(var(--progress-ratio, 0) * (100cqw - var(--progress-thumb-width)))) translateY(-50%) scale(.74);
   transition: transform var(--motion-duration-fast) var(--motion-ease-out), opacity var(--motion-duration-fast) var(--motion-ease-out);
   pointer-events: none;
 
   &.dragging {
     opacity: 1;
-    transform: translateX(calc(var(--progress-ratio, 0) * (100cqw - var(--progress-thumb-size)))) translateY(-50%) scale(1);
+    transform: translateX(calc(var(--progress-ratio, 0) * (100cqw - var(--progress-thumb-width)))) translateY(-50%) scale(1);
     transition-duration: 0ms;
   }
 }
@@ -222,7 +223,7 @@ export default {
 .progress:hover .progressThumb,
 .progress:focus-within .progressThumb {
   opacity: 1;
-  transform: translateX(calc(var(--progress-ratio, 0) * (100cqw - var(--progress-thumb-size)))) translateY(-50%) scale(1);
+  transform: translateX(calc(var(--progress-ratio, 0) * (100cqw - var(--progress-thumb-width)))) translateY(-50%) scale(1);
 }
 
 </style>

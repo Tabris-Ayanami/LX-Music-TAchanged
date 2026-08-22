@@ -1,10 +1,12 @@
 import zh_cn from './zh-cn.json'
 import zh_tw from './zh-tw.json'
 import en_us from './en-us.json'
+import ja_jp from './ja-jp.json'
 
 type Message = Record<keyof typeof zh_cn, string>
 | Record<keyof typeof zh_tw, string>
 | Record<keyof typeof en_us, string>
+| Record<keyof typeof ja_jp, string>
 
 type Messages = Record<(typeof langs)[number]['locale'], Message>
 
@@ -29,6 +31,12 @@ const langs = [
     locale: 'en-us',
     country: 'us',
     message: en_us,
+  },
+  {
+    name: '日本語',
+    locale: 'ja-jp',
+    country: 'jp',
+    message: ja_jp,
   },
 ] as const
 

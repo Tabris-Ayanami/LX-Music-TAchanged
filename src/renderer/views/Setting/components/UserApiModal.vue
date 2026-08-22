@@ -12,9 +12,12 @@ material-modal(:show="modelValue" bg-close teleport="#view" @close="handleClose"
           p {{ api.description }}
           div
             base-checkbox(:id="`user_api_${api.id}`" v-model="api.allowShowUpdateAlert" :class="$style.checkbox" :label="$t('user_api__allow_show_update_alert')" @change="handleChangeAllowUpdateAlert(api, $event)")
-        base-btn(:class="$style.listBtn" outline :aria-label="$t('user_api__btn_remove')" @click.stop="handleRemove(index)")
-          svg(v-once version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 212.982 212.982" space="preserve")
-            use(xlink:href="#icon-delete")
+        button(:class="$style.listBtn" :aria-label="$t('user_api__btn_remove')" @click.stop="handleRemove(index)")
+          svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+            polyline(points="3 6 5 6 21 6")
+            path(d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2")
+            line(x1="10" y1="11" x2="10" y2="17")
+            line(x1="14" y1="11" x2="14" y2="17")
     div(v-else :class="$style.content")
       div(:class="$style.noitem") {{ $t('user_api__noitem') }}
     div(:class="$style.note")
@@ -210,8 +213,20 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
+  border: 1px solid var(--shell-control-border, color-mix(in srgb, var(--color-primary) 38%, var(--color-font-label, #888)));
+  border-radius: @form-radius;
+  background-color: transparent;
+  color: var(--color-font);
+  cursor: pointer;
+  outline: none;
+  transition: background-color @transition-fast, border-color @transition-fast, color @transition-fast;
   svg {
-    width: 60%;
+    width: 55%;
+    height: 55%;
+  }
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
   }
 }
 .note {

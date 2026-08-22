@@ -16,5 +16,10 @@
     "name": "English",
     "locale": "en-us",
     "country": "us"
+  },
+  {
+    "name": "日本語",
+    "locale": "ja-jp",
+    "country": "jp"
   }
 ]
