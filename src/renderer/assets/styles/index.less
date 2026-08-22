@@ -418,7 +418,9 @@ button, input, textarea, a {
   color: var(--color-font);
 }
 
-:where(button, a, [tabindex]):focus-visible {
+/* 不再为 [tabindex] 元素强制全局主题色 focus 边框：
+   搜索输入框等带 tabindex 的元素聚焦时，outline 会被胶囊 overflow 裁切成一条主题色竖线。 */
+:where(button, a):focus-visible {
   outline: 2px solid var(--focus-ring) !important;
   outline-offset: 2px;
 }

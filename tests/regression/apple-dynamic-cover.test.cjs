@@ -308,12 +308,38 @@ test('play detail gates lookup on the appearance switch and delegates video life
   const immersive = fs.readFileSync(path.join(root, 'src/renderer/components/layout/PlayDetail/ImmersiveLyrics.vue'), 'utf8')
   const dynamicVideo = fs.readFileSync(path.join(root, 'src/renderer/components/player/DynamicArtworkVideo.vue'), 'utf8')
 
-  assert.doesNotMatch(playDetail, /setting__play_detail_dynamic_cover_prompt/)
-  assert.doesNotMatch(playDetail, /dialog\.confirm/)
+  assert.match(playDetail, /setting__play_detail_dynamic_cover_prompt/)
+  assert.match(playDetail, /dialog\.confirm/)
+  assert.match(playDetail, /promptedMusicIds/)
+  assert.match(playDetail, /selectionText/)
+  assert.match(playDetail, /dynamicCoverAskAgain/)
+  assert.match(playDetail, /playDetail\.appleDynamicCover[\s\S]*?playDetail\.coverType'\] == 'dynamic'/)
   assert.match(playDetail, /appSetting\['playDetail\.appleDynamicCover'\]/)
+  assert.match(
+    playDetail,
+    /watch\(\(\) => musicInfo\.id,[\s\S]*?window\.setTimeout\(\(\) => \{[\s\S]*?void tryLoadDynamicCover\(\)[\s\S]*?\}, oldId == null \? 1500 : 300\)/,
+    'Dynamic-cover detection should run while a song is playing, not only when the detail page opens',
+  )
+  assert.match(playDetail, /if \(!appSetting\['playDetail\.appleDynamicCover'\] \|\| !musicInfo\.id\) return/)
   assert.ok((playDetail.match(/DynamicArtworkVideo/g) ?? []).length >= 3)
   assert.match(immersive, /DynamicArtworkVideo/)
   assert.match(dynamicVideo, /v-if="active && src"/)
   assert.match(dynamicVideo, /preload="auto"/)
   assert.match(playDetail, /if \(!loaded && lazyLoadKey == musicId\) lazyLoadKey = ''/)
+})
+
+test('dynamic-cover prompt ships a never-ask checkbox label in every locale', () => {
+  const zhCN = fs.readFileSync(path.join(root, 'src/lang/zh-cn.json'), 'utf8')
+  const zhTW = fs.readFileSync(path.join(root, 'src/lang/zh-tw.json'), 'utf8')
+  const enUS = fs.readFileSync(path.join(root, 'src/lang/en-us.json'), 'utf8')
+  assert.match(zhCN, /"setting__play_detail_dynamic_cover_prompt_never_ask": "不再询问"/)
+  assert.match(zhTW, /"setting__play_detail_dynamic_cover_prompt_never_ask": "不再詢問"/)
+  assert.match(enUS, /"setting__play_detail_dynamic_cover_prompt_never_ask": "Don't ask again"/)
+})
+
+test('Apple fetch calls follow redirects because the needle fork defaults to follow_max 0', () => {
+  const tokenSource = fs.readFileSync(path.join(root, 'src/renderer/utils/appleDynamicCover/token.ts'), 'utf8')
+  const coverSource = fs.readFileSync(path.join(root, 'src/renderer/utils/appleDynamicCover/index.ts'), 'utf8')
+  assert.match(tokenSource, /follow_max:\s*5/)
+  assert.match(coverSource, /follow_max:\s*5/)
 })

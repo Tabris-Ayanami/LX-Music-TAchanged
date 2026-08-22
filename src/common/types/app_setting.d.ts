@@ -401,6 +401,9 @@ declare global {
       /** 是否自动使用 Apple Music 动态封面 */
       'playDetail.appleDynamicCover': boolean
 
+      /** 获取到动态封面时是否每次弹窗询问（勾选“不再询问”后为 false） */
+      'playDetail.dynamicCoverAskAgain': boolean
+
       /**
        * 播放详情页模糊背景是否使用动态封面
        */

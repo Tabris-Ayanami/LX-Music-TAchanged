@@ -89,6 +89,7 @@ const defaultSetting: LX.AppSetting = {
   'playDetail.layoutStyle': 'classic',
   'playDetail.coverType': 'static',
   'playDetail.appleDynamicCover': true,
+  'playDetail.dynamicCoverAskAgain': true,
   'playDetail.backgroundUseDynamicCover': false,
   'playDetail.immersiveBackgroundUseDynamicCover': false,
 

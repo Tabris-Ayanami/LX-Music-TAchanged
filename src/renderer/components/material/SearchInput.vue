@@ -353,7 +353,8 @@ export default {
   border-radius: 50%;
   background: var(--color-primary);
   opacity: 0;
-  transform: translateX(-58px) scale(.4);
+  /* 收拢态圆球与搜索图标同位置（大约在胶囊右半圆圆心），展开时从此处液态分离 */
+  transform: translateX(-48px) scale(.4);
   transition: opacity .15s ease, transform .55s var(--motion-ease-out);
 }
 
@@ -482,8 +483,8 @@ export default {
   background: transparent;
   color: var(--shell-muted, var(--color-button-font));
   box-shadow: none;
-  /* 折叠：球藏在胶囊右端内侧（向左偏移），快速显形后随 translateX/gap 滑出分离 */
-  transform: translateX(-58px);
+  /* 折叠：图标在胶囊右半圆圆心（86% 位置），无外框容器；展开后滑出分离 */
+  transform: translateX(-48px);
   opacity: 1;
   pointer-events: none;
   transition: opacity .15s ease, transform .55s var(--motion-ease-out);
@@ -658,6 +659,8 @@ export default {
   .gooLayerButton {
     width: 38px;
     height: 38px;
+    /* 小号胶囊圆角 20.5px，圆心即右缘 129.5px，38px 圆钮左缘为 110.5px → 偏移 -39.5px */
+    transform: translateX(-39.5px) scale(.4);
   }
 
   .input {
@@ -668,6 +671,7 @@ export default {
   .searchBtn {
     width: 38px;
     height: 38px;
+    transform: translateX(-39.5px);
 
     svg {
       width: 17px;
@@ -736,7 +740,7 @@ export default {
       inset 0 -1px 1px rgba(255, 255, 255, .05);
   }
 
-  .searchBtn {
+  .goo:not(.collapsed) .searchBtn {
     box-shadow:
       0 6px 18px color-mix(in srgb, var(--color-primary) 40%, rgba(0, 0, 0, .4)),
       inset 0 1px 0 rgba(255, 255, 255, .35),

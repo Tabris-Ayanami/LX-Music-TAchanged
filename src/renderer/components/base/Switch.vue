@@ -25,9 +25,7 @@ const props = withDefaults(defineProps<{
   label: '',
 })
 
-const emit = defineEmits<{
-  (event: 'update:modelValue', value: boolean): void
-}>()
+const emit = defineEmits<(event: 'update:modelValue', value: boolean) => void>()
 
 const toggle = () => {
   if (props.disabled) return

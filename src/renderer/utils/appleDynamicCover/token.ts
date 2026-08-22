@@ -78,6 +78,7 @@ export const clearCachedToken = () => {
 const getPageText = async(url: string): Promise<string> => new Promise((resolve, reject) => {
   const { promise } = httpFetchTyped(url, {
     method: 'get',
+    follow_max: 5, // needle fork 默认不跟随重定向，Apple 页面会 302，必须显式跟随
     headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36' },
   })
   promise

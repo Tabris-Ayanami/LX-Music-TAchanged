@@ -83,7 +83,8 @@ import ControlBtnsRightHeader from './ControlBtnsRightHeader.vue'
 import ImmersiveLyrics from './ImmersiveLyrics.vue'
 import DynamicArtworkVideo from '@renderer/components/player/DynamicArtworkVideo.vue'
 import { registerAutoHideMounse, unregisterAutoHideMounse } from './autoHideMounse'
-import { appSetting } from '@renderer/store/setting'
+import { appSetting, updateSetting } from '@renderer/store/setting'
+import { dialog } from '@renderer/plugins/Dialog'
 import { backend } from '@renderer/backend'
 import { clearPlayDetailOrigin, getPlayDetailOrigin } from '@renderer/utils/playDetailTransition'
 import { dynamicCoverUrl, dynamicCoverPoster, loadDynamicCover, resetDynamicCover } from '@renderer/store/player/dynamicCover'
@@ -759,6 +760,7 @@ export default {
     }))
     const dynamicArtworkActive = computed(() => (
       !!appSetting['playDetail.appleDynamicCover'] &&
+      appSetting['playDetail.coverType'] == 'dynamic' &&
       isShowPlayerDetail.value &&
       visibled.value &&
       !!musicInfo.id
@@ -778,31 +780,52 @@ export default {
 
     // 记录详情页打开时已经触发过的动态封面加载 key
     let lazyLoadKey = ''
+    // 记录已经询问过是否开启动态封面的歌曲，避免同一首歌重复弹窗
+    const promptedMusicIds = new Set()
 
     // 在详情页打开时，惰性检查并加载动态封面。
     // 避免在应用启动（恢复播放）时立即联网，导致初始化变慢。
     const tryLoadDynamicCover = async() => {
-      if (!appSetting['playDetail.appleDynamicCover'] || !isShowPlayerDetail.value || !musicInfo.id) return
+      if (!appSetting['playDetail.appleDynamicCover'] || !musicInfo.id) return
       const musicId = String(musicInfo.id)
       if (lazyLoadKey == musicId) return
       lazyLoadKey = musicId
 
       const loaded = await loadDynamicCover(musicInfo)
       if (!loaded && lazyLoadKey == musicId) lazyLoadKey = ''
+      if (!loaded || promptedMusicIds.has(musicId)) return
+      // 已开启或用户选择过“不再询问”后，不再弹窗
+      if (appSetting['playDetail.coverType'] == 'dynamic' || !appSetting['playDetail.dynamicCoverAskAgain']) return
+
+      // 首次获取到动态封面：弹窗询问开启还是关闭，可勾选“不再询问”
+      promptedMusicIds.add(musicId)
+      const result = await dialog.confirm({
+        message: window.i18n.t('setting__play_detail_dynamic_cover_prompt'),
+        cancelButtonText: window.i18n.t('setting__play_detail_dynamic_cover_prompt_no'),
+        confirmButtonText: window.i18n.t('setting__play_detail_dynamic_cover_prompt_yes'),
+        selectionText: window.i18n.t('setting__play_detail_dynamic_cover_prompt_never_ask'),
+      })
+      const useDynamic = result?.confirm ?? result
+      if (result?.selectionChecked) updateSetting({ 'playDetail.dynamicCoverAskAgain': false })
+      if (useDynamic) {
+        updateSetting({ 'playDetail.appleDynamicCover': true })
+        updateSetting({ 'playDetail.coverType': 'dynamic' })
+      }
     }
 
-    // 切歌时重置动态封面状态
-    watch(() => musicInfo.id, async() => {
+    // 切歌时重置动态封面状态；播放任意歌曲时都尝试检测动态封面（弹窗询问不再依赖详情页是否打开）
+    watch(() => musicInfo.id, async(newId, oldId) => {
       if (!musicInfo.id) {
         resetDynamicCover()
         return
       }
       artworkVideoFailed.value = false
       bgBlurVideoFailed.value = false
-      // 详情页已打开或处于沉浸模式时，切歌后自动加载新歌的动态封面
-      if (appSetting['playDetail.appleDynamicCover'] && (isShowPlayerDetail.value || isImmersive.value)) {
+      if (!appSetting['playDetail.appleDynamicCover']) return
+      // 启动恢复播放时首次触发延迟稍长，避免阻塞初始化；正常切歌快速检测
+      window.setTimeout(() => {
         void tryLoadDynamicCover()
-      }
+      }, oldId == null ? 1500 : 300)
     }, { immediate: true })
 
     // 打开播放详情页时，惰性检查动态封面。
@@ -821,7 +844,7 @@ export default {
         bgBlurVideoFailed.value = false
         return
       }
-      if (musicInfo.id && isShowPlayerDetail.value && !dynamicCoverUrl.value) {
+      if (musicInfo.id && !dynamicCoverUrl.value) {
         artworkVideoFailed.value = false
         bgBlurVideoFailed.value = false
         void tryLoadDynamicCover()

@@ -18,13 +18,11 @@
 import { onBeforeUnmount, ref, watch } from '@common/utils/vueTools'
 import { attachDynamicArtworkSource } from '@renderer/utils/appleDynamicCover/hls'
 
-const props = withDefaults(defineProps<{
-  src: string | null
-  poster?: string | null
+const props = defineProps<{
+  src: string
+  poster?: string
   active: boolean
-}>(), {
-  poster: null,
-})
+}>()
 
 const emit = defineEmits<{ error: [] }>()
 

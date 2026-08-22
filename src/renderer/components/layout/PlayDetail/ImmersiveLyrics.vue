@@ -209,6 +209,7 @@ const blurBackgroundStyle = computed(() => ({
 }))
 const showBlurDynamicCover = computed(() => (
   !!appSetting['playDetail.appleDynamicCover'] &&
+  appSetting['playDetail.coverType'] == 'dynamic' &&
   !!appSetting['playDetail.immersiveBackgroundUseDynamicCover'] &&
   !!dynamicCoverUrl.value &&
   !blurVideoFailed.value

@@ -56,6 +56,7 @@ const queueRequest = async<T,>(task: () => Promise<T>): Promise<T> => {
 const fetchJson = async(url: string, token: string): Promise<any> => new Promise((resolve, reject) => {
   const { promise } = httpFetchTyped(url, {
     method: 'get',
+    follow_max: 5, // needle fork 默认不跟随重定向，amp-api / HLS 地址可能 302
     headers: {
       authorization: `Bearer ${token}`,
       origin: 'https://music.apple.com',
@@ -83,6 +84,7 @@ const fetchJson = async(url: string, token: string): Promise<any> => new Promise
 const fetchText = async(url: string): Promise<string> => new Promise((resolve, reject) => {
   const { promise } = httpFetchTyped(url, {
     method: 'get',
+    follow_max: 5, // needle fork 默认不跟随重定向，HLS master/媒体地址可能 302
     headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36' },
   })
   promise
@@ -175,6 +177,8 @@ const similarity = (a: string, b: string): number => {
 
 const pickBestSearch = (list: SearchSong[], query: { title: string, artist: string, album: string }): SearchSong | null => {
   if (!list.length) return null
+  const rawTitle = String(query.title ?? '').trim().toLowerCase()
+  const rawArtist = String(query.artist ?? '').trim().toLowerCase()
   const title = normalize(query.title)
   const artist = normalize(query.artist)
   const album = normalize(query.album)
@@ -188,11 +192,13 @@ const pickBestSearch = (list: SearchSong[], query: { title: string, artist: stri
     const itemAlbum = normalize(item.albumName)
 
     if (title && itemTitle) {
-      if (itemTitle == title) score += 6
+      if (String(item.name ?? '').trim().toLowerCase() == rawTitle) score += 50
+      else if (itemTitle == title) score += 6
       else score += similarity(itemTitle, title) * 3
     }
     if (artist && itemArtist) {
-      if (itemArtist == artist) score += 4
+      if (String(item.artistName ?? '').trim().toLowerCase() == rawArtist) score += 4
+      else if (itemArtist == artist) score += 4
       else if (itemArtist.includes(artist) || artist.includes(itemArtist)) score += 3
       else score += similarity(itemArtist, artist) * 2
     }
