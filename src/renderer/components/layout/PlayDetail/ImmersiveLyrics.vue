@@ -42,7 +42,7 @@
       <DynamicArtworkVideo
         v-if="showBlurDynamicCover"
         :class="$style.blurBackgroundVideo"
-        :src="dynamicCoverUrl"
+        :src="dynamicCoverUrlImmersive"
         :poster="dynamicCoverPoster || musicInfo.pic || undefined"
         :active="showBlurDynamicCover"
         @error="blurVideoFailed = true"
@@ -160,7 +160,7 @@ import { playProgress } from '@renderer/store/player/playProgress'
 import { isPlay, musicInfo, playMusicInfo } from '@renderer/store/player/state'
 import { setMusicInfo } from '@renderer/store/player/action'
 import { appSetting } from '@renderer/store/setting'
-import { dynamicCoverUrl, dynamicCoverPoster } from '@renderer/store/player/dynamicCover'
+import { dynamicCoverUrlImmersive, dynamicCoverPoster } from '@renderer/store/player/dynamicCover'
 import DynamicArtworkVideo from '@renderer/components/player/DynamicArtworkVideo.vue'
 import { biliSearch, getBiliLyricSource, getBiliVideoUrl } from '@renderer/utils/ipc'
 
@@ -211,7 +211,7 @@ const showBlurDynamicCover = computed(() => (
   !!appSetting['playDetail.appleDynamicCover'] &&
   appSetting['playDetail.coverType'] == 'dynamic' &&
   !!appSetting['playDetail.immersiveBackgroundUseDynamicCover'] &&
-  !!dynamicCoverUrl.value &&
+  !!dynamicCoverUrlImmersive.value &&
   !blurVideoFailed.value
 ))
 const biliTrack = computed(() => {

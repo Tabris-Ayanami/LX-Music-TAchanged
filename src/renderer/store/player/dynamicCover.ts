@@ -1,16 +1,20 @@
 /**
  * 当前播放歌曲的动态封面状态
  *
- * 在切换歌曲时由调用方触发 loadDynamicCover，成功后 dynamicCoverUrl 即为
- * 可供 <video> 直接播放的视频地址。解析失败/无动态封面时为 null，界面回退静态封面。
+ * 在切换歌曲时由调用方触发 loadDynamicCover，成功后按展示场景保存传统、
+ * 沉浸、像素三种动态封面视频地址。解析失败/无动态封面时为 null，界面回退静态封面。
  */
 import { ref } from '@common/utils/vueTools'
 import { getAppleDynamicCover, clearAppleDynamicCoverCache } from '@renderer/utils/appleDynamicCover'
 
 export type DynamicCoverState = 'idle' | 'loading' | 'ready' | 'error'
 
-/** 当前歌曲的动态封面视频地址 */
+/** 当前歌曲的传统详情页动态封面视频地址 */
 export const dynamicCoverUrl = ref<string | null>(null)
+/** 沉浸模式背景使用的动态封面视频地址 */
+export const dynamicCoverUrlImmersive = ref<string | null>(null)
+/** 像素漫延布局使用的动态封面视频地址 */
+export const dynamicCoverUrlPixel = ref<string | null>(null)
 /** 动态封面的预览帧地址（可作 poster） */
 export const dynamicCoverPoster = ref<string | null>(null)
 /** 加载状态 */
@@ -54,6 +58,8 @@ export const loadDynamicCover = async(info: LoadDynamicCoverInfo): Promise<boole
 
   dynamicCoverState.value = 'loading'
   dynamicCoverUrl.value = null
+  dynamicCoverUrlImmersive.value = null
+  dynamicCoverUrlPixel.value = null
   dynamicCoverPoster.value = null
 
   const task = getAppleDynamicCover({
@@ -64,6 +70,8 @@ export const loadDynamicCover = async(info: LoadDynamicCoverInfo): Promise<boole
     if (generation != requestGeneration || (requestKey && requestKey != lastRequestKey)) return false
     if (result) {
       dynamicCoverUrl.value = result.videoUrl
+      dynamicCoverUrlImmersive.value = result.videoUrlImmersive ?? result.videoUrl
+      dynamicCoverUrlPixel.value = result.videoUrlPixel ?? result.videoUrl
       dynamicCoverPoster.value = result.posterUrl
       dynamicCoverState.value = 'ready'
       return true
@@ -92,6 +100,8 @@ export const resetDynamicCover = () => {
   lastRequestKey = ''
   dynamicCoverState.value = 'idle'
   dynamicCoverUrl.value = null
+  dynamicCoverUrlImmersive.value = null
+  dynamicCoverUrlPixel.value = null
   dynamicCoverPoster.value = null
 }
 

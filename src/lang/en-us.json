@@ -181,6 +181,7 @@
   "lyric_menu__align": "Lyric alignment",
   "lyric_menu__align_center": "Center",
   "lyric_menu__align_left": "Left",
+  "lyric_menu__align_right": "Right",
   "lyric_menu__lrc_size": "Font Size [{size}]",
   "lyric_menu__offset": "Offset [{offset}ms]",
   "lyric_menu__offset_add_10": "Increase 10ms",

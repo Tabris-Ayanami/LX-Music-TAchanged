@@ -181,7 +181,7 @@
             <base-slider-bar
               id="immersive_background_blur"
               :value="appSetting['playDetail.immersiveBackgroundBlur']"
-              :min="8"
+              :min="0"
               :max="64"
               :step="2"
               @change="updateSetting({ 'playDetail.immersiveBackgroundBlur': $event })"

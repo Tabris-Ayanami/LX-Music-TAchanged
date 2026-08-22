@@ -181,6 +181,7 @@
   "lyric_menu__align": "歌詞對齊方式",
   "lyric_menu__align_center": "置中",
   "lyric_menu__align_left": "置左",
+  "lyric_menu__align_right": "置右",
   "lyric_menu__lrc_size": "字體大小  [ {size} ]",
   "lyric_menu__offset": "歌詞偏移 [ {offset}ms ]",
   "lyric_menu__offset_add_10": "加快 10 毫秒",

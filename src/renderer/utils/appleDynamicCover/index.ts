@@ -22,11 +22,25 @@ const STOREFRONTS = ['cn', 'hk', 'tw', 'us', 'gb', 'jp', 'de', 'fr']
 /** 封面类型，编辑视频里 motion 字段的 key 顺序（优先 1:1 方形，符合专辑封面展示） */
 const MOTION_KEYS = ['motionDetailSquare', 'motionSquareVideo1x1', 'motionDetailTall']
 
+/** 不同展示场景使用不同的动态封面分辨率上限 */
+const DYNAMIC_COVER_SPECS = {
+  /** 传统详情页小封面，当前 640px 已经足够清晰 */
+  classic: 640,
+  /** 沉浸模式全屏背景，使用 AVC 可稳定解码的最高 1080px */
+  immersive: 1080,
+  /** 像素漫延布局，同样铺满大画布，使用 1080px AVC */
+  pixel: 1080,
+}
+
 const AMP_API_BASE = 'https://amp-api.music.apple.com/v1/catalog'
 
 export interface DynamicCoverResult {
-  /** 可直接交给 <video> 播放的视频地址（media playlist 或 master playlist） */
+  /** 传统详情页使用的动态封面地址（media playlist 或 master playlist） */
   videoUrl: string
+  /** 沉浸模式背景使用的动态封面地址 */
+  videoUrlImmersive: string
+  /** 像素漫延布局使用的动态封面地址 */
+  videoUrlPixel: string
   /** 该动态封面的预览帧（可作 poster） */
   posterUrl: string | null
   /** 专辑 id */
@@ -258,21 +272,28 @@ const getEditorialVideoUrl = async(albumId: string, preferredStorefront: string,
   return null
 }
 
+const resolveVariantUrl = (master: string, masterUrl: string, maxEdge: number): string => {
+  if (!master.includes('#EXT-X-STREAM-INF')) return masterUrl
+  const variant = pickBestVariant(master, masterUrl, maxEdge)
+  if (!variant) return masterUrl
+  return resolveVariantMediaUrl(variant, masterUrl)
+}
+
 /**
- * 解析动态封面 HLS：优先 AVC 变体，返回最终可用于 <video> 播放的地址。
- * 若无法解析变体，原样返回 master 地址（Chromium 原生 HLS 也能自适应）。
+ * 解析动态封面 HLS：一次拉取 master，再分别为传统、沉浸、像素三种场景
+ * 选择合适分辨率的变体。若无法解析，原样返回 master 地址。
  */
-const resolvePlayableVideoUrl = async(masterUrl: string): Promise<string> => {
+const resolvePlayableVideoUrls = async(masterUrl: string): Promise<{ videoUrl: string, videoUrlImmersive: string, videoUrlPixel: string }> => {
   try {
     const master = await fetchText(masterUrl)
-    if (!master.includes('#EXT-X-STREAM-INF')) return masterUrl
-    const variant = pickBestVariant(master, masterUrl)
-    if (!variant) return masterUrl
-    const mediaUrl = resolveVariantMediaUrl(variant, masterUrl)
-    return mediaUrl
+    return {
+      videoUrl: resolveVariantUrl(master, masterUrl, DYNAMIC_COVER_SPECS.classic),
+      videoUrlImmersive: resolveVariantUrl(master, masterUrl, DYNAMIC_COVER_SPECS.immersive),
+      videoUrlPixel: resolveVariantUrl(master, masterUrl, DYNAMIC_COVER_SPECS.pixel),
+    }
   } catch (err) {
     console.warn('[appleDynamicCover] resolve hls failed, use master directly', err)
-    return masterUrl
+    return { videoUrl: masterUrl, videoUrlImmersive: masterUrl, videoUrlPixel: masterUrl }
   }
 }
 
@@ -332,9 +353,11 @@ export const getAppleDynamicCover = async(info: AppleDynamicCoverQuery): Promise
       const result = await queueRequest(async() => getEditorialVideoUrl(albumRef.albumId, albumRef.storefront, token))
       if (!result) return null
 
-      const videoUrl = await resolvePlayableVideoUrl(result.videoUrl)
+      const videoUrls = await resolvePlayableVideoUrls(result.videoUrl)
       const finalResult: DynamicCoverResult = {
-        videoUrl,
+        videoUrl: videoUrls.videoUrl,
+        videoUrlImmersive: videoUrls.videoUrlImmersive,
+        videoUrlPixel: videoUrls.videoUrlPixel,
         posterUrl: result.posterUrl,
         albumId: albumRef.albumId,
         storefront: result.storefront,

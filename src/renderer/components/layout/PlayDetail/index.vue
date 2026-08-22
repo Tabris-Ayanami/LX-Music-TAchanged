@@ -24,7 +24,7 @@ transition(@before-enter="handleBeforeEnter" @enter="handleEnter" @after-enter="
             DynamicArtworkVideo(
               v-if="showDynamicCoverArtwork"
               :class="$style.img"
-              :src="dynamicCoverUrl"
+              :src="artworkDynamicCoverUrl"
               :poster="dynamicCoverPoster || musicInfo.pic || undefined"
               :active="dynamicArtworkActive"
               @error="artworkVideoFailed = true"
@@ -87,7 +87,7 @@ import { appSetting, updateSetting } from '@renderer/store/setting'
 import { dialog } from '@renderer/plugins/Dialog'
 import { backend } from '@renderer/backend'
 import { clearPlayDetailOrigin, getPlayDetailOrigin } from '@renderer/utils/playDetailTransition'
-import { dynamicCoverUrl, dynamicCoverPoster, loadDynamicCover, resetDynamicCover } from '@renderer/store/player/dynamicCover'
+import { dynamicCoverUrl, dynamicCoverUrlPixel, dynamicCoverPoster, loadDynamicCover, resetDynamicCover } from '@renderer/store/player/dynamicCover'
 
 const PLAYER_SHELL_DURATION = 480
 const PLAYER_CONTENT_DURATION = 240
@@ -765,9 +765,14 @@ export default {
       visibled.value &&
       !!musicInfo.id
     ))
+    const artworkDynamicCoverUrl = computed(() => (
+      layoutStyle.value == 'pixel'
+        ? dynamicCoverUrlPixel.value
+        : dynamicCoverUrl.value
+    ))
     const showDynamicCoverArtwork = computed(() => (
       dynamicArtworkActive.value &&
-      !!dynamicCoverUrl.value &&
+      !!artworkDynamicCoverUrl.value &&
       !artworkVideoFailed.value
     ))
     const showBlurDynamicCover = computed(() => (
@@ -867,6 +872,7 @@ export default {
       pixelControlsVisible,
       musicInfo,
       dynamicCoverUrl,
+      artworkDynamicCoverUrl,
       dynamicCoverPoster,
       dynamicArtworkActive,
       showDynamicCoverArtwork,

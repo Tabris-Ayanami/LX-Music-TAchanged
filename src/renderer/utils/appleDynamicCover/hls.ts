@@ -50,15 +50,15 @@ export const parseMasterPlaylist = (content: string): HlsVariant[] => {
 }
 
 /** 挑选最佳变体：优先 AVC，其次 HEVC 中分辨率适中者 */
-export const pickBestVariant = (content: string, _masterUrl: string): HlsVariant | null => {
+export const pickBestVariant = (content: string, _masterUrl: string, maxEdge = 640): HlsVariant | null => {
   const variants = parseMasterPlaylist(content)
   if (!variants.length) return null
 
   const avcList = variants.filter(variant => isAvc(variant.codecs))
   if (avcList.length) {
-    // 动态封面按此前确认的 640px 上限取最高可用档，避免在大图层重复解码 1080p。
+    // 动态封面按传入的最大边上限取最高可用档，不同展示场景可分别指定。
     const withResolution = avcList.filter(variant => variant.width > 0 && variant.height > 0)
-    const withinTarget = withResolution.filter(variant => Math.max(variant.width, variant.height) <= 640)
+    const withinTarget = withResolution.filter(variant => Math.max(variant.width, variant.height) <= maxEdge)
     const sorted = [...(withinTarget.length ? withinTarget : withResolution)].sort((a, b) => {
       const edgeDiff = Math.max(b.width, b.height) - Math.max(a.width, a.height)
       if (edgeDiff) return withinTarget.length ? edgeDiff : -edgeDiff

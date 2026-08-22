@@ -1,13 +1,16 @@
 <template>
   <teleport to="#root">
     <div ref="dom_menu" :class="$style.container" :style="menuStyles" :aria-hidden="!modelValue">
-      <!-- <div :class="$style.group">
-      <div :class="$style.title">{{ $t('lyric_menu__align') }}</div>
-      <div :class="$style.subGroup">
-        <div :class="[$style.btn, { [$style.active]: appSetting['playDetail.style.align'] == 'left' }]" role="button" @click="setFontAlign('left')" ignore-tip :aria-label="$t('lyric_menu__align_left')">{{ $t('lyric_menu__align_left') }}</div>
-        <div :class="[$style.btn, { [$style.active]: appSetting['playDetail.style.align'] == 'center' }]" role="button" @click="setFontAlign('center')" ignore-tip :aria-label="$t('lyric_menu__align_center')">{{ $t('lyric_menu__align_center') }}</div>
+      <div :class="$style.group">
+        <div :class="$style.subGroup">
+          <div :class="$style.title">{{ $t('lyric_menu__align') }}</div>
+        </div>
+        <div :class="$style.subGroup">
+          <button :class="[$style.btn, { [$style.active]: appSetting['playDetail.style.align'] == 'left' }]" ignore-tip :aria-label="$t('lyric_menu__align_left')" @click="setFontAlign('left')">{{ $t('lyric_menu__align_left') }}</button>
+          <button :class="[$style.btn, { [$style.active]: appSetting['playDetail.style.align'] == 'center' }]" ignore-tip :aria-label="$t('lyric_menu__align_center')" @click="setFontAlign('center')">{{ $t('lyric_menu__align_center') }}</button>
+          <button :class="[$style.btn, { [$style.active]: appSetting['playDetail.style.align'] == 'right' }]" ignore-tip :aria-label="$t('lyric_menu__align_right')" @click="setFontAlign('right')">{{ $t('lyric_menu__align_right') }}</button>
+        </div>
       </div>
-    </div> -->
       <div :class="$style.group">
         <div :class="$style.subGroup">
           <div :class="$style.title">{{ $t('lyric_menu__lrc_size', { size: appSetting['playDetail.style.fontSize'] }) }}</div>
