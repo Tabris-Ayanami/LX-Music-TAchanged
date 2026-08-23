@@ -255,6 +255,19 @@ can verify fragile UI fixes without rebuilding a full test system first.
 - Test coverage:
   `tests/regression/data-init-parallel.test.cjs`
 
+### RG-066: Slider document listeners follow drag lifecycle
+
+- Symptom: every mounted volume or generic slider installed document-level
+  `mousemove` and `mouseup` listeners even while idle.
+- Root cause: listeners were registered during component setup and removed only
+  on unmount, so cached or persistent player controls added idle event-dispatch
+  work.
+- Guard strategy: attach the two listeners on pointer-down, remove them on
+  pointer-up, and keep unmount cleanup as a safety net. Idle mounted sliders
+  therefore register no document drag listeners.
+- Test coverage:
+  `tests/regression/slider-global-listener-lifecycle.test.cjs`
+
 ## How to add the next regression item
 
 1. Give the issue a stable id such as `RG-002`.

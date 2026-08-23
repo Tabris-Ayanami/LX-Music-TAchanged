@@ -43,6 +43,8 @@ const setVolumeFromClientY = clientY => {
 
 const handleSliderDown = event => {
   isDragging.value = true
+  document.addEventListener('mousemove', handleMouseMove)
+  document.addEventListener('mouseup', handleMouseUp)
   setVolumeFromClientY(event.clientY)
 }
 
@@ -53,6 +55,8 @@ const handleMouseMove = event => {
 
 const handleMouseUp = () => {
   isDragging.value = false
+  document.removeEventListener('mousemove', handleMouseMove)
+  document.removeEventListener('mouseup', handleMouseUp)
 }
 
 const handleWheel = event => {
@@ -83,9 +87,6 @@ const icon = computed(() => {
           ? '#icon-volume-medium-outline'
           : '#icon-volume-high-outline'
 })
-
-document.addEventListener('mousemove', handleMouseMove)
-document.addEventListener('mouseup', handleMouseUp)
 
 onBeforeUnmount(() => {
   document.removeEventListener('mousemove', handleMouseMove)

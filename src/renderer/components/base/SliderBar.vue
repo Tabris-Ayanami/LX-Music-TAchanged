@@ -89,6 +89,8 @@ export default {
       sliderEvent.isMsDown = true
       isDragging.value = true
       sliderEvent.msDownX = event.clientX
+      document.addEventListener('mousemove', handleSliderMsMove)
+      document.addEventListener('mouseup', handleSliderMsUp)
 
       const rawValue = (event.offsetX / width) * getRange() + props.min
       const value = emitSteppedValue(rawValue)
@@ -97,6 +99,8 @@ export default {
     const handleSliderMsUp = () => {
       sliderEvent.isMsDown = false
       isDragging.value = false
+      document.removeEventListener('mousemove', handleSliderMsMove)
+      document.removeEventListener('mouseup', handleSliderMsUp)
     }
     const handleSliderMsMove = event => {
       if (!sliderEvent.isMsDown || props.disabled) return
@@ -133,8 +137,6 @@ export default {
       emitSteppedValue(nextValue)
     }
 
-    document.addEventListener('mousemove', handleSliderMsMove)
-    document.addEventListener('mouseup', handleSliderMsUp)
     onBeforeUnmount(() => {
       document.removeEventListener('mousemove', handleSliderMsMove)
       document.removeEventListener('mouseup', handleSliderMsUp)
