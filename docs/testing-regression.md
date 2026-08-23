@@ -242,6 +242,19 @@ can verify fragile UI fixes without rebuilding a full test system first.
 - Test coverage:
   `tests/regression/main-player-status-dedup.test.cjs`
 
+### RG-065: Independent renderer startup data initialization overlaps
+
+- Symptom: startup data preparation awaited user lists, dislike metadata, and
+  previous-play restoration in a strict serial chain, so one slow source could
+  delay all later initialization work.
+- Root cause: the three tasks do not depend on one another, but the startup
+  hook awaited each promise before starting the next one.
+- Guard strategy: start all three promises together with `Promise.all`, keep
+  the existing user-list assignment and error handling, and wait for the
+  slowest task before completing the hook.
+- Test coverage:
+  `tests/regression/data-init-parallel.test.cjs`
+
 ## How to add the next regression item
 
 1. Give the issue a stable id such as `RG-002`.

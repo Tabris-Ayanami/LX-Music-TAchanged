@@ -50,11 +50,15 @@ export default () => {
     unregister = registerAction((ids) => {
       window.app_event.myListUpdate(ids)
     })
-    window.lxData.userLists = await getUserLists() // 获取用户列表
     unregisterDislikeEvent = registerRemoteDislikeAction()
-    await initDislikeInfo() // 获取不喜欢列表
-    await initPrevPlayInfo().catch(err => {
-      log.error(err)
-    }) // 初始化上次的歌曲播放信息
+    await Promise.all([
+      getUserLists().then(lists => {
+        window.lxData.userLists = lists // 获取用户列表
+      }),
+      initDislikeInfo(), // 获取不喜欢列表
+      initPrevPlayInfo().catch(err => {
+        log.error(err)
+      }), // 初始化上次的歌曲播放信息
+    ])
   }
 }
