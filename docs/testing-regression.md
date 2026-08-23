@@ -268,6 +268,18 @@ can verify fragile UI fixes without rebuilding a full test system first.
 - Test coverage:
   `tests/regression/slider-global-listener-lifecycle.test.cjs`
 
+### RG-067: Lyric drag listeners follow pointer lifecycle
+
+- Symptom: opening play detail installed mouse and touch move/end listeners on
+  `document` for the entire time the lyric panel was mounted, including idle
+  playback.
+- Root cause: the lyric composable registered drag handlers from `onMounted`
+  instead of from the lyric pointer-start handlers.
+- Guard strategy: attach mouse listeners for mouse drags and touch listeners
+  for touch drags, remove all four on pointer end, and retain unmount cleanup.
+- Test coverage:
+  `tests/regression/lyric-drag-listener-lifecycle.test.cjs`
+
 ## How to add the next regression item
 
 1. Give the issue a stable id such as `RG-002`.

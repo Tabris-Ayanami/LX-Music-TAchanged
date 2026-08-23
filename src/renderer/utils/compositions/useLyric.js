@@ -122,15 +122,23 @@ export default ({ isPlay, lyric, playProgress, isShowLyricProgressSetting, offse
   }
   const handleLyricMouseDown = event => {
     handleLyricDown(event.clientY)
+    document.addEventListener('mousemove', handleMouseMsMove)
+    document.addEventListener('mouseup', handleMouseMsUp)
   }
   const handleLyricTouchStart = event => {
     if (event.changedTouches.length) {
       const touch = event.changedTouches[0]
       handleLyricDown(touch.clientY)
+      document.addEventListener('touchmove', handleTouchMove)
+      document.addEventListener('touchend', handleMouseMsUp)
     }
   }
-  const handleMouseMsUp = event => {
+  const handleMouseMsUp = () => {
     isMsDown.value = false
+    document.removeEventListener('mousemove', handleMouseMsMove)
+    document.removeEventListener('mouseup', handleMouseMsUp)
+    document.removeEventListener('touchmove', handleTouchMove)
+    document.removeEventListener('touchend', handleMouseMsUp)
   }
   const handleMove = (y) => {
     if (isMsDown.value) {
@@ -216,11 +224,6 @@ export default ({ isPlay, lyric, playProgress, isShowLyricProgressSetting, offse
   watch(() => lyric.line, scrollLine)
 
   onMounted(() => {
-    document.addEventListener('mousemove', handleMouseMsMove)
-    document.addEventListener('mouseup', handleMouseMsUp)
-    document.addEventListener('touchmove', handleTouchMove)
-    document.addEventListener('touchend', handleMouseMsUp)
-
     initLrc(lyric.lines, null)
   })
 
