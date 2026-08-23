@@ -2,6 +2,7 @@ import { EventEmitter } from 'events'
 
 import { saveAppHotKeyConfig, updateSetting } from '@main/utils'
 import type { BrowserWindow } from 'electron'
+import { applyPlayerStatusPatch } from './playerStatus'
 
 export class Event extends EventEmitter {
   // closeAll() {
@@ -54,11 +55,8 @@ export class Event extends EventEmitter {
   }
 
   player_status(status: Partial<LX.Player.Status>) {
-    for (const [key, value] of Object.entries(status)) {
-      // @ts-expect-error
-      global.lx.player_status[key] = value
-    }
-    this.emit('player_status', status)
+    const changed = applyPlayerStatusPatch(global.lx.player_status, status)
+    if (changed) this.emit('player_status', changed)
   }
 
   hot_key_down(keyInfo: LX.HotKeyDownInfo) {

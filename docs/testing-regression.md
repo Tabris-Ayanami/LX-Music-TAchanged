@@ -229,6 +229,19 @@ can verify fragile UI fixes without rebuilding a full test system first.
 - Test coverage:
   `tests/regression/surface-visibility-guard.test.cjs`
 
+### RG-064: Main player-status events emit only changed fields
+
+- Symptom: repeated status patches could wake every main-process consumer,
+  including taskbar, tray, and OpenAPI status subscribers, even when all values
+  were unchanged.
+- Root cause: `AppEvent.player_status` updated the shared snapshot and emitted
+  the original patch unconditionally.
+- Guard strategy: compare status fields with `Object.is`, update the shared
+  snapshot only for changed keys, and skip the event entirely for an unchanged
+  patch. The pure merge helper is covered for ordinary values and `NaN`.
+- Test coverage:
+  `tests/regression/main-player-status-dedup.test.cjs`
+
 ## How to add the next regression item
 
 1. Give the issue a stable id such as `RG-002`.
