@@ -15,20 +15,23 @@ export default ({ props, onLoadedList }) => {
 
   const list = shallowRef([])
   let releaseListCache = () => {}
+  let loadRequestId = 0
   watch(() => props.musicList, musicList => {
     if (!Array.isArray(musicList)) return
+    loadRequestId++
     list.value = [...musicList]
     onLoadedList()
   }, {
     immediate: true,
   })
   watch(() => props.listId, id => {
+    const requestId = ++loadRequestId
     releaseListCache()
     releaseListCache = retainMusicListCache(id)
     if (Array.isArray(props.musicList)) return
     getListMusics(id).then(l => {
+      if (requestId != loadRequestId || id != props.listId || Array.isArray(props.musicList)) return
       list.value = [...l]
-      if (id != props.listId) return
       onLoadedList()
     })
   }, {
@@ -49,7 +52,9 @@ export default ({ props, onLoadedList }) => {
   const handleMyListUpdate = (ids) => {
     if (!ids.includes(props.listId)) return
     if (Array.isArray(props.musicList)) return
+    const requestId = ++loadRequestId
     getListMusics(props.listId).then(l => {
+      if (requestId != loadRequestId || Array.isArray(props.musicList)) return
       list.value = [...l]
     })
   }

@@ -89,6 +89,16 @@ declare global {
       'common.isShowUpdateAlert': boolean
 
       /**
+       * 点击关闭按钮时的行为
+       */
+      'common.closeBtnAction': 'minimize' | 'close'
+
+      /**
+       * 是否在首次点击关闭按钮时弹出选择提示
+       */
+      'common.isShowCloseBtnAsk': boolean
+
+      /**
        * B站账号 Cookie
        */
       'account.bili.cookie': string
@@ -308,6 +318,11 @@ declare global {
        * 是否启用音频加载失败时自动切歌
        */
       'player.autoSkipOnError': boolean
+
+      /**
+       * 智能过渡（切歌时交叉淡入淡出）
+       */
+      'player.isSmartTransition': boolean
 
       /**
        * 点击相同列表内的歌曲切歌时是否清空已播放列表（随机模式下列表内所有歌曲会重新参与随机）

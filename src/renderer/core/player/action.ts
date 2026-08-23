@@ -132,7 +132,7 @@ export const setMusicUrl = (musicInfo: LX.Music.MusicInfo | LX.Download.ListItem
   gettingUrlId = createGettingUrlId(musicInfo)
   void getMusicPlayUrl(musicInfo, isRefresh).then((url) => {
     if (!url) return
-    backend.player.load({ source: url })
+    backend.player.load({ source: url, transition: !isRefresh })
   }).catch((err: any) => {
     console.log(err)
     setAllStatus(err.message)
@@ -185,21 +185,27 @@ const handleRestorePlay = async(restorePlayInfo: LX.Player.SavedPlayInfo) => {
 
 
 // 处理音乐播放
-const handlePlay = () => {
+const handlePlay = (preparedOverlapSec?: number): boolean => {
   window.lx.isPlayedStop &&= false
 
   resetRandomNextMusicInfo()
   if (window.lx.restorePlayInfo) {
     void handleRestorePlay(window.lx.restorePlayInfo)
     window.lx.restorePlayInfo = null
-    return
+    return false
   }
   const musicInfo = playMusicInfo.musicInfo
 
-  if (!musicInfo) return
+  if (!musicInfo) return false
 
-  backend.player.stop()
-  window.app_event.pause()
+  let preparedTransitionStarted = false
+  if (preparedOverlapSec != null) {
+    preparedTransitionStarted = backend.player.startPreparedTransition({ overlapSec: preparedOverlapSec })
+  } else {
+    backend.player.cancelPrepared('manual-play')
+    if (!appSetting['player.isSmartTransition']) backend.player.stop()
+    window.app_event.pause()
+  }
 
   clearDelayNextTimeout()
   clearLoadTimeout()
@@ -207,7 +213,9 @@ const handlePlay = () => {
 
   if (appSetting['player.togglePlayMethod'] == 'random' && !playMusicInfo.isTempPlay) addPlayedList({ ...(playMusicInfo as LX.Player.PlayMusicInfo) })
 
-  setMusicUrl(musicInfo)
+  // The prepared deck already owns a resolved URL. Resolving it again here would
+  // race the crossfade and can prepare the same song a second time.
+  if (!preparedTransitionStarted) setMusicUrl(musicInfo)
 
   void getPicPath({ musicInfo, listId: playMusicInfo.listId }).then((url: string) => {
     if (musicInfo.id != playMusicInfo.musicInfo?.id || url == _musicInfo.pic) return
@@ -230,6 +238,13 @@ const handlePlay = () => {
     if (musicInfo.id != playMusicInfo.musicInfo?.id) return
     setAllStatus(window.i18n.t('lyric__load_error'))
   })
+  return preparedOverlapSec == null || preparedTransitionStarted
+}
+
+export const playPreparedNext = (next: LX.Player.PlayMusicInfo, overlapSec: number): boolean => {
+  if (!next.musicInfo) return false
+  setPlayMusicInfo(next.listId, next.musicInfo, next.isTempPlay)
+  return handlePlay(overlapSec)
 }
 
 /**

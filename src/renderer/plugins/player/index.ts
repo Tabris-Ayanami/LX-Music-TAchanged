@@ -1,9 +1,20 @@
+import {
+  computePerceptualCrossfadeGains,
+  createTailActivityTracker,
+  createTransitionOperation,
+  relayPreparedMediaReady,
+} from './transition'
+
 interface HTMLAudioElementChrome extends HTMLAudioElement {
   setSinkId: (id: string) => Promise<void>
 }
 let audio: HTMLAudioElementChrome | null = null
+let deckElements: [HTMLAudioElementChrome, HTMLAudioElementChrome] | null = null
+let activeDeckIndex: 0 | 1 = 0
 let audioContext: AudioContext
-let mediaSource: MediaElementAudioSourceNode
+let mediaSource: AudioNode
+let deckGains: [GainNode, GainNode]
+let deckAnalysers: [AnalyserNode, AnalyserNode]
 let analyser: AnalyserNode
 // https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext
 // https://benzleung.gitbooks.io/web-audio-api-mini-guide/content/chapter5-1.html
@@ -49,22 +60,109 @@ let convolverSourceGainNode: GainNode
 let convolverOutputGainNode: GainNode
 let convolverDynamicsCompressor: DynamicsCompressorNode
 let gainNode: GainNode
+let userVolume = 1
+let isMuted = false
 let panner: PannerNode
 let pitchShifterNode: AudioWorkletNode
 let pitchShifterNodePitchFactor: AudioParam | null
 let pitchShifterNodeLoadStatus: 'none' | 'loading' | 'unconnect' | 'connected' = 'none'
 let pitchShifterNodeTempValue = 1
+let pitchShifterDeckBindings: Array<{
+  deck: HTMLAudioElementChrome
+  playing: EventListener
+  pause: EventListener
+  waiting: EventListener
+  emptied: EventListener
+}> = []
 let defaultChannelCount = 2
 export const soundR = 0.5
+let preparedSource = ''
+let preparedReady = false
+let preparedDeckIndex: 0 | 1 = 1
+let transitionTimer: number | null = null
+let transitionRunning = false
+let resourceRequestId = 0
+const transitionOperation = createTransitionOperation()
+const tailActivityTracker = createTailActivityTracker()
+let lastTelemetryTime = 0
 
+const isSmartTransitionEnabled = () => !!window.lxData?.appSetting?.['player.isSmartTransition']
+
+const createDeck = () => {
+  const deck = new window.Audio() as HTMLAudioElementChrome
+  deck.controls = false
+  deck.autoplay = false
+  deck.preload = 'auto'
+  deck.crossOrigin = 'anonymous'
+  deck.volume = isMuted ? 0 : userVolume
+  return deck
+}
+
+const getDeck = (index: 0 | 1) => deckElements?.[index] ?? null
+const getActiveDeck = () => getDeck(activeDeckIndex)
+const otherDeckIndex = (index: 0 | 1): 0 | 1 => index == 0 ? 1 : 0
+const getStandbyDeck = () => getDeck(otherDeckIndex(activeDeckIndex))
+const getDeckGain = (index: 0 | 1) => deckGains?.[index]
+
+const setDeckGain = (index: 0 | 1, value: number) => {
+  const gain = getDeckGain(index)
+  if (!gain) return
+  const safe = Math.min(1, Math.max(0, value))
+  const now = audioContext?.currentTime ?? 0
+  gain.gain.cancelScheduledValues(now)
+  gain.gain.setValueAtTime(safe, now)
+}
+
+const clearDeckSource = (deck: HTMLAudioElementChrome | null) => {
+  if (!deck) return
+  deck.pause()
+  deck.removeAttribute('src')
+  deck.load()
+}
+
+const cancelTransitionTimer = () => {
+  if (transitionTimer == null) return
+  window.clearTimeout(transitionTimer)
+  transitionTimer = null
+}
+
+export const cancelPrepared = (_reason = 'cancelled') => {
+  transitionOperation.cancel()
+  cancelTransitionTimer()
+  transitionRunning = false
+  preparedSource = ''
+  preparedReady = false
+  const standbyIndex = otherDeckIndex(activeDeckIndex)
+  setDeckGain(standbyIndex, 0)
+  clearDeckSource(getStandbyDeck())
+}
+
+const cancelRunningTransition = () => {
+  if (!transitionRunning) return
+  transitionOperation.cancel()
+  cancelTransitionTimer()
+  transitionRunning = false
+  const activeGain = getDeckGain(activeDeckIndex)
+  if (activeGain) {
+    const now = audioContext?.currentTime ?? 0
+    activeGain.gain.cancelScheduledValues(now)
+    activeGain.gain.setValueAtTime(1, now)
+  }
+  const standbyIndex = otherDeckIndex(activeDeckIndex)
+  setDeckGain(standbyIndex, 0)
+  clearDeckSource(getStandbyDeck())
+}
 
 export const createAudio = () => {
-  if (audio) return
-  audio = new window.Audio() as HTMLAudioElementChrome
-  audio.controls = false
-  audio.autoplay = true
-  audio.preload = 'auto'
-  audio.crossOrigin = 'anonymous'
+  if (deckElements) return
+  const first = createDeck()
+  const second = createDeck()
+  first.autoplay = true
+  deckElements = [first, second]
+  audio = first
+  activeDeckIndex = 0
+  setDeckGain(0, 1)
+  setDeckGain(1, 0)
 }
 
 const initAnalyser = () => {
@@ -110,18 +208,39 @@ const initGain = () => {
 
 const initAdvancedAudioFeatures = () => {
   if (audioContext) return
-  if (!audio) throw new Error('audio not defined')
+  createAudio()
+  if (!deckElements) throw new Error('audio not defined')
   audioContext = new window.AudioContext({ latencyHint: 'playback' })
   defaultChannelCount = audioContext.destination.channelCount
+  for (const deck of deckElements) deck.volume = 1
 
   initAnalyser()
   initBiquadFilter()
   initConvolver()
   initPanner()
   initGain()
-  // source -> analyser -> biquadFilter -> pitchShifter -> [(convolver & convolverSource)->convolverDynamicsCompressor] -> panner -> gain
-  mediaSource = audioContext.createMediaElementSource(audio)
-  mediaSource.connect(analyser)
+  const mixInput = audioContext.createGain()
+  const sourceA = audioContext.createMediaElementSource(deckElements[0])
+  const sourceB = audioContext.createMediaElementSource(deckElements[1])
+  const gainA = audioContext.createGain()
+  const gainB = audioContext.createGain()
+  const analyserA = audioContext.createAnalyser()
+  const analyserB = audioContext.createAnalyser()
+  analyserA.fftSize = 1024
+  analyserB.fftSize = 1024
+  sourceA.connect(analyserA)
+  sourceB.connect(analyserB)
+  analyserA.connect(gainA)
+  analyserB.connect(gainB)
+  gainA.connect(mixInput)
+  gainB.connect(mixInput)
+  mixInput.connect(analyser)
+  deckGains = [gainA, gainB]
+  deckAnalysers = [analyserA, analyserB]
+  mediaSource = mixInput
+  gainA.gain.value = 1
+  gainB.gain.value = 0
+  gainNode.gain.value = isMuted ? 0 : userVolume
   analyser.connect(biquads.get(`hz${freqs[0]}`)!)
   const lastBiquadFilter = (biquads.get(`hz${freqs.at(-1)!}`)!)
   lastBiquadFilter.connect(convolverSourceGainNode)
@@ -141,6 +260,7 @@ const initAdvancedAudioFeatures = () => {
 }
 
 const handleMediaListChange = () => {
+  if (!mediaSource) return
   mediaSource.disconnect()
   mediaSource.connect(analyser)
 }
@@ -308,11 +428,33 @@ const disconnectNode = () => {
 }
 const connectPitchShifterNode = () => {
   console.log('connect Pitch Shifter Node')
-  audio!.addEventListener('playing', connectNode)
-  audio!.addEventListener('pause', disconnectNode)
-  audio!.addEventListener('waiting', disconnectNode)
-  audio!.addEventListener('emptied', disconnectNode)
-  if (audio!.paused) disconnectNode()
+  for (const binding of pitchShifterDeckBindings) {
+    binding.deck.removeEventListener('playing', binding.playing)
+    binding.deck.removeEventListener('pause', binding.pause)
+    binding.deck.removeEventListener('waiting', binding.waiting)
+    binding.deck.removeEventListener('emptied', binding.emptied)
+  }
+  pitchShifterDeckBindings = []
+  for (const deck of deckElements ?? []) {
+    const playing: EventListener = event => {
+      if (event.currentTarget === audio) connectNode()
+    }
+    const pause: EventListener = event => {
+      if (event.currentTarget === audio) disconnectNode()
+    }
+    const waiting: EventListener = event => {
+      if (event.currentTarget === audio) disconnectNode()
+    }
+    const emptied: EventListener = event => {
+      if (event.currentTarget === audio) disconnectNode()
+    }
+    deck.addEventListener('playing', playing)
+    deck.addEventListener('pause', pause)
+    deck.addEventListener('waiting', waiting)
+    deck.addEventListener('emptied', emptied)
+    pitchShifterDeckBindings.push({ deck, playing, pause, waiting, emptied })
+  }
+  if (audio?.paused) disconnectNode()
 
   const lastBiquadFilter = (biquads.get(`hz${freqs.at(-1)!}`)!)
   lastBiquadFilter.disconnect()
@@ -335,10 +477,13 @@ const disconnectPitchShifterNode = () => {
   pitchShifterNodeLoadStatus = 'unconnect'
   pitchShifterNodePitchFactor = null
 
-  audio!.removeEventListener('playing', connectNode)
-  audio!.removeEventListener('pause', disconnectNode)
-  audio!.removeEventListener('waiting', disconnectNode)
-  audio!.removeEventListener('emptied', disconnectNode)
+  for (const binding of pitchShifterDeckBindings) {
+    binding.deck.removeEventListener('playing', binding.playing)
+    binding.deck.removeEventListener('pause', binding.pause)
+    binding.deck.removeEventListener('waiting', binding.waiting)
+    binding.deck.removeEventListener('emptied', binding.emptied)
+  }
+  pitchShifterDeckBindings = []
   connectNode()
 }
 const loadPitchShifterNode = () => {
@@ -385,77 +530,287 @@ export const setPitchShifter = (val: number) => {
 
 export const hasInitedAdvancedAudioFeatures = (): boolean => audioContext != null
 
-export const setResource = (src: string) => {
-  if (audio) audio.src = src
+const clearPreparedWithoutInvalidating = () => {
+  preparedSource = ''
+  preparedReady = false
+  const standbyIndex = activeDeckIndex == 0 ? 1 : 0
+  setDeckGain(standbyIndex, 0)
+  clearDeckSource(getStandbyDeck())
+}
+
+const scheduleGainCurve = (index: 0 | 1, deck: 'outgoing' | 'incoming', durationSec: number, breathRatio: number, startAt: number) => {
+  const gain = getDeckGain(index)
+  if (!gain || !audioContext) return
+  const duration = Math.max(0.25, durationSec)
+  const values = new Float32Array(96)
+  for (let i = 0; i < values.length; i++) {
+    const progress = i / (values.length - 1)
+    const crossfade = computePerceptualCrossfadeGains(progress, { breathRatio })
+    values[i] = deck == 'incoming' ? crossfade.incomingGain : crossfade.outgoingGain
+  }
+  // Use the same future anchor for both decks. A sequence of ordered ramps is
+  // more reliable in Chromium than setValueCurveAtTime when a media element
+  // becomes ready immediately (as local files commonly do).
+  gain.gain.cancelScheduledValues(startAt - 0.01)
+  gain.gain.setValueAtTime(values[0], startAt)
+  for (let i = 1; i < values.length; i++) {
+    gain.gain.linearRampToValueAtTime(values[i], startAt + (duration * i / (values.length - 1)))
+  }
+}
+
+const finishPreparedTransition = (operationToken: number, outgoingIndex: 0 | 1, incomingIndex: 0 | 1) => {
+  if (!transitionOperation.isCurrent(operationToken)) return
+  transitionRunning = false
+  transitionTimer = null
+  setDeckGain(incomingIndex, 1)
+  setDeckGain(outgoingIndex, 0)
+  clearDeckSource(getDeck(outgoingIndex))
+  preparedSource = ''
+  preparedReady = false
+}
+
+export const startPreparedTransition = (overlapSec = 5) => {
+  if (!preparedReady || !preparedSource || transitionRunning) return false
+  const outgoing = getActiveDeck()
+  const incoming = getDeck(preparedDeckIndex)
+  if (!outgoing || !incoming || outgoing.paused || outgoing.ended) return false
+
+  try {
+    initAdvancedAudioFeatures()
+  } catch (error) {
+    console.warn('[transition] Web Audio unavailable, using immediate load', error)
+    return false
+  }
+
+  const operationToken = transitionOperation.begin()
+  const outgoingIndex = activeDeckIndex
+  const incomingIndex = preparedDeckIndex
+  const durationSec = Math.max(0.75, Math.min(8, overlapSec))
+  incoming.currentTime = 0
+  incoming.volume = 1
+  setDeckGain(outgoingIndex, 1)
+  setDeckGain(incomingIndex, 0)
+
+  activeDeckIndex = incomingIndex
+  audio = incoming
+  transitionRunning = true
+  relayPreparedMediaReady(incoming)
+  const breathRatio = Math.min(0.34, Math.max(0.2, 1 / durationSec))
+  const curveStartAt = audioContext.currentTime + 0.03
+  try {
+    scheduleGainCurve(outgoingIndex, 'outgoing', durationSec, breathRatio, curveStartAt)
+    scheduleGainCurve(incomingIndex, 'incoming', durationSec, breathRatio, curveStartAt)
+  } catch (error) {
+    console.warn('[transition] gain curve scheduling failed, using immediate load', error)
+    transitionOperation.cancel()
+    cancelTransitionTimer()
+    transitionRunning = false
+    activeDeckIndex = outgoingIndex
+    audio = outgoing
+    setDeckGain(outgoingIndex, 1)
+    setDeckGain(incomingIndex, 0)
+    clearDeckSource(incoming)
+    preparedSource = ''
+    preparedReady = false
+    return false
+  }
+
+  void incoming.play().catch((error: unknown) => {
+    if (!transitionOperation.isCurrent(operationToken)) return
+    console.warn('[transition] incoming play failed', error)
+    transitionOperation.cancel()
+    cancelTransitionTimer()
+    transitionRunning = false
+    activeDeckIndex = outgoingIndex
+    audio = outgoing
+    setDeckGain(outgoingIndex, 1)
+    setDeckGain(incomingIndex, 0)
+    clearDeckSource(incoming)
+    preparedSource = ''
+    preparedReady = false
+  })
+
+  transitionTimer = window.setTimeout(() => {
+    finishPreparedTransition(operationToken, outgoingIndex, incomingIndex)
+  }, durationSec * 1000 + 80)
+  return true
+}
+
+export const prepareNext = async(src: string): Promise<boolean> => {
+  if (!src) return false
+  createAudio()
+  cancelRunningTransition()
+  cancelPrepared()
+  const operationToken = transitionOperation.begin()
+  preparedDeckIndex = activeDeckIndex == 0 ? 1 : 0
+  const deck = getDeck(preparedDeckIndex)
+  if (!deck) return false
+  deck.autoplay = false
+  deck.volume = audioContext ? 1 : isMuted ? 0 : userVolume
+  deck.preload = 'auto'
+
+  return await new Promise<boolean>(resolve => {
+    let settled = false
+    const cleanup = () => {
+      window.clearTimeout(timeout)
+      deck.removeEventListener('canplay', handleReady)
+      deck.removeEventListener('error', handleError)
+      deck.removeEventListener('abort', handleError)
+    }
+    const finish = (ready: boolean) => {
+      if (settled) return
+      settled = true
+      cleanup()
+      if (!transitionOperation.isCurrent(operationToken)) {
+        resolve(false)
+        return
+      }
+      if (ready) {
+        preparedSource = src
+        preparedReady = true
+        setDeckGain(preparedDeckIndex, 0)
+      } else {
+        clearPreparedWithoutInvalidating()
+      }
+      resolve(ready)
+    }
+    const handleReady = () => { finish(true) }
+    const handleError = () => { finish(false) }
+    const timeout = window.setTimeout(() => { finish(false) }, 8000)
+    deck.addEventListener('canplay', handleReady, { once: true })
+    deck.addEventListener('error', handleError, { once: true })
+    deck.addEventListener('abort', handleError, { once: true })
+    deck.src = src
+    deck.load()
+  })
+}
+
+export const setResource = (src: string, transition = isSmartTransitionEnabled()) => {
+  const requestId = ++resourceRequestId
+  createAudio()
+  const current = getActiveDeck()
+  if (!current) return
+  if (!transition || !isSmartTransitionEnabled() || !current.src || current.paused || current.ended) {
+    loadImmediate(src)
+    return
+  }
+  void prepareNext(src).then(ready => {
+    if (requestId != resourceRequestId) return
+    if (!ready) {
+      loadImmediate(src)
+      return
+    }
+    if (!startPreparedTransition()) loadImmediate(src)
+  })
+}
+
+const loadImmediate = (src: string) => {
+  createAudio()
+  cancelRunningTransition()
+  cancelPrepared()
+  const current = getActiveDeck()
+  if (!current) return
+  current.autoplay = true
+  setDeckGain(activeDeckIndex, 1)
+  current.volume = audioContext ? 1 : isMuted ? 0 : userVolume
+  current.src = src
+  current.load()
 }
 
 export const setPlay = () => {
-  void audio?.play().catch((err: unknown) => {
+  void getActiveDeck()?.play().catch((err: unknown) => {
     console.warn('audio play failed', err)
   })
 }
 
 export const setPause = () => {
-  audio?.pause()
+  resourceRequestId++
+  cancelRunningTransition()
+  cancelPrepared('pause')
+  getActiveDeck()?.pause()
+  getStandbyDeck()?.pause()
 }
 
 export const setStop = () => {
-  if (audio) {
-    audio.src = ''
-    audio.removeAttribute('src')
+  resourceRequestId++
+  cancelRunningTransition()
+  cancelPrepared('stop')
+  for (const deck of deckElements ?? []) clearDeckSource(deck)
+  setDeckGain(activeDeckIndex, 1)
+  setDeckGain(otherDeckIndex(activeDeckIndex), 0)
+}
+
+export const isEmpty = (): boolean => !getActiveDeck()?.src
+
+export const setLoopPlay = (isLoop: boolean) => {
+  for (const deck of deckElements ?? []) deck.loop = isLoop
+}
+
+export const getPlaybackRate = (): number => getActiveDeck()?.defaultPlaybackRate ?? 1
+
+export const setPlaybackRate = (rate: number) => {
+  for (const deck of deckElements ?? []) {
+    deck.defaultPlaybackRate = rate
+    deck.playbackRate = rate
   }
 }
 
-export const isEmpty = (): boolean => !audio?.src
-
-export const setLoopPlay = (isLoop: boolean) => {
-  if (audio) audio.loop = isLoop
-}
-
-export const getPlaybackRate = (): number => {
-  return audio?.defaultPlaybackRate ?? 1
-}
-
-export const setPlaybackRate = (rate: number) => {
-  if (!audio) return
-  audio.defaultPlaybackRate = rate
-  audio.playbackRate = rate
-}
-
 export const setPreservesPitch = (preservesPitch: boolean) => {
-  if (!audio) return
-  audio.preservesPitch = preservesPitch
+  for (const deck of deckElements ?? []) deck.preservesPitch = preservesPitch
 }
 
-export const getMute = (): boolean => {
-  return audio?.muted ?? false
+export const getMute = (): boolean => isMuted
+
+export const setMute = (mute: boolean) => {
+  isMuted = mute
+  if (gainNode) gainNode.gain.value = mute ? 0 : userVolume
+  else for (const deck of deckElements ?? []) deck.volume = mute ? 0 : userVolume
 }
 
-export const setMute = (isMute: boolean) => {
-  if (audio) audio.muted = isMute
-}
-
-export const getCurrentTime = () => {
-  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-  return audio?.currentTime || 0
-}
+export const getCurrentTime = () => getActiveDeck()?.currentTime ?? 0
 
 export const setCurrentTime = (time: number) => {
-  if (audio) audio.currentTime = time
+  const current = getActiveDeck()
+  if (current) current.currentTime = time
 }
 
 export const setMediaDeviceId = async(mediaDeviceId: string): Promise<void> => {
-  if (!audio) return
-  return audio.setSinkId(mediaDeviceId)
+  const decks = deckElements ?? []
+  await Promise.all(decks.map(async deck => { await deck.setSinkId(mediaDeviceId) }))
 }
 
 export const setVolume = (volume: number) => {
-  if (audio) audio.volume = volume
+  userVolume = Math.min(1, Math.max(0, volume))
+  if (gainNode) gainNode.gain.value = isMuted ? 0 : userVolume
+  else for (const deck of deckElements ?? []) deck.volume = isMuted ? 0 : userVolume
 }
 
-export const getDuration = () => {
-  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-  return audio?.duration || 0
+export const getDuration = () => getActiveDeck()?.duration ?? 0
+
+const readDeckRms = (index: 0 | 1) => {
+  const sourceAnalyser = deckAnalysers?.[index]
+  if (!sourceAnalyser) return 0
+  const buffer = new Float32Array(sourceAnalyser.fftSize)
+  sourceAnalyser.getFloatTimeDomainData(buffer)
+  let sum = 0
+  for (const sample of buffer) sum += sample * sample
+  return Math.sqrt(sum / Math.max(1, buffer.length))
+}
+
+export const getTransitionTelemetry = () => {
+  const current = getActiveDeck()
+  const currentTime = current?.currentTime ?? 0
+  if (currentTime < lastTelemetryTime) tailActivityTracker.reset()
+  lastTelemetryTime = currentTime
+  const activity = readDeckRms(activeDeckIndex)
+  const tail = tailActivityTracker.update(activity, currentTime)
+  return {
+    prepared: preparedReady,
+    playing: !!current && !current.paused && !current.ended,
+    remainingSec: Math.max(0, (current?.duration ?? 0) - currentTime),
+    rms: tail.rms,
+    silenceSec: tail.silenceSec,
+  }
 }
 
 // export const getPlaybackRate = () => {
@@ -463,99 +818,31 @@ export const getDuration = () => {
 // }
 
 type Noop = () => void
+type PlayerEventName = 'playing' | 'pause' | 'ended' | 'error' | 'loadeddata' | 'loadstart' | 'canplay' | 'emptied' | 'timeupdate' | 'durationchange' | 'waiting'
 
-export const onPlaying = (callback: Noop) => {
-  if (!audio) throw new Error('audio not defined')
-
-  audio.addEventListener('playing', callback)
+const listenPlayerEvent = (event: PlayerEventName, callback: Noop) => {
+  const decks = deckElements ?? []
+  const wrapper = (e: Event) => {
+    if (e.currentTarget === audio) callback()
+  }
+  for (const deck of decks) deck.addEventListener(event, wrapper)
   return () => {
-    audio?.removeEventListener('playing', callback)
+    for (const deck of decks) deck.removeEventListener(event, wrapper)
   }
 }
 
-export const onPause = (callback: Noop) => {
-  if (!audio) throw new Error('audio not defined')
+export const onPlaying = (callback: Noop) => listenPlayerEvent('playing', callback)
+export const onPause = (callback: Noop) => listenPlayerEvent('pause', callback)
+export const onEnded = (callback: Noop) => listenPlayerEvent('ended', callback)
+export const onError = (callback: Noop) => listenPlayerEvent('error', callback)
+export const onLoadeddata = (callback: Noop) => listenPlayerEvent('loadeddata', callback)
+export const onLoadstart = (callback: Noop) => listenPlayerEvent('loadstart', callback)
+export const onCanplay = (callback: Noop) => listenPlayerEvent('canplay', callback)
+export const onEmptied = (callback: Noop) => listenPlayerEvent('emptied', callback)
+export const onTimeupdate = (callback: Noop) => listenPlayerEvent('timeupdate', callback)
+export const onDurationchange = (callback: Noop) => listenPlayerEvent('durationchange', callback)
+export const onWaiting = (callback: Noop) => listenPlayerEvent('waiting', callback)
 
-  audio?.addEventListener('pause', callback)
-  return () => {
-    audio?.removeEventListener('pause', callback)
-  }
-}
-
-export const onEnded = (callback: Noop) => {
-  if (!audio) throw new Error('audio not defined')
-
-  audio.addEventListener('ended', callback)
-  return () => {
-    audio?.removeEventListener('ended', callback)
-  }
-}
-
-export const onError = (callback: Noop) => {
-  if (!audio) throw new Error('audio not defined')
-
-  audio.addEventListener('error', callback)
-  return () => {
-    audio?.removeEventListener('error', callback)
-  }
-}
-
-export const onLoadeddata = (callback: Noop) => {
-  if (!audio) throw new Error('audio not defined')
-
-  audio.addEventListener('loadeddata', callback)
-  return () => {
-    audio?.removeEventListener('loadeddata', callback)
-  }
-}
-
-export const onLoadstart = (callback: Noop) => {
-  if (!audio) throw new Error('audio not defined')
-
-  audio.addEventListener('loadstart', callback)
-  return () => {
-    audio?.removeEventListener('loadstart', callback)
-  }
-}
-
-export const onCanplay = (callback: Noop) => {
-  if (!audio) throw new Error('audio not defined')
-
-  audio.addEventListener('canplay', callback)
-  return () => {
-    audio?.removeEventListener('canplay', callback)
-  }
-}
-
-export const onEmptied = (callback: Noop) => {
-  if (!audio) throw new Error('audio not defined')
-
-  audio.addEventListener('emptied', callback)
-  return () => {
-    audio?.removeEventListener('emptied', callback)
-  }
-}
-
-export const onTimeupdate = (callback: Noop) => {
-  if (!audio) throw new Error('audio not defined')
-
-  audio.addEventListener('timeupdate', callback)
-  return () => {
-    audio?.removeEventListener('timeupdate', callback)
-  }
-}
-
-// 缓冲中
-export const onWaiting = (callback: Noop) => {
-  if (!audio) throw new Error('audio not defined')
-
-  audio.addEventListener('waiting', callback)
-  return () => {
-    audio?.removeEventListener('waiting', callback)
-  }
-}
-
-// 可见性改变
 export const onVisibilityChange = (callback: Noop) => {
   document.addEventListener('visibilitychange', callback)
   return () => {

@@ -8,6 +8,7 @@ import { musicInfo, playMusicInfo, playInfo } from '@renderer/store/player/state
 import { appSetting } from '@renderer/store/setting'
 import { playNext } from '@renderer/core/player'
 import { updateListMusics } from '@renderer/store/list/action'
+import { shouldPreserveOutgoingProgress } from '@renderer/plugins/player/transition'
 
 const delaySavePlayInfo = throttle(backend.player.savePlaybackState, 2000)
 
@@ -86,8 +87,15 @@ export default () => {
     console.log('handleError')
   }
 
+  const updateDurationFromPlayer = () => {
+    const duration = backend.player.getDuration()
+    if (!Number.isFinite(duration) || duration <= 0) return false
+    setMaxplayTime(duration)
+    return true
+  }
+
   const handleLoadeddata = () => {
-    setMaxplayTime(backend.player.getDuration())
+    updateDurationFromPlayer()
 
     if (playMusicInfo.musicInfo && 'source' in playMusicInfo.musicInfo && !playMusicInfo.musicInfo.interval) {
       // console.log(formatPlayTime2(playProgress.maxPlayTime))
@@ -126,11 +134,24 @@ export default () => {
   }
 
   const handleSetPlayInfo = () => {
-    // restorePlayTime = playProgress.nowPlayTime
-    backend.player.seek(restorePlayTime = playProgress.nowPlayTime)
-    // setMaxplayTime(playProgress.maxPlayTime)
+    const telemetry = backend.player.getTransitionTelemetry()
+    const preserveOutgoingProgress = shouldPreserveOutgoingProgress({
+      enabled: appSetting['player.isSmartTransition'],
+      playing: telemetry.playing,
+      empty: backend.player.isEmpty(),
+    })
+    if (preserveOutgoingProgress) {
+      // The selected song changed, but its URL/deck is not active yet. Keep the
+      // outgoing deck untouched until prepareNext promotes the incoming deck.
+      restorePlayTime = 0
+      setNowPlayTime(backend.player.getPosition())
+      const duration = backend.player.getDuration()
+      if (Number.isFinite(duration) && duration > 0) setMaxplayTime(duration)
+    } else {
+      backend.player.seek(restorePlayTime = playProgress.nowPlayTime)
+    }
     handlePause()
-    if (!playMusicInfo.isTempPlay && playMusicInfo.listId) {
+    if (!preserveOutgoingProgress && !playMusicInfo.isTempPlay && playMusicInfo.listId) {
       delaySavePlayInfo({
         time: playProgress.nowPlayTime,
         maxTime: playProgress.maxPlayTime,
@@ -177,6 +198,9 @@ export default () => {
   const rOnTimeupdate = backend.player.on('timeupdate', () => {
     setNowPlayTime(backend.player.getPosition())
   })
+  const rOnDurationchange = backend.player.on('durationchange', () => {
+    updateDurationFromPlayer()
+  })
 
   let currentPlayTime = 0
   const rVisibilityChange = backend.player.on('visibilitychange', () => {
@@ -191,6 +215,7 @@ export default () => {
 
   onBeforeUnmount(() => {
     rOnTimeupdate()
+    rOnDurationchange()
     rVisibilityChange()
     // window.app_event.off('play', handlePlay)
     window.app_event.off('pause', handlePause)

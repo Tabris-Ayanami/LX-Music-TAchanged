@@ -8,20 +8,73 @@ import { sendFocus, sendTaskbarButtonClick } from './rendererEvent'
 
 let browserWindow: Electron.BrowserWindow | null = null
 let trayModulePromise: Promise<{ ensureTray: () => void }> | null = null
+let allowClose = false
+
+const closeDialogText: Record<string, { title: string, message: string, minimize: string, close: string, ask: string }> = {
+  'zh-cn': { title: '关闭行为', message: '点击关闭按钮时执行的操作', minimize: '最小化到托盘', close: '关闭应用', ask: '不再询问' },
+  'zh-tw': { title: '關閉行為', message: '點擊關閉按鈕時執行的操作', minimize: '最小化到系統匣', close: '關閉應用程式', ask: '不再詢問' },
+  'ja-jp': { title: '閉じる動作', message: '閉じるボタンを押したときの動作', minimize: 'トレイに最小化', close: 'アプリを終了', ask: '今後表示しない' },
+  'en-us': { title: 'Close behavior', message: 'What should happen when closing the window?', minimize: 'Minimize to tray', close: 'Close app', ask: "Don't ask again" },
+}
+
+const showCloseBehaviorDialog = async(win: Electron.BrowserWindow): Promise<'minimize' | 'close'> => {
+  const lang = global.lx.appSetting['common.langId']
+  const text = closeDialogText[lang ?? 'en-us'] ?? closeDialogText['en-us']
+  const result = await dialog.showMessageBox(win, {
+    type: 'question',
+    title: text.title,
+    message: text.message,
+    buttons: [text.minimize, text.close],
+    defaultId: 0,
+    cancelId: 0,
+    checkboxLabel: text.ask,
+    checkboxChecked: false,
+    noLink: true,
+  })
+  const action: 'minimize' | 'close' = result.response === 0 ? 'minimize' : 'close'
+  if (result.checkboxChecked) {
+    global.lx.event_app.update_config({ 'common.isShowCloseBtnAsk': false, 'common.closeBtnAction': action })
+  }
+  return action
+}
+
+const ensureTrayAndHide = () => {
+  trayModulePromise ??= import('../tray')
+  void trayModulePromise.then(({ ensureTray }) => {
+    ensureTray()
+    browserWindow?.hide()
+  })
+}
 
 const winEvent = () => {
   if (!browserWindow) return
 
   browserWindow.on('close', event => {
-    if (global.lx.isSkipTrayQuit || !global.lx.appSetting['tray.enable']) {
+    if (global.lx.isSkipTrayQuit || allowClose) {
+      allowClose = false
       browserWindow!.setProgressBar(-1)
       // global.lx.mainWindowClosed = true
       global.lx.event_app.main_window_close()
       return
     }
 
-    event.preventDefault()
-    browserWindow!.hide()
+    const applyCloseAction = (action: 'minimize' | 'close') => {
+      if (action == 'minimize') {
+        event.preventDefault()
+        ensureTrayAndHide()
+        return
+      }
+      allowClose = true
+      browserWindow!.close()
+    }
+
+    if (global.lx.appSetting['common.isShowCloseBtnAsk']) {
+      event.preventDefault()
+      void showCloseBehaviorDialog(browserWindow!).then(applyCloseAction)
+      return
+    }
+
+    applyCloseAction(global.lx.appSetting['common.closeBtnAction'])
   })
 
   browserWindow.on('closed', () => {

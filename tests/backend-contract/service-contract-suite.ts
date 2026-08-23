@@ -89,6 +89,22 @@ export const runBackendContractSuite = (name: string, factory: BackendContractFi
     })
   })
 
+  test(`${name}: player preparation can be cancelled without clearing the active source`, async() => {
+    await withFixture(factory, async({ backend }) => {
+      const prepared = await backend.player.prepare({ source: 'file:///prepared-track.flac' })
+      assert.equal(prepared, true)
+      assert.deepEqual(backend.player.getTransitionTelemetry(), {
+        prepared: true,
+        playing: false,
+        remainingSec: 0,
+        rms: 0,
+        silenceSec: 0,
+      })
+      backend.player.cancelPrepared('test')
+      assert.equal(backend.player.isEmpty(), true)
+    })
+  })
+
   test(`${name}: metadata reports stable errors and writes through one boundary`, async() => {
     await withFixture(factory, async({ backend, missingMetadataPath, metadataWrite }) => {
       await assert.rejects(backend.metadata.read(missingMetadataPath), (error: unknown) => error instanceof BackendError && error.code == 'not_found')

@@ -7,6 +7,12 @@ dd
       svg-icon(class="help-icon" name="help-circle-outline" :aria-label="$t('setting__other_transparent_window_tip')")
 
 dd
+  h3#other_close_btn_action {{ $t('setting__other_close_btn_action') }}
+  div
+    base-checkbox.gap-left(
+      v-for="item in closeBtnActionList" :id="'setting_close_btn_action_' + item.id" :key="item.id" :model-value="appSetting['common.closeBtnAction']" name="setting_close_btn_action"
+      need :label="item.label" :value="item.id" @update:model-value="updateSetting({'common.closeBtnAction': $event, 'common.isShowCloseBtnAsk': false})")
+dd
   h3#other_tray_theme {{ $t('setting__other_tray_theme') }}
   div
     base-checkbox.gap-left(
@@ -99,6 +105,13 @@ export default {
         { id: 2, name: 'black', label: t('setting__other_tray_theme_black') },
         { id: 1, name: 'origin', label: t('setting__other_tray_theme_origin') },
         { id: TRAY_AUTO_ID, name: 'auto', label: t('setting__other_tray_theme_auto') },
+      ]
+    })
+
+    const closeBtnActionList = computed(() => {
+      return [
+        { id: 'minimize', label: t('setting__other_close_btn_action_minimize') },
+        { id: 'close', label: t('setting__other_close_btn_action_close') },
       ]
     })
 
@@ -213,6 +226,7 @@ export default {
     }
 
     return {
+      closeBtnActionList,
       appSetting,
       updateSetting,
       trayThemeList,

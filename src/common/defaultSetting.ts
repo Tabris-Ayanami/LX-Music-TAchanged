@@ -23,6 +23,8 @@ const defaultSetting: LX.AppSetting = {
   'common.tryAutoUpdate': true,
   'common.showChangeLog': true,
   'common.isShowUpdateAlert': true,
+  'common.closeBtnAction': 'close',
+  'common.isShowCloseBtnAsk': true,
 
   'account.bili.cookie': '',
   'account.wy.cookie': '',
@@ -52,6 +54,7 @@ const defaultSetting: LX.AppSetting = {
   'player.waitPlayEndStop': true,
   'player.waitPlayEndStopTime': '',
   'player.autoSkipOnError': true,
+  'player.isSmartTransition': false,
   'player.isAutoCleanPlayedList': false,
   'player.soundEffect.convolution.fileName': '',
   'player.soundEffect.convolution.mainGain': 10,

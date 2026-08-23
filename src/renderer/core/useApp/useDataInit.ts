@@ -41,9 +41,7 @@ export default () => {
   })
 
   return async() => {
-    await Promise.all([
-      initUserApi(), // 自定义API
-    ]).catch((err: any) => {
+    void initUserApi().catch((err: any) => {
       log.error(err)
     })
     void music.init().catch((err: any) => {

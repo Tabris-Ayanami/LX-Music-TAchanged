@@ -47,6 +47,7 @@ const playerEvents: Record<PlayerEventName, (listener: () => void) => () => void
   canplay: webPlayer.onCanplay,
   emptied: webPlayer.onEmptied,
   timeupdate: webPlayer.onTimeupdate,
+  durationchange: webPlayer.onDurationchange,
   waiting: webPlayer.onWaiting,
   visibilitychange: webPlayer.onVisibilityChange,
 }
@@ -73,7 +74,11 @@ export class ElectronBackendAdapter implements BackendApi {
 
   readonly player: BackendApi['player'] = {
     initialize: webPlayer.createAudio,
-    load: ({ source }) => { webPlayer.setResource(source) },
+    load: ({ source, transition }) => { webPlayer.setResource(source, transition) },
+    prepare: ({ source }) => webPlayer.prepareNext(source),
+    startPreparedTransition: options => webPlayer.startPreparedTransition(options?.overlapSec),
+    cancelPrepared: reason => webPlayer.cancelPrepared(reason),
+    getTransitionTelemetry: webPlayer.getTransitionTelemetry,
     play: webPlayer.setPlay,
     pause: webPlayer.setPause,
     stop: webPlayer.setStop,

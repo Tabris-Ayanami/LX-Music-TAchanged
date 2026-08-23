@@ -47,6 +47,8 @@ export class FakeBackendAdapter implements BackendApi {
   private readonly duration = 0
   private playbackRate = 1
   private empty = true
+  private playing = false
+  private prepared = false
 
   constructor(options: FakeBackendOptions = {}) {
     this.settingsValue = options.settings ? { ...defaultSetting, ...options.settings } : { ...defaultSetting }
@@ -62,10 +64,14 @@ export class FakeBackendAdapter implements BackendApi {
 
   readonly player: BackendApi['player'] = {
     initialize: () => { this.record('player', 'initialize') },
-    load: ({ source }) => { this.record('player', 'load', source); this.empty = !source; this.position = 0 },
-    play: () => { this.record('player', 'play'); this.emitPlayer('playing') },
-    pause: () => { this.record('player', 'pause'); this.emitPlayer('pause') },
-    stop: () => { this.record('player', 'stop'); this.empty = true; this.position = 0; this.emitPlayer('emptied') },
+    load: ({ source }) => { this.record('player', 'load', source); this.empty = !source; this.playing = false; this.prepared = false; this.position = 0 },
+    prepare: async({ source }) => { this.record('player', 'prepare', source); this.prepared = !!source; return this.prepared },
+    startPreparedTransition: () => { this.record('player', 'startPreparedTransition'); const started = this.prepared; if (started) { this.prepared = false; this.empty = false; this.playing = true } return started },
+    cancelPrepared: reason => { this.record('player', 'cancelPrepared', reason); this.prepared = false },
+    getTransitionTelemetry: () => ({ prepared: this.prepared, playing: this.playing, remainingSec: 0, rms: 0, silenceSec: 0 }),
+    play: () => { this.record('player', 'play'); this.playing = true; this.emitPlayer('playing') },
+    pause: () => { this.record('player', 'pause'); this.playing = false; this.emitPlayer('pause') },
+    stop: () => { this.record('player', 'stop'); this.playing = false; this.empty = true; this.prepared = false; this.position = 0; this.emitPlayer('emptied') },
     next: async(automatic) => { this.record('player', 'next', automatic) },
     previous: async(automatic) => { this.record('player', 'previous', automatic) },
     isEmpty: () => this.empty,

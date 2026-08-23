@@ -139,16 +139,35 @@ export type PlayerEventName =
   | 'canplay'
   | 'emptied'
   | 'timeupdate'
+  | 'durationchange'
   | 'waiting'
   | 'visibilitychange'
 
 export interface PlayerLoadRequest {
   source: string
+  /** Whether this user-facing source load may crossfade from the active deck. */
+  transition?: boolean
+}
+
+export interface PlayerTransitionTelemetry {
+  prepared: boolean
+  playing: boolean
+  remainingSec: number
+  rms: number
+  silenceSec: number
+}
+
+export interface PlayerTransitionOptions {
+  overlapSec?: number
 }
 
 export interface PlayerService {
   initialize: () => void
   load: (request: PlayerLoadRequest) => void
+  prepare: (request: PlayerLoadRequest) => Promise<boolean>
+  startPreparedTransition: (options?: PlayerTransitionOptions) => boolean
+  cancelPrepared: (reason?: string) => void
+  getTransitionTelemetry: () => PlayerTransitionTelemetry
   play: () => void
   pause: () => void
   stop: () => void
