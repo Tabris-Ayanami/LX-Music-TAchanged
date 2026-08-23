@@ -280,6 +280,18 @@ can verify fragile UI fixes without rebuilding a full test system first.
 - Test coverage:
   `tests/regression/lyric-drag-listener-lifecycle.test.cjs`
 
+### RG-068: Wrapped renderer IPC listeners can be removed
+
+- Symptom: listeners registered through the renderer IPC adapter could remain
+  attached after their owner called the returned unsubscribe function.
+- Root cause: `rendererOn` registered an internal wrapper but `rendererOff`
+  attempted to remove the caller's original function, which Electron treats as
+  a different listener identity.
+- Guard strategy: retain wrapper identities per event/listener pair, remove one
+  matching wrapper per `rendererOff`, and clear the mapping in `rendererOffAll`.
+- Test coverage:
+  `tests/regression/renderer-ipc-listener-lifecycle.test.cjs`
+
 ## How to add the next regression item
 
 1. Give the issue a stable id such as `RG-002`.
