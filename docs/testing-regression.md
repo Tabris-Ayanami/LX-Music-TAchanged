@@ -213,8 +213,19 @@ can verify fragile UI fixes without rebuilding a full test system first.
   shared hover variables were too weak for the new light shell and were also
   vulnerable to lazy chunk style ordering.
 - Guard strategy:
-  pin stronger row hover / active surfaces directly in the affected list views,
-  while keeping them theme-derived.
+   pin stronger row hover / active surfaces directly in the affected list views,
+   while keeping them theme-derived.
+
+### RG-063: LocalMusic query changes reuse one keep-alive instance
+
+- Symptom: switching between local tracks, albums, artists, and keyword views
+  could retain a separate full LocalMusic page for each query key.
+- Root cause: the shared view shell included the complete route query in every
+  keep-alive key, even though LocalMusic already watches query changes in one
+  component instance.
+- Guard strategy: use a stable `/local` key while preserving query-specific keys
+  for other routes; verify the invariant in
+  `tests/regression/local-view-keepalive-key.test.cjs`.
 - Test coverage:
   `tests/regression/surface-visibility-guard.test.cjs`
 

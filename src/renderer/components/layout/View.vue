@@ -16,6 +16,7 @@ import { useRoute } from '@common/utils/vueRouter'
 
 const route = useRoute()
 const routeViewKey = computed(() => {
+  if (route.path == '/local') return route.path
   const query = route.query ? JSON.stringify(route.query) : ''
   return `${route.path}::${query}`
 })
