@@ -172,9 +172,25 @@ export const userApiRequestCancel = (requestKey: LX.UserApi.UserApiRequestCancel
 //   }
 // }
 
-export const sendPlayerStatus = (status: Partial<LX.Player.Status>) => {
-  rendererSend<Partial<LX.Player.Status>>(WIN_MAIN_RENDERER_EVENT_NAME.player_status, status)
+export const createPlayerStatusSender = (send: (status: Partial<LX.Player.Status>) => void) => {
+  const lastStatus: Record<string, unknown> = Object.create(null)
+
+  return (status: Partial<LX.Player.Status>) => {
+    const changed: Record<string, unknown> = {}
+    let hasChanges = false
+    for (const [key, value] of Object.entries(status)) {
+      if (Object.prototype.hasOwnProperty.call(lastStatus, key) && Object.is(lastStatus[key], value)) continue
+      lastStatus[key] = value
+      changed[key] = value
+      hasChanges = true
+    }
+    if (hasChanges) send(changed as Partial<LX.Player.Status>)
+  }
 }
+
+export const sendPlayerStatus = createPlayerStatusSender(status => {
+  rendererSend<Partial<LX.Player.Status>>(WIN_MAIN_RENDERER_EVENT_NAME.player_status, status)
+})
 
 
 export const sendOpenAPIAction = async(action: LX.OpenAPI.Actions) => {
