@@ -4,7 +4,7 @@ use clap::Parser;
 use lx_native_core::{
     CAPABILITIES, CORE_VERSION, PROTOCOL_VERSION,
     artwork::{ArtworkCache, VariantRequest},
-    download::{self, AudioConvertRequest},
+    download::{self, AudioConvertRequest, DownloadJobs, HttpDownloadRequest},
     error::CoreError,
     library::{self, LibraryScanRequest},
     metadata::{self, MetadataWriteRequest},
@@ -40,6 +40,7 @@ struct Args {
 #[derive(Clone)]
 struct Context {
     artwork: ArtworkCache,
+    downloads: DownloadJobs,
     ffmpeg_path: Option<PathBuf>,
     libmpv_path: Option<PathBuf>,
 }
@@ -59,6 +60,7 @@ async fn main() -> anyhow::Result<()> {
             args.artwork_cache_budget,
             args.ffmpeg.clone(),
         )?,
+        downloads: DownloadJobs::default(),
         ffmpeg_path: args.ffmpeg,
         libmpv_path: args.libmpv,
     };
@@ -247,6 +249,22 @@ async fn dispatch(request: RpcRequest, context: Context) -> Result<Value, CoreEr
             let result = download::convert_audio(ffmpeg_path.as_deref(), value).await?;
             serde_json::to_value(result).map_err(|error| CoreError::Internal(error.to_string()))
         }
+        "download.http.start" => {
+            let value: HttpDownloadRequest = serde_json::from_value(request.params)
+                .map_err(|error| CoreError::InvalidArgument(error.to_string()))?;
+            serde_json::to_value(context.downloads.start(value)?)
+                .map_err(|error| CoreError::Internal(error.to_string()))
+        }
+        "download.http.status" => {
+            let job_id = required_string(&request.params, "jobId")?;
+            serde_json::to_value(context.downloads.status(&job_id)?)
+                .map_err(|error| CoreError::Internal(error.to_string()))
+        }
+        "download.http.cancel" => {
+            let job_id = required_string(&request.params, "jobId")?;
+            serde_json::to_value(context.downloads.cancel(&job_id)?)
+                .map_err(|error| CoreError::Internal(error.to_string()))
+        }
         "player.probe" => serde_json::to_value(player::probe(context.libmpv_path.as_deref()))
             .map_err(|error| CoreError::Internal(error.to_string())),
         method => Err(CoreError::NotSupported(format!(
@@ -273,6 +291,15 @@ fn required_path(params: &Value) -> Result<PathBuf, CoreError> {
         .filter(|value| !value.is_empty())
         .map(PathBuf::from)
         .ok_or_else(|| CoreError::InvalidArgument("filePath is required".into()))
+}
+
+fn required_string(params: &Value, name: &str) -> Result<String, CoreError> {
+    params
+        .get(name)
+        .and_then(Value::as_str)
+        .filter(|value| !value.is_empty())
+        .map(str::to_owned)
+        .ok_or_else(|| CoreError::InvalidArgument(format!("{name} is required")))
 }
 
 fn success_response(request_id: String, result: Value) -> RpcResponse {

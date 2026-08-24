@@ -3,6 +3,7 @@ const { spawn, execFileSync } = require('node:child_process')
 const { createHash, randomUUID } = require('node:crypto')
 const fs = require('node:fs/promises')
 const net = require('node:net')
+const http = require('node:http')
 const path = require('node:path')
 const Module = require('node:module')
 const ts = require('typescript')
@@ -33,6 +34,43 @@ const waitForLine = async(stream, pattern) => new Promise((resolve, reject) => {
     resolve()
   })
 })
+
+const startDownloadServer = async(body) => {
+  const server = http.createServer((request, response) => {
+    const range = request.headers.range?.match(/^bytes=(\d+)-/)
+    const start = range ? Number(range[1]) : 0
+    if (start >= body.length) {
+      response.writeHead(416, { 'Content-Range': `bytes */${body.length}` })
+      response.end()
+      return
+    }
+    const payload = body.subarray(start)
+    response.writeHead(range ? 206 : 200, {
+      'Accept-Ranges': 'bytes',
+      'Content-Length': payload.length,
+      ...(range ? { 'Content-Range': `bytes ${start}-${body.length - 1}/${body.length}` } : {}),
+    })
+    response.end(payload)
+  })
+  await new Promise((resolve, reject) => {
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', resolve)
+  })
+  const address = server.address()
+  return {
+    url: `http://127.0.0.1:${address.port}/fixture.bin`,
+    close: async() => new Promise(resolve => server.close(resolve)),
+  }
+}
+
+const waitForDownload = async(client, jobId) => {
+  for (let attempt = 0; attempt < 500; attempt++) {
+    const status = await client.call('download.http.status', { jobId })
+    if (status.state != 'running') return status
+    await wait(20)
+  }
+  throw new Error(`download job did not finish: ${jobId}`)
+}
 
 class RpcClient {
   constructor(socket) {
@@ -132,6 +170,7 @@ const run = async() => {
     assert.ok(handshake.capabilities.includes('artwork.variant'))
     assert.ok(handshake.capabilities.includes('library.scan'))
     assert.ok(handshake.capabilities.includes('download.ffmpeg.convert'))
+    assert.ok(handshake.capabilities.includes('download.http.job'))
     assert.ok(handshake.capabilities.includes('player.libmpv.probe'))
     const playerProbe = await core.client.call('player.probe')
     assert.equal(playerProbe.available, false)
@@ -161,6 +200,27 @@ const run = async() => {
     const convertedMetadata = await core.client.call('metadata.read', { filePath: convertedAudio })
     assert.ok(convertedMetadata.duration > 0)
     report.download.ffmpeg = { extension: 'mp3', duration: convertedMetadata.duration, outputExists: true }
+
+    const downloadBody = await fs.readFile(fixture.files.mp3)
+    const downloadServer = await startDownloadServer(downloadBody)
+    try {
+      const downloadedPath = path.join(fixture.work, 'native-http-download.mp3')
+      const started = await core.client.call('download.http.start', { url: downloadServer.url, outputPath: downloadedPath })
+      const completed = await waitForDownload(core.client, started.jobId)
+      assert.equal(completed.state, 'completed')
+      assert.equal(completed.downloaded, downloadBody.length)
+      assert.deepEqual(await fs.readFile(downloadedPath), downloadBody)
+
+      const resumedPath = path.join(fixture.work, 'native-http-resume.mp3')
+      await fs.writeFile(resumedPath, downloadBody.subarray(0, Math.floor(downloadBody.length / 2)))
+      const resumed = await core.client.call('download.http.start', { url: downloadServer.url, outputPath: resumedPath })
+      const resumeCompleted = await waitForDownload(core.client, resumed.jobId)
+      assert.equal(resumeCompleted.state, 'completed')
+      assert.deepEqual(await fs.readFile(resumedPath), downloadBody)
+      report.download.http = { bytes: downloadBody.length, fresh: 'passed', resume: 'passed' }
+    } finally {
+      await downloadServer.close()
+    }
 
     const cancellationTarget = path.join(fixture.work, 'cancellation-target.wav')
     await fs.copyFile(fixture.files.wav, cancellationTarget)

@@ -15,6 +15,7 @@ pub const CAPABILITIES: &[&str] = &[
     "artwork.variant",
     "artwork.cache.lru",
     "download.ffmpeg.convert",
+    "download.http.job",
     "library.scan",
     "player.libmpv.probe",
     "rpc.cancel",
