@@ -10,6 +10,9 @@ const PROTOCOL_VERSION = '1.0'
 const MAX_FRAME_BYTES = 16 * 1024 * 1024
 const START_TIMEOUT_MS = 8_000
 const REQUEST_TIMEOUT_MS = 30_000
+// Keep the sidecar warm for normal browsing bursts, but do not retain a
+// native process indefinitely after the last native request.
+const IDLE_SHUTDOWN_MS = 5 * 60 * 1000
 
 export interface NativeHandshake {
   protocolVersion: string
@@ -74,19 +77,23 @@ export class NativeCoreSupervisor {
   private receiveBuffer = Buffer.alloc(0)
   private readonly pending = new Map<string, PendingRequest>()
   private stopping = false
+  private idleShutdownTimer: NodeJS.Timeout | null = null
 
   async handshake(): Promise<NativeHandshake> {
+    this.clearIdleShutdown()
     return this.ensureStarted()
   }
 
   async call<T>(method: string, params: unknown, signal?: AbortSignal, timeoutMs = REQUEST_TIMEOUT_MS): Promise<T> {
     if (signal?.aborted) throw this.createError('aborted', 'Native request cancelled')
+    this.clearIdleShutdown()
     await this.ensureStarted()
     return this.sendRequest<T>(method, params, signal, timeoutMs)
   }
 
   async stop() {
     this.stopping = true
+    this.clearIdleShutdown()
     this.socket?.destroy()
     this.socket = null
     const child = this.process
@@ -109,6 +116,7 @@ export class NativeCoreSupervisor {
   }
 
   private async start(): Promise<NativeHandshake> {
+    this.clearIdleShutdown()
     const executable = resolveExecutable()
     if (!existsSync(executable)) throw this.createError('backend_unavailable', `Native core executable not found: ${executable}`)
     const profile = globalThis.process.env.LX_NATIVE_PROFILE_PATH ? path.resolve(globalThis.process.env.LX_NATIVE_PROFILE_PATH) : path.join(global.lxDataPath, 'native-core')
@@ -168,6 +176,7 @@ export class NativeCoreSupervisor {
   }
 
   private async sendRequest<T>(method: string, params: unknown, signal?: AbortSignal, timeoutMs = REQUEST_TIMEOUT_MS): Promise<T> {
+    this.clearIdleShutdown()
     const socket = this.socket
     if (!socket || socket.destroyed) throw this.createError('backend_unavailable', 'Native core is not connected')
     const requestId = randomUUID()
@@ -239,10 +248,28 @@ export class NativeCoreSupervisor {
     } else {
       pending.resolve(response.result)
     }
+    this.scheduleIdleShutdown()
+  }
+
+  private clearIdleShutdown() {
+    if (!this.idleShutdownTimer) return
+    clearTimeout(this.idleShutdownTimer)
+    this.idleShutdownTimer = null
+  }
+
+  private scheduleIdleShutdown() {
+    this.clearIdleShutdown()
+    if (!this.process || !this.socket || this.socket.destroyed || this.pending.size) return
+    this.idleShutdownTimer = setTimeout(() => {
+      this.idleShutdownTimer = null
+      if (!this.pending.size && this.process && this.socket && !this.socket.destroyed) void this.stop()
+    }, IDLE_SHUTDOWN_MS)
+    this.idleShutdownTimer.unref()
   }
 
   private handleExit(error: unknown) {
     const normalized = error instanceof Error ? error : this.createError('backend_unavailable', String(error))
+    this.clearIdleShutdown()
     this.socket?.destroy()
     this.socket = null
     this.handshakeValue = null

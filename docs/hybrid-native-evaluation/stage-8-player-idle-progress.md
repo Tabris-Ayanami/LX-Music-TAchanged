@@ -15,4 +15,10 @@ The player now exposes the active deck state and starts the panner interval only
 - `npm run build:renderer` passed; the production renderer remains 6.01 MiB of JavaScript across 291 node_modules modules.
 - Existing Node regression tests were run; their pre-existing UI fixture failures remain unrelated to this player-only change, and no new assertion was added by the patch.
 
+## Native sidecar idle lifetime
+
+`NativeCoreSupervisor` now arms an unref'd five-minute idle timer after the last completed native RPC. If no request is pending when it expires, the sidecar is stopped; the next native call transparently starts it again and renegotiates the existing protocol/capability handshake. The timer is cancelled on every new call and on app shutdown, so active scans, downloads, artwork work, and conversion are never interrupted. This bounds long-running background native memory without adding a permanent Main-process timer or changing the fallback contract.
+
+The lifetime policy is intentionally measured as a bounded-retention guarantee rather than an immediate CPU claim: a sidecar that is actively used remains warm, while a sidecar left unused for five minutes no longer contributes resident memory.
+
 This is a deterministic timer/wakeup reduction, not a claimed whole-process CPU delta. The next acceptance probe should compare renderer CPU with the panner enabled during paused playback and during active playback, then continue to the next background renderer only if the idle capture confirms a material reduction.
