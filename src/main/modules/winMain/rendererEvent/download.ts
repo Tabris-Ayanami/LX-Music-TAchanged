@@ -8,6 +8,8 @@ import {
   setNativeDownloadEventSink,
   startNativeDownloadTask,
   updateNativeDownloadTaskUrl,
+  writeDownloadedLyrics,
+  writeDownloadedMetadata,
 } from '@main/modules/nativeCore/downloadServices'
 
 
@@ -42,5 +44,11 @@ export default () => {
   })
   mainHandle<{ taskId: string, url: string }>(WIN_MAIN_RENDERER_EVENT_NAME.download_task_update_url, async({ params }) => {
     await updateNativeDownloadTaskUrl(params)
+  })
+  mainHandle<LX.Download.DownloadMetadataWriteRequest>(WIN_MAIN_RENDERER_EVENT_NAME.download_write_metadata, async({ params }) => {
+    await writeDownloadedMetadata(params)
+  })
+  mainHandle<LX.Download.DownloadLyricsWriteRequest>(WIN_MAIN_RENDERER_EVENT_NAME.download_write_lyrics, async({ params }) => {
+    await writeDownloadedLyrics(params)
   })
 }

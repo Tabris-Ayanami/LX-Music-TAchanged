@@ -250,6 +250,8 @@ export interface DownloadService {
   pauseNativeTask: (taskId: string, signal?: AbortSignal) => Promise<void>
   removeNativeTask: (taskId: string, signal?: AbortSignal) => Promise<void>
   updateNativeTaskUrl: (taskId: string, url: string, signal?: AbortSignal) => Promise<void>
+  writeMetadata: (request: LX.Download.DownloadMetadataWriteRequest, signal?: AbortSignal) => Promise<void>
+  writeLyrics: (request: LX.Download.DownloadLyricsWriteRequest, signal?: AbortSignal) => Promise<void>
   onNativeTaskAction: (listener: (event: LX.Download.NativeDownloadAction) => void) => Unsubscribe
 }
 

@@ -176,7 +176,11 @@ const saveMeta = (downloadInfo: LX.Download.ListItem) => {
       album: downloadInfo.metadata.musicInfo.meta.albumName,
       APIC: imgUrl,
     }
-    void window.lx.worker.download.writeMeta(info, lyrics ?? { lyric: '' }, getProxy())
+    void backend.download.writeMetadata({
+      ...info,
+      lyrics: lyrics ?? { lyric: '' },
+      proxy: getProxy(),
+    })
   })
 }
 
@@ -200,7 +204,7 @@ const downloadLyric = (downloadInfo: LX.Download.ListItem) => {
         downloadTlrc: appSetting['download.isDownloadTLrc'],
         downloadRlrc: appSetting['download.isDownloadRLrc'],
       }
-      void window.lx.worker.download.saveLrc(lrcs, info)
+      void backend.download.writeLyrics({ lrcData: lrcs, ...info })
     }
   })
 }

@@ -170,6 +170,8 @@ const modules = {
     download_task_remove: 'download_task_remove',
     download_task_update_url: 'download_task_update_url',
     download_task_action: 'download_task_action',
+    download_write_metadata: 'download_write_metadata',
+    download_write_lyrics: 'download_write_lyrics',
   },
   winLyric: {
     close: 'close',

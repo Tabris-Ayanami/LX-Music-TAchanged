@@ -190,6 +190,8 @@ export class ElectronBackendAdapter implements BackendApi {
     pauseNativeTask: async(taskId, signal) => call(() => legacyIpc.pauseNativeDownloadTask(taskId), signal),
     removeNativeTask: async(taskId, signal) => call(() => legacyIpc.removeNativeDownloadTask(taskId), signal),
     updateNativeTaskUrl: async(taskId, url, signal) => call(() => legacyIpc.updateNativeDownloadTaskUrl({ taskId, url }), signal),
+    writeMetadata: async(request, signal) => call(() => legacyIpc.writeDownloadMetadata(request), signal),
+    writeLyrics: async(request, signal) => call(() => legacyIpc.writeDownloadLyrics(request), signal),
     onNativeTaskAction: listener => legacyIpc.onNativeDownloadAction(({ params }) => { listener(params) }),
   }
 

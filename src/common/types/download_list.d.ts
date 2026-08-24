@@ -47,6 +47,28 @@ declare global {
         action: DownloadTaskActions
       }
 
+      interface DownloadMetadataWriteRequest {
+        filePath: string
+        isEmbedLyricLx: boolean
+        isEmbedLyricT: boolean
+        isEmbedLyricR: boolean
+        title: string
+        artist: string
+        album: string
+        APIC: string | null
+        lyrics: LX.Music.LyricInfo
+        proxy?: { host: string, port: number }
+      }
+
+      interface DownloadLyricsWriteRequest {
+        lrcData: LX.Music.LyricInfo
+        filePath: string
+        format: LX.LyricFormat
+        downloadLxlrc: boolean
+        downloadTlrc: boolean
+        downloadRlrc: boolean
+      }
+
       interface DownloadTaskActionBase <A> {
         action: A
       }

@@ -177,6 +177,8 @@ export class FakeBackendAdapter implements BackendApi {
     pauseNativeTask: async() => {},
     removeNativeTask: async() => {},
     updateNativeTaskUrl: async() => {},
+    writeMetadata: async() => {},
+    writeLyrics: async() => {},
     onNativeTaskAction: () => () => {},
   }
 

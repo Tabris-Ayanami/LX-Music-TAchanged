@@ -1,37 +1,8 @@
 import { DOWNLOAD_STATUS, QUALITYS } from '@common/constants'
 import { filterFileName } from '@common/utils/common'
-import { buildLyrics } from './lrcTool'
-import fs from 'fs'
 import { clipFileNameLength, clipNameLength } from '@common/utils/tools'
 
 const BILI_DOWNLOAD_QUALITYS: LX.Quality[] = ['flac24bit', '320k', '192k', '128k']
-
-/**
- * 保存歌词文件
- */
-export const saveLrc = async(lrcData: LX.Music.LyricInfo, info: {
-  filePath: string
-  format: LX.LyricFormat
-  downloadLxlrc: boolean
-  downloadTlrc: boolean
-  downloadRlrc: boolean
-}) => {
-  const iconv = (await import('iconv-lite')).default
-  const lrc = buildLyrics(lrcData, info.downloadLxlrc, info.downloadTlrc, info.downloadRlrc)
-  switch (info.format) {
-    case 'gbk':
-      fs.writeFile(info.filePath, iconv.encode(lrc, 'gbk', { addBOM: true }), err => {
-        if (err) console.log(err)
-      })
-      break
-    case 'utf8':
-    default:
-      fs.writeFile(info.filePath, iconv.encode(lrc, 'utf8', { addBOM: true }), err => {
-        if (err) console.log(err)
-      })
-      break
-  }
-}
 
 export const getExt = (type: string): LX.Download.FileExt => {
   switch (type) {

@@ -972,6 +972,14 @@ export const removeNativeDownloadTask = async(taskId: string) => {
 export const updateNativeDownloadTaskUrl = async(request: { taskId: string, url: string }) => {
   return rendererInvoke(WIN_MAIN_RENDERER_EVENT_NAME.download_task_update_url, request)
 }
+
+export const writeDownloadMetadata = async(request: LX.Download.DownloadMetadataWriteRequest) => {
+  return rendererInvoke(WIN_MAIN_RENDERER_EVENT_NAME.download_write_metadata, request)
+}
+
+export const writeDownloadLyrics = async(request: LX.Download.DownloadLyricsWriteRequest) => {
+  return rendererInvoke(WIN_MAIN_RENDERER_EVENT_NAME.download_write_lyrics, request)
+}
 export const onNativeDownloadAction = (listener: LX.IpcRendererEventListenerParams<LX.Download.NativeDownloadAction>): RemoveListener => {
   rendererOn(WIN_MAIN_RENDERER_EVENT_NAME.download_task_action, listener)
   return () => { rendererOff(WIN_MAIN_RENDERER_EVENT_NAME.download_task_action, listener) }

@@ -1,7 +1,8 @@
 import { spawn } from 'node:child_process'
 import { dirname } from 'node:path'
-import { mkdir, rm, stat } from 'node:fs/promises'
+import { mkdir, rm, stat, writeFile } from 'node:fs/promises'
 import { sizeFormate } from '@common/utils/common'
+import { buildDownloadLyrics } from '@common/utils/lyricUtils/download'
 import { getNativeCoreSupervisor, resolveFfmpeg } from './supervisor'
 
 const CONVERT_TIMEOUT_MS = 30 * 60 * 1000
@@ -70,6 +71,22 @@ export const convertDownloadedAudio = async(request: LX.Download.AudioConvertReq
     }))
     await convertWithElectron(request)
   }
+}
+
+export const writeDownloadedMetadata = async(request: LX.Download.DownloadMetadataWriteRequest) => {
+  const { setMeta } = await import('@common/utils/musicMeta')
+  const { filePath, isEmbedLyricLx, isEmbedLyricT, isEmbedLyricR, lyrics, proxy, ...meta } = request
+  setMeta(filePath, {
+    ...meta,
+    lyrics: buildDownloadLyrics(lyrics, isEmbedLyricLx, isEmbedLyricT, isEmbedLyricR),
+  }, proxy)
+}
+
+export const writeDownloadedLyrics = async(request: LX.Download.DownloadLyricsWriteRequest) => {
+  const iconv = (await import('iconv-lite')).default
+  const lyric = buildDownloadLyrics(request.lrcData, request.downloadLxlrc, request.downloadTlrc, request.downloadRlrc)
+  const encoding = request.format == 'gbk' ? 'gbk' : 'utf8'
+  await writeFile(request.filePath, iconv.encode(lyric, encoding, { addBOM: true }))
 }
 
 const clearNativeTask = (task: NativeTask) => {
