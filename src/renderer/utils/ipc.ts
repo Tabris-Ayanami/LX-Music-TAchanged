@@ -762,6 +762,10 @@ export const getLocalArtworkVariant = async(request: LX.LocalMusic.ArtworkVarian
   return rendererInvoke<LX.LocalMusic.ArtworkVariantRequest, LX.LocalMusic.ArtworkHandle | null>(WIN_MAIN_RENDERER_EVENT_NAME.get_local_artwork_variant, request)
 }
 
+export const getLegacyArtworkPath = async(filePath: string) => {
+  return rendererInvoke<string, string>(WIN_MAIN_RENDERER_EVENT_NAME.get_legacy_artwork_path, filePath)
+}
+
 export const invalidateLocalArtwork = async(filePath: string) => {
   return rendererInvoke<string>(WIN_MAIN_RENDERER_EVENT_NAME.invalidate_local_artwork, filePath)
 }

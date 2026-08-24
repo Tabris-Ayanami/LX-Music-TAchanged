@@ -141,6 +141,7 @@ const modules = {
     read_local_lyrics: 'read_local_lyrics',
     read_local_cover_file: 'read_local_cover_file',
     get_local_artwork_variant: 'get_local_artwork_variant',
+    get_legacy_artwork_path: 'get_legacy_artwork_path',
     invalidate_local_artwork: 'invalidate_local_artwork',
     scan_local_music_files: 'scan_local_music_files',
 

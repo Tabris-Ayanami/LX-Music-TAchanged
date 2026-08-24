@@ -34,6 +34,8 @@ The existing native-core integration suite remains green, including FFmpeg, HTTP
 
 This slice primarily reduces lazy Renderer worker code and cross-context serialization. A fresh memory/CPU delta is not claimed yet because the smoke harness does not exercise a real download or local lyric/artwork read; those are the next acceptance probes. The main startup bundle did not grow synchronously after changing metadata loading to an async chunk.
 
+After switching the legacy artwork fallback from a renderer data URL to a Main-side cache file, a repeated 10-second production capture on the populated smoke profile reported: FCP 268 ms, renderer private 188.12 MiB, whole Electron tree private 756.11 MiB, CPU 8.1% of one core, 264 threads, and 4,090 handles. The preceding capture in the same run was treated as warm-up because its renderer counters were transiently inflated; the repeated sample is the stable comparison point. The historical reference was FCP 420 ms, renderer private 216.82 MiB, whole private 1059.19 MiB, CPU 18.2%, 320 threads, and 4,628 handles. Process count differs (6 here versus 7 in the reference), so the whole-tree reduction is indicative rather than an isolated attribution claim.
+
 ## Next
 
 Measure a real native download lifecycle in the production app (start/progress/pause/resume/refresh-url/complete), then compare process private memory, CPU, thread, and handle counts against the recorded baseline before removing more Worker fallbacks.

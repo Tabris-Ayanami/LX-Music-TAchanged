@@ -1,7 +1,7 @@
 import { WIN_MAIN_RENDERER_EVENT_NAME } from '@common/ipcNames'
 import { mainHandle } from '@common/mainIpc'
 import { readLocalCoverFile, readLocalEmbeddedLyrics, readLocalLyrics, writeLocalEmbeddedLyrics } from '@main/modules/localMusicTools/metadata'
-import { getArtworkVariant, invalidateArtwork, readMetadataWithBackend, writeMetadataWithBackend } from '@main/modules/nativeCore/mediaServices'
+import { getArtworkVariant, getLegacyArtworkPath, invalidateArtwork, readMetadataWithBackend, writeMetadataWithBackend } from '@main/modules/nativeCore/mediaServices'
 import { scanLocalMusicFiles } from '@main/modules/nativeCore/libraryServices'
 
 
@@ -13,6 +13,7 @@ export default () => {
   mainHandle<string, LX.Music.LyricInfo | null>(WIN_MAIN_RENDERER_EVENT_NAME.read_local_lyrics, async({ params }) => readLocalLyrics(params))
   mainHandle<string, string>(WIN_MAIN_RENDERER_EVENT_NAME.read_local_cover_file, async({ params }) => readLocalCoverFile(params))
   mainHandle<LX.LocalMusic.ArtworkVariantRequest, LX.LocalMusic.ArtworkHandle | null>(WIN_MAIN_RENDERER_EVENT_NAME.get_local_artwork_variant, async({ params }) => getArtworkVariant(params))
+  mainHandle<string, string>(WIN_MAIN_RENDERER_EVENT_NAME.get_legacy_artwork_path, async({ params }) => getLegacyArtworkPath(params))
   mainHandle<string>(WIN_MAIN_RENDERER_EVENT_NAME.invalidate_local_artwork, async({ params }) => invalidateArtwork(params))
   mainHandle<string[], string[]>(WIN_MAIN_RENDERER_EVENT_NAME.scan_local_music_files, async({ params }) => scanLocalMusicFiles(params))
 

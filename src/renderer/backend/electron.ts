@@ -161,7 +161,7 @@ export class ElectronBackendAdapter implements BackendApi {
       if (window.lxData.appSetting['backend.artwork'] == 'native') {
         try { return await legacyIpc.getLocalArtworkVariant(request) } catch {}
       }
-      const value = await legacyIpc.readLocalCoverFile(request.filePath)
+      const value = await legacyIpc.getLegacyArtworkPath(request.filePath)
       if (!value) return null
       const url = /^(?:https?:|data:|blob:|file:)/i.test(value) ? value : `file:///${value.replaceAll('\\', '/')}`
       return { id: request.filePath, url, mimeType: '', width: request.size, height: request.size, byteLength: 0, sourceFingerprint: 'legacy' }

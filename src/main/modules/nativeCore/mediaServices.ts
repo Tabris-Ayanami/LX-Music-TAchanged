@@ -1,4 +1,4 @@
-import { appendFile, mkdir } from 'node:fs/promises'
+import { appendFile, mkdir, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { createHash } from 'node:crypto'
@@ -167,6 +167,24 @@ export const getArtworkVariant = async(request: LX.LocalMusic.ArtworkVariantRequ
     byteLength: result.byteLength,
     sourceFingerprint: result.sourceFingerprint,
   }
+}
+
+export const getLegacyArtworkPath = async(filePath: string): Promise<string> => {
+  const parsed = path.parse(filePath)
+  for (const extension of ['.jpg', '.png']) {
+    const sidecar = path.join(parsed.dir, `${parsed.name}${extension}`)
+    if (await stat(sidecar).then(info => info.isFile()).catch(() => false)) return sidecar
+  }
+  const metadata = await readLocalMetadata(filePath)
+  const match = /^data:(image\/[\w.+-]+);base64,([\s\S]+)$/i.exec(metadata.coverDataUrl)
+  if (!match) return ''
+  const info = await stat(filePath)
+  const extension = match[1].split('/')[1] || 'jpg'
+  const cacheDir = path.join(global.lxDataPath, 'native-core', 'legacy-covers')
+  const cachePath = path.join(cacheDir, `${createHash('sha1').update(`${filePath}:${info.mtimeMs}:${info.size}`).digest('hex')}.${extension}`)
+  await mkdir(cacheDir, { recursive: true })
+  if (!await stat(cachePath).then(() => true).catch(() => false)) await writeFile(cachePath, Buffer.from(match[2], 'base64'))
+  return cachePath
 }
 
 export const invalidateArtwork = async(filePath: string) => {
