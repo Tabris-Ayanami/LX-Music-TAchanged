@@ -25,3 +25,15 @@ The player now exposes the active deck state and starts the panner interval only
 The lifetime policy is intentionally measured as a bounded-retention guarantee rather than an immediate CPU claim: a sidecar that is actively used remains warm, while a sidecar left unused for five minutes no longer contributes resident memory.
 
 This is a deterministic timer/wakeup reduction, not a claimed whole-process CPU delta. The next acceptance probe should compare renderer CPU with the panner enabled during paused playback and during active playback, then continue to the next background renderer only if the idle capture confirms a material reduction.
+
+## Packaged-build user acceptance
+
+The Windows x64 NSIS build from `hybrid-native` commit `3ba7449` was tested manually on 2026-08-24 against the user's previous installed build. The observed whole-app memory values were:
+
+| Scenario | Previous build | Hybrid-native build | Observed change |
+|---|---:|---:|---:|
+| Local page during playback | about 450 MB | about 400 MB | about -50 MB (-11.1%) |
+| Traditional player detail page | about 480 MB | about 450-470 MB | about -10 to -30 MB (-2.1% to -6.3%) |
+| Immersive mode, floating title and MV | about 700 MB | about 600 MB | about -100 MB (-14.3%) |
+
+These are direct installed-build observations and confirm a material reduction in the local-page and high-load immersive/MV scenarios. They are not a controlled multi-run median, and the traditional detail page remains variable, so the next optimization pass should focus on detail-page and MV visual-resource lifecycle rather than claiming a stable improvement there.

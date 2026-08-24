@@ -76,13 +76,23 @@ export class WebWorkerBackgroundRender extends BaseBackgroundRender {
   }
 
   async setCoverImage(url: string) {
-    if (!this.worker) return
+    const worker = this.worker
+    if (!worker) return
     try {
       const response = await fetch(url)
       const blob = await response.blob()
       const bitmap = await createImageBitmap(blob)
+      if (worker !== this.worker) {
+        bitmap.close()
+        return
+      }
       const command: WorkerCommand = { type: 'coverImage', imageData: bitmap }
-      this.worker.postMessage(command, [bitmap])
+      try {
+        worker.postMessage(command, [bitmap])
+      } catch (error) {
+        bitmap.close()
+        throw error
+      }
     } catch (error) {
       console.warn('Failed to load cover image for aura background renderer', error)
     }

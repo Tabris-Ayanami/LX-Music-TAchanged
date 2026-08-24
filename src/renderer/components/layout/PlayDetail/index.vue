@@ -1,7 +1,7 @@
 <template lang="pug">
 transition(@before-enter="handleBeforeEnter" @enter="handleEnter" @after-enter="handleAfterEnter" @before-leave="handleBeforeLeave" @leave="handleLeave" @after-leave="handleAfterLeave")
   div(v-show="isShowPlayerDetail" :class="[$style.container, $style[`layout-${layoutStyle}`], { fullscreen: isFullscreen, [$style.isPlaying]: isPlay }]" :style="detailStyle" @contextmenu="handleContextMenu")
-    FluidBackground(v-if="layoutStyle != 'pixel' && backgroundType == 'aura'" :class="$style.bg" :cover="musicInfo.pic" :colors="detailColors" :active="visibled")
+    FluidBackground(v-if="visibled && !isImmersive && layoutStyle != 'pixel' && backgroundType == 'aura'" :class="$style.bg" :cover="musicInfo.pic" :colors="detailColors" :active="true")
     div(v-else-if="layoutStyle != 'pixel'" :class="$style.bgBlur" :style="blurBackgroundStyle" aria-hidden="true")
       DynamicArtworkVideo(
         v-if="showBlurDynamicCover"

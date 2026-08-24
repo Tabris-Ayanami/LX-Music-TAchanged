@@ -16,8 +16,8 @@ const auraRendererSource = fs.readFileSync(auraRendererPath, 'utf8')
 test('RG-027: play-detail uses album-color fluid background instead of blurred cover art', () => {
   assert.match(
     playDetailSource,
-    /FluidBackground\(v-if="layoutStyle != 'pixel' && backgroundType == 'aura'" :class="\$style\.bg" :cover="musicInfo\.pic" :colors="detailColors" :active="visibled"\)/m,
-    'The detail page should mount the fluid background with both the cover image and album-derived colors',
+    /FluidBackground\(v-if="visibled && !isImmersive && layoutStyle != 'pixel' && backgroundType == 'aura'" :class="\$style\.bg" :cover="musicInfo\.pic" :colors="detailColors" :active="true"\)/m,
+    'The detail page should mount its album-color fluid background only while the traditional detail view is visible',
   )
   assert.match(
     playDetailSource,

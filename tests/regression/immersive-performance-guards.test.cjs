@@ -9,6 +9,9 @@ const read = (...parts) => fs.readFileSync(path.join(rootDir, ...parts), 'utf8')
 test('RG-054: immersive mode avoids duplicate and off-screen media work', () => {
   const immersive = read('src', 'renderer', 'components', 'layout', 'PlayDetail', 'ImmersiveLyrics.vue')
   const sourcePanel = read('src', 'renderer', 'components', 'layout', 'PlayDetail', 'ImmersiveSourcePanel.vue')
+  const playDetail = read('src', 'renderer', 'components', 'layout', 'PlayDetail', 'index.vue')
+  const auraWorker = read('src', 'renderer', 'components', 'layout', 'PlayDetail', 'auraBackground', 'renderer', 'webWorkerBackground.worker.ts')
+  const auraRenderer = read('src', 'renderer', 'components', 'layout', 'PlayDetail', 'auraBackground', 'renderer', 'WebWorkerBackgroundRender.ts')
 
   assert.match(
     immersive,
@@ -29,6 +32,26 @@ test('RG-054: immersive mode avoids duplicate and off-screen media work', () => 
     sourcePanel,
     /const getSearchResults = \(\) => \{[\s\S]*searchPromise = biliSearch[\s\S]*const requestKey = getSearchKey\(\)[\s\S]*if \(requestKey != getSearchKey\(\)\) return/m,
     'The source panel should share searches and reject stale track responses',
+  )
+  assert.match(
+    playDetail,
+    /FluidBackground\(v-if="visibled && !isImmersive && layoutStyle != 'pixel' && backgroundType == 'aura'"/m,
+    'The traditional Aura worker should be destroyed while the detail page is hidden or immersive mode is active',
+  )
+  assert.match(
+    auraWorker,
+    /const loop = \(now: number\) => \{[\s\S]*if \(!playing \|\| paused\) return[\s\S]*const updateLoop = \(\) => \{[\s\S]*stopLoop\(\)/m,
+    'A paused Aura worker should cancel its animation frame instead of redrawing an unchanged WebGL frame',
+  )
+  assert.match(
+    immersive,
+    /const releaseMvVideo = \(\) => \{[\s\S]*video\.pause\(\)[\s\S]*video\.srcObject = null[\s\S]*video\.removeAttribute\('src'\)[\s\S]*video\.load\(\)[\s\S]*onBeforeUnmount\(\(\) => \{[\s\S]*releaseMvVideo\(\)/m,
+    'Leaving immersive MV mode should release decoder, network, and video surface resources explicitly',
+  )
+  assert.match(
+    auraRenderer,
+    /const worker = this\.worker[\s\S]*if \(worker !== this\.worker\) \{[\s\S]*bitmap\.close\(\)[\s\S]*worker\.postMessage[\s\S]*bitmap\.close\(\)/m,
+    'An asynchronously decoded Aura cover should be closed if its worker was replaced or posting fails',
   )
 })
 

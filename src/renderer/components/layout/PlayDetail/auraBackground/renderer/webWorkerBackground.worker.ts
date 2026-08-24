@@ -659,7 +659,27 @@ const render = (now: number) => {
 }
 
 const loop = (now: number) => {
+  rafId = null
+  if (!playing || paused) return
   render(now)
+  rafId = self.requestAnimationFrame(loop)
+}
+
+const stopLoop = () => {
+  if (rafId === null) return
+  self.cancelAnimationFrame(rafId)
+  rafId = null
+}
+
+const updateLoop = () => {
+  if (!playing || paused) {
+    stopLoop()
+    return
+  }
+  if (rafId !== null) return
+  // Do not count time spent hidden or paused as animation time when resuming.
+  lastFrameTime = performance.now()
+  lastRenderTime = 0
   rafId = self.requestAnimationFrame(loop)
 }
 
@@ -704,8 +724,8 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
     timeAccumulator = 0
     playing = true
     paused = false
-    if (rafId !== null) self.cancelAnimationFrame(rafId)
-    rafId = self.requestAnimationFrame(loop)
+    stopLoop()
+    updateLoop()
     return
   }
 
@@ -728,10 +748,12 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
   }
   if (data.type === 'play' && typeof data.isPlaying === 'boolean') {
     playing = data.isPlaying
+    updateLoop()
     return
   }
   if (data.type === 'pause' && typeof data.paused === 'boolean') {
     paused = data.paused
+    updateLoop()
     return
   }
   if (data.type === 'coverImage' && data.imageData) {

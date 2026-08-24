@@ -29,7 +29,7 @@
         disablepictureinpicture
         @loadedmetadata="syncMvPlayback"
         @canplay="syncMvPlayback"
-        @error="mvUrl = ''"
+        @error="handleMvError"
       />
       <i :class="$style.mvShade" />
     </div>
@@ -293,6 +293,7 @@ const syncMvPlayback = async() => {
 const loadMv = async() => {
   const requestId = ++mvRequestId
   if (background.value != 'mv') {
+    releaseMvVideo()
     mvUrl.value = ''
     activeMvKey.value = ''
     mvStatus.value = 'idle'
@@ -303,6 +304,7 @@ const loadMv = async() => {
   const track = await resolveMvTrack().catch(() => null)
   if (requestId != mvRequestId || background.value != 'mv') return
   if (!track) {
+    releaseMvVideo()
     mvUrl.value = ''
     activeMvKey.value = ''
     mvStatus.value = 'error'
@@ -324,6 +326,7 @@ const loadMv = async() => {
     if (!requestTrack.bvid) throw new Error(window.i18n.t('setting__play_detail_immersive_mv_no_track'))
     const result = await getBiliVideoUrl(requestTrack)
     if (requestId != mvRequestId || background.value != 'mv') return
+    if (mvUrl.value && mvUrl.value != result.url) releaseMvVideo()
     mvUrl.value = result.url
     activeMvKey.value = `${track.bvid}:${track.cid ?? track.page ?? 1}`
     mvStatus.value = 'ready'
@@ -331,6 +334,7 @@ const loadMv = async() => {
     await syncMvPlayback()
   } catch (err) {
     if (requestId == mvRequestId) {
+      releaseMvVideo()
       mvUrl.value = ''
       activeMvKey.value = ''
       mvStatus.value = 'error'
@@ -603,6 +607,21 @@ const stopMvSync = () => {
   mvSyncTimer = 0
 }
 
+const releaseMvVideo = () => {
+  stopMvSync()
+  const video = mvVideo.value
+  if (!video) return
+  video.pause()
+  video.srcObject = null
+  video.removeAttribute('src')
+  video.load()
+}
+
+const handleMvError = () => {
+  releaseMvVideo()
+  mvUrl.value = ''
+}
+
 const updateMvSync = () => {
   stopMvSync()
   if (background.value != 'mv' || !isPlay.value || !mvUrl.value) return
@@ -621,6 +640,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleKeydown, true)
   window.clearTimeout(hideTimer)
   stopMvSync()
+  releaseMvVideo()
   mvRequestId += 1
   lyricRequestId += 1
 })
@@ -648,6 +668,10 @@ watch(() => musicInfo.id, () => {
 watch(() => [isPlay.value, background.value, mvUrl.value], () => {
   updateMvSync()
   void syncMvPlayback()
+})
+
+watch(mvUrl, (url, previousUrl) => {
+  if (!url && previousUrl) releaseMvVideo()
 })
 
 watch(controlHideDelay, () => {
