@@ -12,6 +12,7 @@ import { isBiliRuntimePicUrl } from '@common/utils/tools'
 import { DOWNLOAD_STATUS } from '@common/constants'
 import { proxy } from '../index'
 import { buildSavePath } from './utils'
+import { shouldConvertDownload } from '@renderer/worker/download/utils'
 
 const waitingUpdateTasks = new Map<string, LX.Download.ListItem>()
 let timer: NodeJS.Timeout | null = null
@@ -26,6 +27,7 @@ const throttleUpdateTask = (tasks: LX.Download.ListItem[]) => {
 }
 
 const runingTask = new Map<string, LX.Download.ListItem>()
+const nativeTaskIds = new Set<string>()
 
 // const initDownloadList = (list: LX.Download.ListItem[]) => {
 //   downloadList.splice(0, downloadList.length, ...list)
@@ -239,7 +241,8 @@ const handleRefreshUrl = (downloadInfo: LX.Download.ListItem) => {
     .then(url => {
     // commit('setStatusText', { downloadInfo, text: '链接刷新成功' })
       setUrl(downloadInfo, url)
-      void window.lx.worker.download.updateUrl(downloadInfo.id, url)
+      if (nativeTaskIds.has(downloadInfo.id)) void backend.download.updateNativeTaskUrl(downloadInfo.id, url)
+      else void window.lx.worker.download.updateUrl(downloadInfo.id, url)
     })
     .catch(err => {
       console.log(err)
@@ -248,9 +251,47 @@ const handleRefreshUrl = (downloadInfo: LX.Download.ListItem) => {
 }
 const handleError = (downloadInfo: LX.Download.ListItem, message?: string) => {
   setStatus(downloadInfo, DOWNLOAD_STATUS.ERROR, message)
-  void window.lx.worker.download.removeTask(downloadInfo.id)
+  if (nativeTaskIds.has(downloadInfo.id)) {
+    void backend.download.removeNativeTask(downloadInfo.id)
+    nativeTaskIds.delete(downloadInfo.id)
+  } else void window.lx.worker.download.removeTask(downloadInfo.id)
   runingTask.delete(downloadInfo.id)
   void checkStartTask()
+}
+
+const handleDownloadAction = (downloadInfo: LX.Download.ListItem, event: LX.Download.DownloadTaskActions) => {
+  switch (event.action) {
+    case 'start':
+      setStatus(downloadInfo, DOWNLOAD_STATUS.RUN)
+      break
+    case 'complete':
+      downloadInfo.progress = 100
+      saveMeta(downloadInfo)
+      downloadLyric(downloadInfo)
+      if (nativeTaskIds.has(downloadInfo.id)) nativeTaskIds.delete(downloadInfo.id)
+      else void window.lx.worker.download.removeTask(downloadInfo.id)
+      runingTask.delete(downloadInfo.id)
+      setStatus(downloadInfo, DOWNLOAD_STATUS.COMPLETED)
+      void checkStartTask()
+      break
+    case 'refreshUrl':
+      handleRefreshUrl(downloadInfo)
+      break
+    case 'statusText':
+      setStatusText(downloadInfo, event.data)
+      break
+    case 'progress':
+      setProgress(downloadInfo, event.data)
+      break
+    case 'error':
+      handleError(downloadInfo, event.data.error
+        ? window.i18n.t(event.data.error) + (event.data.message ?? '')
+        : event.data.message,
+      )
+      break
+    default:
+      break
+  }
 }
 
 const handleStartTask = async(downloadInfo: LX.Download.ListItem) => {
@@ -271,39 +312,35 @@ const handleStartTask = async(downloadInfo: LX.Download.ListItem) => {
 
   setStatusText(downloadInfo, window.i18n.t('download_status_start'))
 
-  await window.lx.worker.download.startTask(toRaw(downloadInfo), savePath, appSetting['download.skipExistFile'], proxyCallback((event: LX.Download.DownloadTaskActions) => {
-    // console.log(event)
-    switch (event.action) {
-      case 'start':
-        setStatus(downloadInfo, DOWNLOAD_STATUS.RUN)
-        break
-      case 'complete':
-        downloadInfo.progress = 100
-        saveMeta(downloadInfo)
-        downloadLyric(downloadInfo)
-        void window.lx.worker.download.removeTask(downloadInfo.id)
-        runingTask.delete(downloadInfo.id)
-        setStatus(downloadInfo, DOWNLOAD_STATUS.COMPLETED)
-        void checkStartTask()
-        break
-      case 'refreshUrl':
-        handleRefreshUrl(downloadInfo)
-        break
-      case 'statusText':
-        setStatusText(downloadInfo, event.data)
-        break
-      case 'progress':
-        setProgress(downloadInfo, event.data)
-        break
-      case 'error':
-        handleError(downloadInfo, event.data.error
-          ? window.i18n.t(event.data.error) + (event.data.message ?? '')
-          : event.data.message,
-        )
-        break
-      default:
-        break
+  if (backend.descriptor.capabilities.has('download.native-http')) {
+    const convert = shouldConvertDownload(downloadInfo)
+    const rawPath = convert ? joinPath(savePath, `${downloadInfo.id}.source.m4a`) : filePath
+    try {
+      nativeTaskIds.add(downloadInfo.id)
+      await backend.download.startNativeTask({
+        taskId: downloadInfo.id,
+        url: downloadInfo.metadata.url!,
+        outputPath: rawPath,
+        finalPath: filePath,
+        skipExisting: appSetting['download.skipExistFile'],
+        resume: downloadInfo.downloaded > 0,
+        convert: convert ? {
+          inputPath: rawPath,
+          outputPath: filePath,
+          extension: downloadInfo.metadata.ext as LX.Download.AudioConvertRequest['extension'],
+          quality: downloadInfo.metadata.quality,
+        } : undefined,
+        proxy: getProxy(),
+      })
+      return
+    } catch (error) {
+      nativeTaskIds.delete(downloadInfo.id)
+      console.warn('native download unavailable, falling back to worker', error)
     }
+  }
+
+  await window.lx.worker.download.startTask(toRaw(downloadInfo), savePath, appSetting['download.skipExistFile'], proxyCallback((event: LX.Download.DownloadTaskActions) => {
+    handleDownloadAction(downloadInfo, event)
   }), proxyCallback((request: LX.Download.AudioConvertRequest) => backend.download.convertAudio(request)), getProxy())
 }
 const startTask = async(downloadInfo: LX.Download.ListItem) => {
@@ -389,7 +426,8 @@ export const pauseDownloadTasks = async(list: LX.Download.ListItem[]) => {
   for (const downloadInfo of list) {
     switch (downloadInfo.status) {
       case DOWNLOAD_STATUS.RUN:
-        void window.lx.worker.download.pauseTask(downloadInfo.id)
+        if (nativeTaskIds.has(downloadInfo.id)) void backend.download.pauseNativeTask(downloadInfo.id)
+        else void window.lx.worker.download.pauseTask(downloadInfo.id)
         runingTask.delete(downloadInfo.id)
       case DOWNLOAD_STATUS.WAITING:
       case DOWNLOAD_STATUS.ERROR:
@@ -410,7 +448,11 @@ export const removeDownloadTasks = async(ids: string[]) => {
 
   const idsSet = new Set<string>(ids)
   const newList = downloadList.filter(task => {
-    if (runingTask.has(task.id)) {
+    if (nativeTaskIds.has(task.id)) {
+      void backend.download.removeNativeTask(task.id)
+      nativeTaskIds.delete(task.id)
+      runingTask.delete(task.id)
+    } else if (runingTask.has(task.id)) {
       void window.lx.worker.download.removeTask(task.id)
       runingTask.delete(task.id)
     }
@@ -423,3 +465,9 @@ export const removeDownloadTasks = async(ids: string[]) => {
   void checkStartTask()
   window.app_event.downloadListUpdate()
 }
+
+backend.download.onNativeTaskAction(({ taskId, action }) => {
+  if (!nativeTaskIds.has(taskId)) return
+  const downloadInfo = downloadList.find(task => task.id == taskId)
+  if (downloadInfo) handleDownloadAction(downloadInfo, action)
+})

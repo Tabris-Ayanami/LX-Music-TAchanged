@@ -15,6 +15,7 @@ export type BackendCapability =
   | 'artwork.native-variants'
   | 'download.legacy-electron'
   | 'download.native-ffmpeg'
+  | 'download.native-http'
   | 'source.javascript'
   | 'settings.electron'
   | 'platform.electron'
@@ -244,6 +245,11 @@ export interface DownloadService {
   removePersistedTasks: (ids: string[]) => Promise<void>
   clearPersistedTasks: () => Promise<void>
   convertAudio: (request: LX.Download.AudioConvertRequest, signal?: AbortSignal) => Promise<void>
+  startNativeTask: (request: LX.Download.NativeDownloadRequest, signal?: AbortSignal) => Promise<void>
+  pauseNativeTask: (taskId: string, signal?: AbortSignal) => Promise<void>
+  removeNativeTask: (taskId: string, signal?: AbortSignal) => Promise<void>
+  updateNativeTaskUrl: (taskId: string, url: string, signal?: AbortSignal) => Promise<void>
+  onNativeTaskAction: (listener: (event: LX.Download.NativeDownloadAction) => void) => Unsubscribe
 }
 
 export interface SourceService {

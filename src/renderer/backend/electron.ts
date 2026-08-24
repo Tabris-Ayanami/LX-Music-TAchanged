@@ -33,6 +33,7 @@ const capabilities = new Set<BackendCapability>([
   'artwork.native-variants',
   'download.legacy-electron',
   'download.native-ffmpeg',
+  'download.native-http',
   'source.javascript',
   'settings.electron',
   'platform.electron',
@@ -184,6 +185,11 @@ export class ElectronBackendAdapter implements BackendApi {
     removePersistedTasks: async ids => call(() => legacyIpc.downloadTasksRemove(ids)),
     clearPersistedTasks: async() => call(legacyIpc.downloadListClear),
     convertAudio: async(request, signal) => call(() => legacyIpc.convertDownloadedAudio(request), signal),
+    startNativeTask: async(request, signal) => call(() => legacyIpc.startNativeDownloadTask(request), signal),
+    pauseNativeTask: async(taskId, signal) => call(() => legacyIpc.pauseNativeDownloadTask(taskId), signal),
+    removeNativeTask: async(taskId, signal) => call(() => legacyIpc.removeNativeDownloadTask(taskId), signal),
+    updateNativeTaskUrl: async(taskId, url, signal) => call(() => legacyIpc.updateNativeDownloadTaskUrl({ taskId, url }), signal),
+    onNativeTaskAction: listener => legacyIpc.onNativeDownloadAction(({ params }) => { listener(params) }),
   }
 
   readonly source: BackendApi['source'] = {

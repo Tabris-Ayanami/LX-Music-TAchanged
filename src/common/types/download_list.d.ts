@@ -31,6 +31,22 @@ declare global {
         quality: LX.Quality
       }
 
+      interface NativeDownloadRequest {
+        taskId: string
+        url: string
+        outputPath: string
+        finalPath: string
+        skipExisting: boolean
+        resume?: boolean
+        proxy?: { host: string, port: number }
+        convert?: AudioConvertRequest
+      }
+
+      interface NativeDownloadAction {
+        taskId: string
+        action: DownloadTaskActions
+      }
+
       interface DownloadTaskActionBase <A> {
         action: A
       }

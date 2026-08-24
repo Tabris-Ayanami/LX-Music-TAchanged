@@ -956,3 +956,19 @@ export const downloadListClear = async() => {
 export const convertDownloadedAudio = async(request: LX.Download.AudioConvertRequest) => {
   return rendererInvoke<LX.Download.AudioConvertRequest>(WIN_MAIN_RENDERER_EVENT_NAME.convert_download_audio, request)
 }
+export const startNativeDownloadTask = async(request: LX.Download.NativeDownloadRequest) => {
+  return rendererInvoke(WIN_MAIN_RENDERER_EVENT_NAME.download_task_start, request)
+}
+export const pauseNativeDownloadTask = async(taskId: string) => {
+  return rendererInvoke(WIN_MAIN_RENDERER_EVENT_NAME.download_task_pause, taskId)
+}
+export const removeNativeDownloadTask = async(taskId: string) => {
+  return rendererInvoke(WIN_MAIN_RENDERER_EVENT_NAME.download_task_remove, taskId)
+}
+export const updateNativeDownloadTaskUrl = async(request: { taskId: string, url: string }) => {
+  return rendererInvoke(WIN_MAIN_RENDERER_EVENT_NAME.download_task_update_url, request)
+}
+export const onNativeDownloadAction = (listener: LX.IpcRendererEventListenerParams<LX.Download.NativeDownloadAction>): RemoveListener => {
+  rendererOn(WIN_MAIN_RENDERER_EVENT_NAME.download_task_action, listener)
+  return () => { rendererOff(WIN_MAIN_RENDERER_EVENT_NAME.download_task_action, listener) }
+}
