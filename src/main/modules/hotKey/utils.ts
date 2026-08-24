@@ -1,5 +1,5 @@
 import { globalShortcut } from 'electron'
-import { log } from '@common/utils'
+import log from '@common/utils/nodeLog'
 
 export const handleKeyDown = (key: string) => {
   if (!global.lx.hotKey.enable) return

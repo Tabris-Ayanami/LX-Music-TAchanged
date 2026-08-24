@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import { checkPath, joinPath } from '@common/utils/nodejs'
-import { log } from '@common/utils'
+import log from '@common/utils/nodeLog'
 import { filterMusicList, toNewMusicInfo } from '@common/utils/tools'
 import { APP_EVENT_NAMES, STORE_NAMES } from '@common/constants'
 

@@ -1,4 +1,7 @@
 import { clipboard, contextBridge, ipcRenderer, shell } from 'electron'
+import path from 'node:path'
+import os from 'node:os'
+import { pathToFileURL as toFileURL } from 'node:url'
 import {
   BILI_RENDERER_EVENT_NAME,
   CMMON_EVENT_NAME,
@@ -36,7 +39,7 @@ const bridge = {
       assertChannel(name)
       return ipcRenderer.sendSync(name, params)
     },
-    invoke(name: string, params?: unknown) {
+    async invoke(name: string, params?: unknown) {
       assertChannel(name)
       return ipcRenderer.invoke(name, params)
     },
@@ -70,6 +73,20 @@ const bridge = {
     },
   },
   platform: {
+    name: process.platform,
+    arch: process.arch,
+    appVersion: process.versions.app,
+    isProduction: process.env.NODE_ENV == 'production',
+    defaultDownloadPath: path.join(os.homedir(), 'Desktop'),
+    pathSeparator: path.sep,
+    normalizePath(filePath: string) {
+      if (typeof filePath != 'string') throw new Error('Path must be a string')
+      return path.normalize(filePath)
+    },
+    pathToFileURL(filePath: string) {
+      if (typeof filePath != 'string') throw new Error('Path must be a string')
+      return toFileURL(filePath).href
+    },
     showItemInFolder(filePath: string) {
       if (typeof filePath != 'string') throw new Error('Path must be a string')
       shell.showItemInFolder(filePath)

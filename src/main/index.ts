@@ -1,6 +1,6 @@
 import { app } from 'electron'
 import './utils/logInit'
-import '@common/error'
+import '@main/error'
 import {
   initGlobalData,
   initSingleInstanceHandle,

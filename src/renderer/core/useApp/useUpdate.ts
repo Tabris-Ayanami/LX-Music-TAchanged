@@ -14,14 +14,17 @@ import { isShowChangeLog, versionInfo } from '@renderer/store'
 import { getVersionInfo } from '@renderer/utils/update'
 import { dialog } from '@renderer/plugins/Dialog'
 import { appSetting } from '@renderer/store/setting'
+import { getHostBridge } from '@common/hostBridge'
 
 export default () => {
+  const runtime = getHostBridge().platform
+  const currentVersion = runtime.appVersion
   let isShowedChangeLog = false
 
   // 更新超时定时器
   let updateTimeout: number | null = null
   const startUpdateTimeout = () => {
-    if (window.lx.isProd && !(isWin && process.arch.includes('arm'))) {
+    if (window.lx.isProd && !(isWin && runtime.arch.includes('arm'))) {
       updateTimeout = window.setTimeout(() => {
         updateTimeout = null
         void nextTick(() => {
@@ -47,13 +50,13 @@ export default () => {
   const handleShowChangeLog = () => {
     isShowedChangeLog = true
     void getLastStartInfo().then((version) => {
-      if (version == process.versions.app) return
-      saveLastStartInfo(process.versions.app)
+      if (version == currentVersion) return
+      saveLastStartInfo(currentVersion)
       if (!appSetting['common.showChangeLog']) return
       if (version) {
-        if (compareVer(process.versions.app, version) < 0) {
+        if (compareVer(currentVersion, version) < 0) {
           void dialog({
-            message: window.i18n.t('update__downgrade_tip', { ver: `${version} → ${process.versions.app}` }),
+            message: window.i18n.t('update__downgrade_tip', { ver: `${version} → ${currentVersion}` }),
             confirmButtonText: window.i18n.t('update__ignore_confirm_tip_confirm'),
           })
           return
@@ -63,7 +66,7 @@ export default () => {
       } else if (
         // 如果当前版本不在已发布的版本中，则不需要显示更新日志
         ![{ version: versionInfo.newVersion!.version, desc: '' }, ...(versionInfo.newVersion!.history ?? [])]
-          .some(i => i.version == process.versions.app)
+          .some(i => i.version == currentVersion)
       ) return
       isShowChangeLog.value = true
     })

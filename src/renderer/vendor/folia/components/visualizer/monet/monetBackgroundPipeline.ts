@@ -1,5 +1,6 @@
 import { colorWithAlpha, parseColorChannels } from '../colorMix';
 import type { MonetBackgroundImage, MonetBackgroundTuning, Theme } from '../../../types';
+import { isProd } from '@common/utils';
 
 // src/components/visualizer/monet/monetBackgroundPipeline.ts
 // Builds and caches the static Monet poster background so the visualizer only recomputes when inputs change.
@@ -280,7 +281,7 @@ export const checkCanvasFilterSupport = (): boolean => {
         const ctx = canvas.getContext('2d');
         if (!ctx || typeof ctx.filter !== 'string') {
             isCanvasFilterSupportedCached = false;
-            if (process.env.NODE_ENV !== 'production') {
+            if (!isProd) {
                 console.log('[MonetBackground] Canvas filter support detection: Unsupported (ctx.filter is missing)');
             }
             return false;
@@ -292,13 +293,13 @@ export const checkCanvasFilterSupport = (): boolean => {
         ctx.fillRect(0, 0, 1, 1);
         const imgData = ctx.getImageData(1, 1, 1, 1);
         isCanvasFilterSupportedCached = imgData.data[0] > 0;
-        if (process.env.NODE_ENV !== 'production') {
+        if (!isProd) {
             console.log(`[MonetBackground] Canvas filter support detection: ${isCanvasFilterSupportedCached ? 'Supported (native)' : 'Unsupported (CSS blur fallback will be used)'}`);
         }
         return isCanvasFilterSupportedCached;
     } catch (e) {
         isCanvasFilterSupportedCached = false;
-        if (process.env.NODE_ENV !== 'production') {
+        if (!isProd) {
             console.log('[MonetBackground] Canvas filter support detection failed:', e);
         }
         return false;

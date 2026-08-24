@@ -9,6 +9,14 @@ export interface HostIpcBridge {
 }
 
 export interface HostPlatformBridge {
+  name: NodeJS.Platform
+  arch: string
+  appVersion: string
+  isProduction: boolean
+  defaultDownloadPath: string
+  pathSeparator: string
+  normalizePath: (path: string) => string
+  pathToFileURL: (path: string) => string
   showItemInFolder: (path: string) => void
   openExternal: (url: string) => Promise<void>
   clipboardWriteText: (text: string) => void

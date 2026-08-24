@@ -13,6 +13,7 @@ import { getRecentCompletedLine, getUpcomingLines } from '../runtime';
 import VisualizerShell from '../VisualizerShell';
 import VisualizerSubtitleOverlay from '../VisualizerSubtitleOverlay';
 import { resolveWordColor } from '../wordColoring';
+import { isProd } from '@common/utils';
 
 // This mode is basically "turn the whole lyric into an article, then move a camera through it".
 // So the pipeline is much bigger than the others: prebuild the article layout, split it into blocks/render lines/graphemes,
@@ -1357,7 +1358,7 @@ const buildArticleLayout = (
     const renderMs = nowMs() - renderStart;
     const totalMs = nowMs() - totalStart;
 
-    if (process.env.NODE_ENV !== 'production') {
+    if (!isProd) {
         console.info('[VisualizerFume] layout timing', {
             totalMs: roundMs(totalMs),
             measureMs: roundMs(measureTiming.prepareLayoutMs + measureTiming.placementMs),

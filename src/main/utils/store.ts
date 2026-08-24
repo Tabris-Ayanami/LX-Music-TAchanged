@@ -2,7 +2,7 @@
 import { dialog, shell } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
-import { log } from '@common/utils'
+import log from '@common/utils/nodeLog'
 
 type Stores = Record<string, Store>
 

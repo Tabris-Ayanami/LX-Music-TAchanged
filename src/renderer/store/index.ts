@@ -4,7 +4,6 @@ import { appSetting } from './setting'
 import pkg from '../../../package.json'
 import { type ProgressInfo } from 'electron-updater'
 import music from '@renderer/utils/musicSdk'
-process.versions.app = pkg.version
 
 export const apiSource = ref<string | null>(null)
 export const proxy: {

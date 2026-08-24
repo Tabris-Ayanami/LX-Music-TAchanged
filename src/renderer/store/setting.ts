@@ -1,5 +1,5 @@
 import { reactive, computed } from '@common/utils/vueTools'
-import defaultSetting from '@common/defaultSetting'
+import defaultSetting from '@renderer/defaultSetting'
 import { backend } from '@renderer/backend'
 
 export const isDesktopLyricDisabled = true

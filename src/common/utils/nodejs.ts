@@ -3,7 +3,7 @@ import crypto from 'node:crypto'
 import { gzip, gunzip } from 'node:zlib'
 import path from 'node:path'
 import { networkInterfaces } from 'node:os'
-import { log } from '@common/utils'
+import log from './nodeLog'
 
 export const joinPath = (...paths: string[]): string => path.join(...paths)
 

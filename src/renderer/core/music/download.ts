@@ -1,6 +1,6 @@
 import { getDownloadFilePath } from '@renderer/utils/music'
 import { isBiliRuntimePicUrl } from '@common/utils/tools'
-import { pathToFileURL } from 'node:url'
+import { getHostBridge } from '@common/hostBridge'
 
 import {
   getMusicUrl as getOnlineMusicUrl,
@@ -11,7 +11,7 @@ import { buildLyricInfo, getCachedLyricInfo } from './utils'
 import { buildSavePath } from '@renderer/store/download/utils'
 
 const normalizePicUrl = (pic: string) => {
-  return /^(?:https?:|data:|blob:|file:)/i.test(pic) ? pic : pathToFileURL(pic).href
+  return /^(?:https?:|data:|blob:|file:)/i.test(pic) ? pic : getHostBridge().platform.pathToFileURL(pic)
 }
 
 export const getMusicUrl = async({ musicInfo, isRefresh, allowToggleSource = true, onToggleSource = () => {} }: {

@@ -1,12 +1,18 @@
-import log from 'electron-log/node'
+interface OptionalNodeProcess {
+  platform?: NodeJS.Platform
+  env?: { NODE_ENV?: string }
+}
 
+const nodeProcess = (globalThis as typeof globalThis & { process?: OptionalNodeProcess }).process
+const hostRuntime = typeof window == 'undefined' ? undefined : window.lxHost?.platform
+const runtimePlatform = hostRuntime?.name ?? nodeProcess?.platform ?? 'linux'
 
-export const isLinux = process.platform == 'linux'
-export const isWin = process.platform == 'win32'
-export const isMac = process.platform == 'darwin'
-export const isProd = process.env.NODE_ENV == 'production'
+export const isLinux = runtimePlatform == 'linux'
+export const isWin = runtimePlatform == 'win32'
+export const isMac = runtimePlatform == 'darwin'
+export const isProd = hostRuntime?.isProduction ?? nodeProcess?.env?.NODE_ENV == 'production'
 
-export const getPlatform = (platform: NodeJS.Platform = process.platform) => {
+export const getPlatform = (platform: NodeJS.Platform = runtimePlatform) => {
   switch (platform) {
     case 'win32': return 'windows'
     case 'darwin': return 'mac'
@@ -32,11 +38,6 @@ export function compareVer(currentVer: string, targetVer: string): -1 | 0 | 1 {
     else if (currentVerArr[i] < targetVerArr[i]) return -1
   }
   return 0
-}
-
-
-export {
-  log,
 }
 
 export * from './common'

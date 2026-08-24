@@ -1,4 +1,5 @@
 import type { I18n } from '@root/lang/i18n'
+import { getHostBridge } from '@common/hostBridge'
 
 // sync(store, router)
 
@@ -56,7 +57,7 @@ const getOrCreateRoot = () => {
 }
 
 const isWebpackDevOverlayError = (error: unknown) => {
-  if (process.env.NODE_ENV !== 'development') return false
+  if (getHostBridge().platform.isProduction) return false
   const message = error instanceof Error
     ? `${error.name}: ${error.message}\n${error.stack ?? ''}`
     : String(error)

@@ -1,4 +1,4 @@
-import { log as writeLog } from '@common/utils'
+import writeLog from '@common/utils/nodeLog'
 
 export default {
   r_info(...params: any[]) {

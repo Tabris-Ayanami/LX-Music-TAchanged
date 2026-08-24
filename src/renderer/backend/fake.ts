@@ -1,4 +1,4 @@
-import defaultSetting from '../../common/defaultSetting'
+import defaultSetting from '@renderer/defaultSetting'
 import {
   BACKEND_INTERFACE_VERSION,
   BackendError,

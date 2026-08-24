@@ -1,5 +1,6 @@
 import { autoUpdater } from 'electron-updater'
-import { log, isWin } from '@common/utils'
+import { isWin } from '@common/utils'
+import log from '@common/utils/nodeLog'
 import { mainOn } from '@common/mainIpc'
 import { isExistWindow, sendEvent } from './index'
 import { WIN_MAIN_RENDERER_EVENT_NAME } from '@common/ipcNames'

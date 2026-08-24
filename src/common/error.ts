@@ -1,18 +1,16 @@
-import { log } from './utils'
-
 const ignoreErrorMessage = [
   'Possible side-effect in debug-evaluate',
   'Unexpected end of input',
 ]
 
-process.on('uncaughtException', err => {
-  if (ignoreErrorMessage.includes(err?.message)) return
+window.addEventListener('error', event => {
+  if (ignoreErrorMessage.includes(event.message)) return
   console.error('An uncaught error occurred!')
-  console.error(err)
-  log.error(err)
+  console.error(event.error ?? event.message)
 })
-process.on('unhandledRejection', (reason, p) => {
-  console.error('Unhandled Rejection at: Promise ', p)
-  console.error(' reason: ', reason)
-  log.error(reason)
+window.addEventListener('unhandledrejection', event => {
+  console.error('Unhandled Rejection at: Promise ', event.promise)
+  console.error(' reason: ', event.reason)
 })
+
+export {}

@@ -1,5 +1,6 @@
 // import defaultSetting from '@common/defaultSetting'
 import createWorkers from '@renderer/worker'
+import { getHostBridge } from '@common/hostBridge'
 
 window.lx = {
   // appSetting: defaultSetting,
@@ -24,11 +25,9 @@ window.lx = {
   },
   restorePlayInfo: null,
   worker: createWorkers(),
-  isProd: process.env.NODE_ENV == 'production',
+  isProd: getHostBridge().platform.isProduction,
   rootOffset: window.dt ? 0 : 8,
   apiInitPromise: [Promise.resolve(false), true, () => {}],
 }
 
 window.lxData = {}
-
-window.ELECTRON_DISABLE_SECURITY_WARNINGS = process.env.ELECTRON_DISABLE_SECURITY_WARNINGS

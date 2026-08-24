@@ -1,6 +1,5 @@
 import { getPlayInfo } from '@renderer/utils/ipc'
 import music from '@renderer/utils/musicSdk'
-import { log } from '@common/utils'
 import { getListMusics, getUserLists, registerAction } from '@renderer/store/list/action'
 
 
@@ -42,10 +41,10 @@ export default () => {
 
   return async() => {
     void initUserApi().catch((err: any) => {
-      log.error(err)
+      console.error(err)
     })
     void music.init().catch((err: any) => {
-      log.error(err)
+      console.error(err)
     }) // 初始化音乐sdk
     unregister = registerAction((ids) => {
       window.app_event.myListUpdate(ids)
@@ -57,7 +56,7 @@ export default () => {
       }),
       initDislikeInfo(), // 获取不喜欢列表
       initPrevPlayInfo().catch(err => {
-        log.error(err)
+        console.error(err)
       }), // 初始化上次的歌曲播放信息
     ])
   }

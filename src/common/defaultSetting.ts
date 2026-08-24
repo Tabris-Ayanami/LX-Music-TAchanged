@@ -1,10 +1,9 @@
-import path from 'node:path'
-import os from 'node:os'
+export interface DefaultSettingRuntime {
+  platform: NodeJS.Platform
+  downloadSavePath: string
+}
 
-const isMac = process.platform == 'darwin'
-const isWin = process.platform == 'win32'
-
-const defaultSetting: LX.AppSetting = {
+const baseDefaultSetting: LX.AppSetting = {
   version: '2.1.0',
 
   'common.windowSizeId': 3,
@@ -17,7 +16,7 @@ const defaultSetting: LX.AppSetting = {
   'common.isShowAnimation': true,
   'common.randomAnimate': true,
   'common.isAgreePact': false,
-  'common.controlBtnPosition': isMac ? 'left' : 'right',
+  'common.controlBtnPosition': 'right',
   'common.playBarProgressStyle': 'mini',
   'common.transparentWindow': false,
   'common.tryAutoUpdate': true,
@@ -48,7 +47,7 @@ const defaultSetting: LX.AppSetting = {
   'player.isShowLyricRoma': false,
   'player.isSwapLyricTranslationAndRoma': false,
   'player.isS2t': false,
-  'player.isPlayLxlrc': !isMac,
+  'player.isPlayLxlrc': true,
   'player.isSavePlayTime': false,
   'player.audioVisualization': false,
   'player.waitPlayEndStop': true,
@@ -109,7 +108,7 @@ const defaultSetting: LX.AppSetting = {
   'desktopLyric.height': 300,
   'desktopLyric.x': null,
   'desktopLyric.y': null,
-  'desktopLyric.isLockScreen': isWin,
+  'desktopLyric.isLockScreen': false,
   'desktopLyric.isDelayScroll': true,
   'desktopLyric.scrollAlign': 'center',
   'desktopLyric.isHoverHide': false,
@@ -144,7 +143,7 @@ const defaultSetting: LX.AppSetting = {
 
   'download.enable': false,
   'download.isSavePathGroupByListName': false,
-  'download.savePath': path.join(os.homedir(), 'Desktop'),
+  'download.savePath': '',
   'download.fileName': '歌名 - 歌手',
   'download.maxDownloadNum': 3,
   'download.skipExistFile': true,
@@ -192,12 +191,22 @@ const defaultSetting: LX.AppSetting = {
 
 }
 
+export const createDefaultSetting = ({ platform, downloadSavePath }: DefaultSettingRuntime): LX.AppSetting => {
+  const isMac = platform == 'darwin'
+  const defaultSetting: LX.AppSetting = {
+    ...baseDefaultSetting,
+    'common.controlBtnPosition': isMac ? 'left' : 'right',
+    'player.isPlayLxlrc': !isMac,
+    'desktopLyric.isLockScreen': platform == 'win32',
+    'download.savePath': downloadSavePath,
+  }
 
-// 使用新年皮肤
-if (new Date().getMonth() < 2) {
-  defaultSetting['theme.id'] = 'happy_new_year'
-  defaultSetting['desktopLyric.style.lyricPlayedColor'] = 'rgba(255, 57, 71, 1)'
+
+  // 使用新年皮肤
+  if (new Date().getMonth() < 2) {
+    defaultSetting['theme.id'] = 'happy_new_year'
+    defaultSetting['desktopLyric.style.lyricPlayedColor'] = 'rgba(255, 57, 71, 1)'
+  }
+
+  return defaultSetting
 }
-
-
-export default defaultSetting

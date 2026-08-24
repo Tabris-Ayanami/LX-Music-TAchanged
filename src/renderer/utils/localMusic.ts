@@ -2,8 +2,8 @@ import { createUserList, getListMusics, getUserLists, addListMusics, overwriteLi
 import { userLists } from '@renderer/store/list/state'
 import { playMusicInfo } from '@renderer/store/player/state'
 import { playMusicsInDefaultList, queueNextInDefaultList } from './playDefaultList'
-import { normalize, sep } from 'node:path'
 import { scanLocalMusicFiles } from './ipc'
+import { getHostBridge } from '@common/hostBridge'
 
 export const LOCAL_MUSIC_LIST_ID = 'userlist_local_music'
 export const LOCAL_MUSIC_LIST_NAME = '本地音乐'
@@ -69,9 +69,9 @@ export const setCachedLocalTracks = (tracks: LX.Music.MusicInfoLocal[]) => {
   localTrackCacheTime = Date.now()
 }
 
-const normalizeLibraryFolder = (folderPath: string) => normalize(folderPath.trim())
+const normalizeLibraryFolder = (folderPath: string) => getHostBridge().platform.normalizePath(folderPath.trim())
 
-const normalizeComparablePath = (path: string) => normalize(path).toLowerCase()
+const normalizeComparablePath = (path: string) => getHostBridge().platform.normalizePath(path).toLowerCase()
 
 const dedupePaths = (paths: string[]) => {
   const map = new Map<string, string>()
@@ -95,7 +95,8 @@ const dedupeMusicInfos = (musicInfos: LX.Music.MusicInfo[]) => {
 const isFileUnderFolder = (filePath: string, folderPath: string) => {
   const normalizedFilePath = normalizeComparablePath(filePath)
   const normalizedFolderPath = normalizeComparablePath(folderPath)
-  const folderPrefix = normalizedFolderPath.endsWith(sep) ? normalizedFolderPath : `${normalizedFolderPath}${sep}`
+  const separator = getHostBridge().platform.pathSeparator
+  const folderPrefix = normalizedFolderPath.endsWith(separator) ? normalizedFolderPath : `${normalizedFolderPath}${separator}`
   return normalizedFilePath == normalizedFolderPath || normalizedFilePath.startsWith(folderPrefix)
 }
 
