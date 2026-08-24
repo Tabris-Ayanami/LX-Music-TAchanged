@@ -7,7 +7,7 @@ use lx_native_core::{
     download::{self, AudioConvertRequest, DownloadJobs, HttpDownloadRequest},
     error::CoreError,
     library::{self, LibraryScanRequest},
-    metadata::{self, MetadataWriteRequest},
+    metadata::{self, MetadataBatchRequest, MetadataWriteRequest},
     player,
     protocol::{Handshake, MAX_FRAME_BYTES, RpcRequest, RpcResponse},
 };
@@ -207,6 +207,12 @@ async fn dispatch(request: RpcRequest, context: Context) -> Result<Value, CoreEr
             let path = required_path(&request.params)?;
             let ffmpeg = context.ffmpeg_path.clone();
             blocking(move || metadata::read_compatible(&path, ffmpeg.as_deref())).await
+        }
+        "metadata.read_library_batch" => {
+            let value: MetadataBatchRequest = serde_json::from_value(request.params)
+                .map_err(|error| CoreError::InvalidArgument(error.to_string()))?;
+            let ffmpeg = context.ffmpeg_path.clone();
+            blocking(move || Ok(metadata::read_library_batch(&value, ffmpeg.as_deref()))).await
         }
         "metadata.write" => {
             let value: MetadataWriteRequest = serde_json::from_value(request.params)

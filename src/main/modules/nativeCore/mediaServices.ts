@@ -169,6 +169,14 @@ export const getArtworkVariant = async(request: LX.LocalMusic.ArtworkVariantRequ
   }
 }
 
+interface NativeLibraryMetadata {
+  filePath: string
+  title: string
+  artists: string[]
+  album: string
+  duration: number
+}
+
 /**
  * Read only the fields needed to build a local-library track. Unlike the
  * interactive metadata path this deliberately skips artwork materialization;
@@ -182,6 +190,30 @@ export const readMetadataForLibrary = async(filePath: string): Promise<LX.LocalM
   } catch (error) {
     console.warn(JSON.stringify({ level: 'warn', event: 'library_metadata_native_fallback', component: 'native-core', message: error instanceof Error ? error.message : String(error) }))
     return readLocalMetadata(filePath)
+  }
+}
+
+/**
+ * Batch variant used by local-library scans. The native endpoint returns only
+ * the five fields needed to build a row; malformed files are returned as null
+ * and retain the legacy per-file fallback behavior.
+ */
+export const readMetadataForLibraryBatch = async(filePaths: string[]): Promise<Array<Pick<LX.LocalMusic.Metadata, 'title' | 'artists' | 'album' | 'duration'> | null>> => {
+  if (!filePaths.length) return []
+  if (global.lx.appSetting['backend.metadata'] != 'native') {
+    return Promise.all(filePaths.map(filePath => readLocalMetadata(filePath).catch(() => null)))
+  }
+  try {
+    const nativeResults = await getNativeCoreSupervisor().call<Array<NativeLibraryMetadata | null>>('metadata.read_library_batch', { filePaths })
+    return Promise.all(filePaths.map(async(filePath, index) => {
+      const native = nativeResults[index]
+      if (native) return native
+      const legacy = await readLocalMetadata(filePath).catch(() => null)
+      return legacy ? { title: legacy.title, artists: legacy.artists, album: legacy.album, duration: legacy.duration } : null
+    }))
+  } catch (error) {
+    console.warn(JSON.stringify({ level: 'warn', event: 'library_metadata_batch_fallback', component: 'native-core', message: error instanceof Error ? error.message : String(error) }))
+    return Promise.all(filePaths.map(filePath => readMetadataForLibrary(filePath).catch(() => null)))
   }
 }
 

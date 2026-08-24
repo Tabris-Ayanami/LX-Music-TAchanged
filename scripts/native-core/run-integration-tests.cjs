@@ -191,6 +191,7 @@ const run = async() => {
     const handshake = await core.client.call('core.handshake')
     assert.equal(handshake.protocolVersion, '1.0')
     assert.ok(handshake.capabilities.includes('metadata.read'))
+    assert.ok(handshake.capabilities.includes('metadata.read_library_batch'))
     assert.ok(handshake.capabilities.includes('artwork.variant'))
     assert.ok(handshake.capabilities.includes('library.scan'))
     assert.ok(handshake.capabilities.includes('download.ffmpeg.convert'))
@@ -211,7 +212,15 @@ const run = async() => {
     assert.equal(libraryFiles.length, 2)
     assert.ok(libraryFiles.some(file => file.endsWith('one.MP3')))
     assert.ok(libraryFiles.some(file => file.endsWith('two.flac')))
-    report.library.scan = { folders: 1, files: libraryFiles.length, duplicateRootsRemoved: true }
+    const batchStartedAt = performance.now()
+    const libraryMetadata = await core.client.call('metadata.read_library_batch', { filePaths: libraryFiles })
+    const batchElapsedMs = performance.now() - batchStartedAt
+    assert.equal(libraryMetadata.length, libraryFiles.length)
+    assert.ok(libraryMetadata.every(value => value && value.title != null && value.artists != null && value.album != null && value.duration > 0 && value.embeddedLyrics == null && value.coverDataUrl == null))
+    report.library = {
+      scan: { folders: 1, files: libraryFiles.length, duplicateRootsRemoved: true },
+      metadataBatch: { files: libraryMetadata.length, rpcCalls: 1, elapsedMs: Number(batchElapsedMs.toFixed(1)), fields: ['filePath', 'title', 'artists', 'album', 'duration'] },
+    }
 
     const convertedAudio = path.join(fixture.work, 'native-converted.mp3')
     const conversion = await core.client.call('download.ffmpeg.convert', {

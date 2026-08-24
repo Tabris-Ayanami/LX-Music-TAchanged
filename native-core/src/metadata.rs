@@ -12,6 +12,10 @@ use std::{
     fs,
     path::{Path, PathBuf},
     process::Command,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicUsize, Ordering},
+    },
     time::Duration,
 };
 use uuid::Uuid;
@@ -55,6 +59,22 @@ pub struct MetadataWriteRequest {
     pub cover_changed: bool,
     #[serde(default)]
     pub cover_source_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MetadataBatchRequest {
+    pub file_paths: Vec<PathBuf>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryMetadata {
+    pub file_path: String,
+    pub title: String,
+    pub artists: Vec<String>,
+    pub album: String,
+    pub duration: f64,
 }
 
 fn assert_supported(path: &Path) -> Result<(), CoreError> {
@@ -163,6 +183,61 @@ pub fn read_compatible(path: &Path, ffmpeg_path: Option<&Path>) -> Result<Metada
             None => Err(primary_error),
         },
     }
+}
+
+/// Read library metadata in parallel while omitting large embedded lyric payloads.
+/// A failed file is represented by `None` so callers can preserve per-file fallback
+/// behavior without failing the entire scan batch.
+pub fn read_library_batch(
+    request: &MetadataBatchRequest,
+    ffmpeg_path: Option<&Path>,
+) -> Vec<Option<LibraryMetadata>> {
+    if request.file_paths.is_empty() {
+        return Vec::new();
+    }
+
+    let paths = Arc::new(request.file_paths.clone());
+    let results = Arc::new(Mutex::new(vec![None; paths.len()]));
+    let next = Arc::new(AtomicUsize::new(0));
+    let worker_count = std::cmp::min(4, paths.len());
+    let ffmpeg = ffmpeg_path.map(Path::to_path_buf);
+
+    std::thread::scope(|scope| {
+        for _ in 0..worker_count {
+            let paths = Arc::clone(&paths);
+            let results = Arc::clone(&results);
+            let next = Arc::clone(&next);
+            let ffmpeg = ffmpeg.clone();
+            scope.spawn(move || {
+                while let Some(index) = next
+                    .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
+                        (value < paths.len()).then_some(value + 1)
+                    })
+                    .ok()
+                {
+                    let metadata = match read_compatible(&paths[index], ffmpeg.as_deref()) {
+                        Ok(value) => value,
+                        Err(_) => continue,
+                    };
+                    // Library rows only need title/artist/album/duration. Avoid
+                    // serializing the rest of the interactive metadata payload.
+                    let summary = LibraryMetadata {
+                        file_path: metadata.file_path,
+                        title: metadata.title,
+                        artists: metadata.artists,
+                        album: metadata.album,
+                        duration: metadata.duration,
+                    };
+                    results.lock().expect("metadata batch lock poisoned")[index] = Some(summary);
+                }
+            });
+        }
+    });
+
+    Arc::try_unwrap(results)
+        .expect("metadata batch results still referenced")
+        .into_inner()
+        .expect("metadata batch lock poisoned")
 }
 
 fn read_with_ffmpeg(path: &Path, ffmpeg: &Path) -> Result<Metadata, CoreError> {

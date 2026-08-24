@@ -46,7 +46,11 @@ This slice primarily reduces Renderer worker code, keeps `music-metadata` out of
 
 The populated probe's post-scan capture reported JS heap 14.7 MiB, browser private bytes 82.98 MiB, 3.6% one-core CPU, 39 threads, and 487 handles. The capture path exposed only the browser process for this temporary profile, so these values are a reproducibility record, not a whole-tree comparison.
 
+The follow-up native library metadata endpoint now batches each scan chunk into one RPC and returns only `filePath`, `title`, `artists`, `album`, and `duration`. A fresh production preload probe with 8 mixed-format files returned all 8 rows in 55.7 ms; a previous warm comparison of the same endpoint invoked once per file in parallel took 43.6 ms. The latency is effectively neutral at this small sample size, but the batch path reduces 8 IPC request/response frames to 1 and removes unused lyric/artwork/extended metadata serialization. The malformed-file fallback remains per-file and is covered by the native integration suite.
+
 After switching the legacy artwork fallback from a renderer data URL to a Main-side cache file, a repeated 10-second production capture on the populated smoke profile reported: FCP 268 ms, renderer private 188.12 MiB, whole Electron tree private 756.11 MiB, CPU 8.1% of one core, 264 threads, and 4,090 handles. The preceding capture in the same run was treated as warm-up because its renderer counters were transiently inflated; the repeated sample is the stable comparison point. The historical reference was FCP 420 ms, renderer private 216.82 MiB, whole private 1059.19 MiB, CPU 18.2%, 320 threads, and 4,628 handles. Process count differs (6 here versus 7 in the reference), so the whole-tree reduction is indicative rather than an isolated attribution claim.
+
+The final stable Stage 5 capture on the same populated profile (10-second sample, after the smoke flow restored `#/local?view=tracks`) reported FCP 276 ms, renderer private 124.20 MiB, whole Electron tree private 759.16 MiB, working set 972.23 MiB, CPU 12.5% of one core, 260 threads, and 4,102 handles across 6 processes. This confirms the reduced renderer private footprint remains reproducible, while the whole-tree value is not treated as a new improvement claim because GPU/utility process residency varied between captures.
 
 ## Next
 
