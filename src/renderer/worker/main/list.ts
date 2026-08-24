@@ -105,9 +105,13 @@ export const filterMusicList = async({ playedList, listId, list, playerMusicInfo
       playerIndex = (filteredList.length ? filteredList : canPlayList).findIndex(m => m.id == playerMusicInfo.id)
     }
   }
+  // The caller only needs canPlayList when all entries were consumed by the
+  // played-list filter and it must clear that history. Returning the full
+  // fallback list on every normal playback pass duplicates a large queue in
+  // Comlink's structured clone.
   return {
     filteredList,
-    canPlayList,
+    canPlayList: !filteredList.length && playedList.length ? canPlayList : [],
     playerIndex,
   }
 }

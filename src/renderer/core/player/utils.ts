@@ -37,7 +37,7 @@ export const filterList = async({ playedList, listId, list, playerMusicInfo, isN
 
   if (!filteredList.length && playedList.length) {
     clearPlayedList()
-    return { filteredList: markRawList(canPlayList), playerIndex }
+    return { filteredList: markRawList(canPlayList ?? []), playerIndex }
   }
   return { filteredList: markRawList(filteredList), playerIndex }
 }
