@@ -39,3 +39,14 @@ After switching the legacy artwork fallback from a renderer data URL to a Main-s
 ## Next
 
 Measure a real native download lifecycle in the production app (start/progress/pause/resume/refresh-url/complete), then compare process private memory, CPU, thread, and handle counts against the recorded baseline before removing more Worker fallbacks.
+
+### Production IPC lifecycle probe
+
+Using a local throttled HTTP Range fixture through the actual Electron preload IPC:
+
+- fresh native start completed an 8 MiB file;
+- pause after 150 ms left a 393,216-byte partial file;
+- resume completed to 8,388,608 bytes with SHA-256 `cb5076bf0f34ac13...eb2e53c7`, matching the fixture;
+- remove cancelled a partial task and removed the exact output path.
+
+This validates Main/native-core task control rather than only the Rust sidecar in isolation.
