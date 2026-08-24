@@ -11,6 +11,7 @@ import {
   setConvolverMainGain,
   setConvolverSendGain,
   setPitchShifter,
+  isAudioPlaying,
 } from '@renderer/plugins/player'
 
 import { appSetting } from '@renderer/store/setting'
@@ -67,7 +68,7 @@ const applyBiquadGain = (hz: (typeof freqs)[number], gain: number) => {
 
 export default () => {
   // console.log(appSetting['player.soundEffect.panner.enable'])
-  if (appSetting['player.soundEffect.panner.enable']) startPanner()
+  if (appSetting['player.soundEffect.panner.enable'] && isAudioPlaying()) startPanner()
   setPannerSoundR(appSetting['player.soundEffect.panner.soundR'] / 10)
   setPannerSpeed(2 * (appSetting['player.soundEffect.panner.speed'] / 10))
   if (freqs.some(v => appSetting[`player.soundEffect.biquadFilter.hz${v}`] != 0)) {
@@ -90,11 +91,21 @@ export default () => {
 
   watch(() => appSetting['player.soundEffect.panner.enable'], (enable) => {
     if (enable) {
-      startPanner()
+      if (isAudioPlaying()) startPanner()
     } else {
       stopPanner()
     }
   })
+  // The panner only needs to advance while audio is audible. Keeping the
+  // interval stopped during pause/stop removes an otherwise permanent timer
+  // from the renderer idle path without changing playback-time behavior.
+  window.app_event.on('play', () => {
+    if (appSetting['player.soundEffect.panner.enable']) startPanner()
+  })
+  const stopPannerWhenSilent = () => { stopPanner() }
+  window.app_event.on('pause', stopPannerWhenSilent)
+  window.app_event.on('stop', stopPannerWhenSilent)
+  window.app_event.on('error', stopPannerWhenSilent)
   watch(() => appSetting['player.soundEffect.panner.soundR'], (soundR) => {
     setPannerSoundR(soundR / 10)
   })

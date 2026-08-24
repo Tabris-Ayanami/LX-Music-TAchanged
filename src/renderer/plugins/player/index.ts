@@ -165,6 +165,10 @@ export const createAudio = () => {
   setDeckGain(1, 0)
 }
 
+// Sound-effect maintenance (for example the spatial panner) should not keep
+// a timer alive before the first track starts or after playback is paused.
+export const isAudioPlaying = () => !!audio && !audio.paused && !audio.ended
+
 const initAnalyser = () => {
   analyser = audioContext.createAnalyser()
   analyser.fftSize = 256
