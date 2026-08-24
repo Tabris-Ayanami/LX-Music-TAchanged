@@ -3,6 +3,7 @@ import { mainHandle } from '@common/mainIpc'
 import { sendEvent } from '../main'
 import {
   convertDownloadedAudio,
+  resolveDownloadedFilePath,
   pauseNativeDownloadTask,
   removeNativeDownloadTask,
   setNativeDownloadEventSink,
@@ -32,6 +33,9 @@ export default () => {
   })
   mainHandle<LX.Download.AudioConvertRequest>(WIN_MAIN_RENDERER_EVENT_NAME.convert_download_audio, async({ params }) => {
     await convertDownloadedAudio(params)
+  })
+  mainHandle<{ musicInfo: LX.Download.ListItem, savePath: string }, string>(WIN_MAIN_RENDERER_EVENT_NAME.resolve_download_file_path, async({ params }) => {
+    return resolveDownloadedFilePath(params.musicInfo, params.savePath)
   })
   mainHandle<LX.Download.NativeDownloadRequest>(WIN_MAIN_RENDERER_EVENT_NAME.download_task_start, async({ params }) => {
     await startNativeDownloadTask(params)

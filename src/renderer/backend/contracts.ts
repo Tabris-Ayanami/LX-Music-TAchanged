@@ -246,6 +246,7 @@ export interface DownloadService {
   removePersistedTasks: (ids: string[]) => Promise<void>
   clearPersistedTasks: () => Promise<void>
   convertAudio: (request: LX.Download.AudioConvertRequest, signal?: AbortSignal) => Promise<void>
+  resolveFilePath: (musicInfo: LX.Download.ListItem, savePath: string, signal?: AbortSignal) => Promise<string>
   startNativeTask: (request: LX.Download.NativeDownloadRequest, signal?: AbortSignal) => Promise<void>
   pauseNativeTask: (taskId: string, signal?: AbortSignal) => Promise<void>
   removeNativeTask: (taskId: string, signal?: AbortSignal) => Promise<void>

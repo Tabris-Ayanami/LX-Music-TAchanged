@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { dirname } from 'node:path'
+import { dirname, join } from 'node:path'
 import { mkdir, rm, stat, writeFile } from 'node:fs/promises'
 import { sizeFormate } from '@common/utils/common'
 import { buildDownloadLyrics } from '@common/utils/lyricUtils/download'
@@ -71,6 +71,13 @@ export const convertDownloadedAudio = async(request: LX.Download.AudioConvertReq
     }))
     await convertWithElectron(request)
   }
+}
+
+export const resolveDownloadedFilePath = async(musicInfo: LX.Download.ListItem, savePath: string) => {
+  if (!musicInfo.isComplate || /\.ape$/.test(musicInfo.metadata.fileName)) return ''
+  if (await stat(musicInfo.metadata.filePath).then(info => info.isFile()).catch(() => false)) return musicInfo.metadata.filePath
+  const fallbackPath = join(savePath, musicInfo.metadata.fileName)
+  return await stat(fallbackPath).then(info => info.isFile() ? fallbackPath : '').catch(() => '')
 }
 
 export const writeDownloadedMetadata = async(request: LX.Download.DownloadMetadataWriteRequest) => {

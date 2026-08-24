@@ -1,4 +1,3 @@
-import { getDownloadFilePath } from '@renderer/utils/music'
 import { isBiliRuntimePicUrl } from '@common/utils/tools'
 import { getHostBridge } from '@common/hostBridge'
 
@@ -22,7 +21,7 @@ export const getMusicUrl = async({ musicInfo, isRefresh, allowToggleSource = tru
   allowToggleSource?: boolean
 }): Promise<string> => {
   if (!isRefresh) {
-    const path = await getDownloadFilePath(musicInfo, buildSavePath(musicInfo))
+    const path = await backend.download.resolveFilePath(musicInfo, buildSavePath(musicInfo))
     if (path) return path
   }
 
@@ -36,7 +35,7 @@ export const getPicUrl = async({ musicInfo, isRefresh, listId, onToggleSource = 
   onToggleSource?: (musicInfo?: LX.Music.MusicInfoOnline) => void
 }): Promise<string> => {
   if (!isRefresh) {
-    const path = await getDownloadFilePath(musicInfo, buildSavePath(musicInfo))
+    const path = await backend.download.resolveFilePath(musicInfo, buildSavePath(musicInfo))
     if (path) {
       const artwork = await backend.artwork.getLocalTrackArtwork({ filePath: path, size: 512 })
       if (artwork?.url) return normalizePicUrl(artwork.url)
@@ -71,7 +70,7 @@ export const getLyricInfo = async({ musicInfo, isRefresh, onToggleSource = () =>
     onToggleSource,
   }).catch(async() => {
     // 尝试读取文件内歌词
-    const path = await getDownloadFilePath(musicInfo, buildSavePath(musicInfo))
+    const path = await backend.download.resolveFilePath(musicInfo, buildSavePath(musicInfo))
     if (path) {
       const rawLyric = await backend.metadata.readLyrics(path)
       if (rawLyric) return buildLyricInfo(rawLyric)

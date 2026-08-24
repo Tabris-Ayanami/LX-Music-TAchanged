@@ -186,6 +186,7 @@ export class ElectronBackendAdapter implements BackendApi {
     removePersistedTasks: async ids => call(() => legacyIpc.downloadTasksRemove(ids)),
     clearPersistedTasks: async() => call(legacyIpc.downloadListClear),
     convertAudio: async(request, signal) => call(() => legacyIpc.convertDownloadedAudio(request), signal),
+    resolveFilePath: async(musicInfo, savePath, signal) => call(() => legacyIpc.resolveDownloadedFilePath({ musicInfo, savePath }), signal),
     startNativeTask: async(request, signal) => call(() => legacyIpc.startNativeDownloadTask(request), signal),
     pauseNativeTask: async(taskId, signal) => call(() => legacyIpc.pauseNativeDownloadTask(taskId), signal),
     removeNativeTask: async(taskId, signal) => call(() => legacyIpc.removeNativeDownloadTask(taskId), signal),

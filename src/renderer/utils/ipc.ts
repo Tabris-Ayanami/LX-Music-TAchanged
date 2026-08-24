@@ -968,6 +968,9 @@ export const downloadListClear = async() => {
 export const convertDownloadedAudio = async(request: LX.Download.AudioConvertRequest) => {
   return rendererInvoke<LX.Download.AudioConvertRequest>(WIN_MAIN_RENDERER_EVENT_NAME.convert_download_audio, request)
 }
+export const resolveDownloadedFilePath = async(request: { musicInfo: LX.Download.ListItem, savePath: string }) => {
+  return rendererInvoke<typeof request, string>(WIN_MAIN_RENDERER_EVENT_NAME.resolve_download_file_path, request)
+}
 export const startNativeDownloadTask = async(request: LX.Download.NativeDownloadRequest) => {
   return rendererInvoke(WIN_MAIN_RENDERER_EVENT_NAME.download_task_start, request)
 }

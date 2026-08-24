@@ -167,6 +167,7 @@ const modules = {
     download_list_remove: 'download_list_remove',
     download_list_clear: 'download_list_clear',
     convert_download_audio: 'convert_download_audio',
+    resolve_download_file_path: 'resolve_download_file_path',
     download_task_start: 'download_task_start',
     download_task_pause: 'download_task_pause',
     download_task_remove: 'download_task_remove',
