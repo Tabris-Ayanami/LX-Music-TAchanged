@@ -39,7 +39,14 @@ export const filterMusicList = async({ playedList, listId, list, playerMusicInfo
   let playerIndex = -1
 
   let canPlayList: Array<LX.Music.MusicInfo | LX.Download.ListItem> = []
-  const filteredPlayedList = playedList.filter(pmInfo => pmInfo.listId == listId && !pmInfo.isTempPlay).map(({ musicInfo }) => musicInfo)
+  // Consume one played entry per matching track while keeping duplicate IDs
+  // correct. A count map avoids the previous findIndex + splice O(n*m) scan
+  // on large queues.
+  const playedCounts = new Map<string, number>()
+  for (const { listId: playedListId, isTempPlay, musicInfo } of playedList) {
+    if (playedListId != listId || isTempPlay) continue
+    playedCounts.set(musicInfo.id, (playedCounts.get(musicInfo.id) ?? 0) + 1)
+  }
   const hasDislike = (info: LX.Music.MusicInfo) => {
     const name = info.name?.replaceAll(SPLIT_CHAR.DISLIKE_NAME, SPLIT_CHAR.DISLIKE_NAME_ALIAS).toLocaleLowerCase().trim() ?? ''
     const singer = info.singer?.replaceAll(SPLIT_CHAR.DISLIKE_NAME, SPLIT_CHAR.DISLIKE_NAME_ALIAS).toLocaleLowerCase().trim() ?? ''
@@ -60,9 +67,10 @@ export const filterMusicList = async({ playedList, listId, list, playerMusicInfo
 
     canPlayList.push(s)
 
-    let index = filteredPlayedList.findIndex(m => m.id == s.id)
-    if (index > -1) {
-      filteredPlayedList.splice(index, 1)
+    const playedCount = playedCounts.get(s.id) ?? 0
+    if (playedCount > 0) {
+      if (playedCount == 1) playedCounts.delete(s.id)
+      else playedCounts.set(s.id, playedCount - 1)
       return false
     }
     return true
