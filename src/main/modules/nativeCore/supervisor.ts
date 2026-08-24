@@ -58,6 +58,14 @@ export const resolveFfmpeg = () => {
   return existsSync(candidate) ? candidate : null
 }
 
+const resolveLibmpv = () => {
+  if (globalThis.process.env.LX_NATIVE_LIBMPV_PATH) return path.resolve(globalThis.process.env.LX_NATIVE_LIBMPV_PATH)
+  const candidates = app.isPackaged
+    ? [path.join(process.resourcesPath, 'native-core', 'mpv-2.dll'), path.join(process.resourcesPath, 'native-core', 'libmpv-2.dll')]
+    : [path.join(process.cwd(), 'native-core', 'runtime', 'mpv-2.dll'), path.join(process.cwd(), 'native-core', 'runtime', 'libmpv-2.dll')]
+  return candidates.find(existsSync) ?? null
+}
+
 export class NativeCoreSupervisor {
   private process: ChildProcessWithoutNullStreams | null = null
   private socket: net.Socket | null = null
@@ -110,6 +118,8 @@ export class NativeCoreSupervisor {
     const args = ['--pipe', pipeName, '--profile', profile, '--cache', cache]
     const ffmpeg = resolveFfmpeg()
     if (ffmpeg) args.push('--ffmpeg', ffmpeg)
+    const libmpv = resolveLibmpv()
+    if (libmpv) args.push('--libmpv', libmpv)
     this.stopping = false
     const child = spawn(executable, args, { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] })
     this.process = child

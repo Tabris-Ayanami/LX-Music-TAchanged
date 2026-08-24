@@ -123,7 +123,7 @@ const run = async() => {
   execFileSync('cargo', ['build', '--manifest-path', path.resolve(__dirname, '../../native-core/Cargo.toml')], { stdio: 'inherit' })
   const fixture = await generate()
   const legacyMedia = await loadTypeScriptModule(path.resolve(__dirname, '../../src/main/modules/localMusicTools/metadata.ts'))
-  const report = { formats: {}, shadowDifferences: {}, failureTests: {}, artwork: {}, library: {}, download: {}, root: fixture.root }
+  const report = { formats: {}, shadowDifferences: {}, failureTests: {}, artwork: {}, library: {}, download: {}, player: {}, root: fixture.root }
   let core = await startCore(fixture)
   try {
     const handshake = await core.client.call('core.handshake')
@@ -132,6 +132,11 @@ const run = async() => {
     assert.ok(handshake.capabilities.includes('artwork.variant'))
     assert.ok(handshake.capabilities.includes('library.scan'))
     assert.ok(handshake.capabilities.includes('download.ffmpeg.convert'))
+    assert.ok(handshake.capabilities.includes('player.libmpv.probe'))
+    const playerProbe = await core.client.call('player.probe')
+    assert.equal(playerProbe.available, false)
+    assert.match(playerProbe.reason, /not configured/)
+    report.player.libmpv = playerProbe
 
     const libraryRoot = path.join(fixture.work, 'library-scan')
     const libraryNested = path.join(libraryRoot, 'nested')

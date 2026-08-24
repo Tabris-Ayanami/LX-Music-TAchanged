@@ -8,6 +8,7 @@ use lx_native_core::{
     error::CoreError,
     library::{self, LibraryScanRequest},
     metadata::{self, MetadataWriteRequest},
+    player,
     protocol::{Handshake, MAX_FRAME_BYTES, RpcRequest, RpcResponse},
 };
 use parking_lot::Mutex;
@@ -32,12 +33,15 @@ struct Args {
     artwork_cache_budget: u64,
     #[arg(long)]
     ffmpeg: Option<PathBuf>,
+    #[arg(long)]
+    libmpv: Option<PathBuf>,
 }
 
 #[derive(Clone)]
 struct Context {
     artwork: ArtworkCache,
     ffmpeg_path: Option<PathBuf>,
+    libmpv_path: Option<PathBuf>,
 }
 
 #[tokio::main]
@@ -56,6 +60,7 @@ async fn main() -> anyhow::Result<()> {
             args.ffmpeg.clone(),
         )?,
         ffmpeg_path: args.ffmpeg,
+        libmpv_path: args.libmpv,
     };
     tracing::info!(event = "native_core_start", protocol = PROTOCOL_VERSION, pipe = %args.pipe);
     run_pipe(&args.pipe, context).await?;
@@ -242,6 +247,8 @@ async fn dispatch(request: RpcRequest, context: Context) -> Result<Value, CoreEr
             let result = download::convert_audio(ffmpeg_path.as_deref(), value).await?;
             serde_json::to_value(result).map_err(|error| CoreError::Internal(error.to_string()))
         }
+        "player.probe" => serde_json::to_value(player::probe(context.libmpv_path.as_deref()))
+            .map_err(|error| CoreError::Internal(error.to_string())),
         method => Err(CoreError::NotSupported(format!(
             "unknown RPC method: {method}"
         ))),

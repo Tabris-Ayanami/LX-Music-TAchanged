@@ -3,6 +3,7 @@ pub mod download;
 pub mod error;
 pub mod library;
 pub mod metadata;
+pub mod player;
 pub mod protocol;
 
 pub const PROTOCOL_VERSION: &str = "1.0";
@@ -15,5 +16,6 @@ pub const CAPABILITIES: &[&str] = &[
     "artwork.cache.lru",
     "download.ffmpeg.convert",
     "library.scan",
+    "player.libmpv.probe",
     "rpc.cancel",
 ];
