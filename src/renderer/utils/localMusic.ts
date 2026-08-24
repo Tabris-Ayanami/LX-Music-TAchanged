@@ -2,21 +2,14 @@ import { createUserList, getListMusics, getUserLists, addListMusics, overwriteLi
 import { userLists } from '@renderer/store/list/state'
 import { playMusicInfo } from '@renderer/store/player/state'
 import { playMusicsInDefaultList, queueNextInDefaultList } from './playDefaultList'
-import { readdir } from 'node:fs/promises'
-import { extname, join, normalize, sep } from 'node:path'
+import { normalize, sep } from 'node:path'
+import { scanLocalMusicFiles } from './ipc'
 
 export const LOCAL_MUSIC_LIST_ID = 'userlist_local_music'
 export const LOCAL_MUSIC_LIST_NAME = '本地音乐'
 export const LOCAL_MUSIC_LIBRARY_FOLDERS_KEY = 'lx_local_music_library_folders'
 
-const LOCAL_MEDIA_EXTS = new Set(['.mp3', '.flac', '.ogg', '.oga', '.wav', '.m4a'])
 const LOCAL_MUSIC_IMPORT_BATCH_SIZE = 200
-
-interface LocalDirEntry {
-  name: string
-  isDirectory: () => boolean
-  isFile: () => boolean
-}
 
 export interface LocalMusicGroupItem {
   index: number
@@ -139,31 +132,8 @@ export const removeLocalMusicLibraryFolder = (folderPath: string) => {
   return setLocalMusicLibraryFolders(getLocalMusicLibraryFolders().filter(path => normalizeComparablePath(path) != targetPath))
 }
 
-export const collectLocalMusicFilesFromDir = async(dirPath: string): Promise<string[]> => {
-  const result: string[] = []
-  let entries: LocalDirEntry[]
-  try {
-    entries = await readdir(dirPath, { withFileTypes: true, encoding: 'utf8' }) as unknown as LocalDirEntry[]
-  } catch {
-    return result
-  }
-
-  for (const entry of entries) {
-    const fullPath = join(dirPath, entry.name)
-    if (entry.isDirectory()) {
-      result.push(...await collectLocalMusicFilesFromDir(fullPath))
-      continue
-    }
-    if (!entry.isFile()) continue
-    if (!LOCAL_MEDIA_EXTS.has(extname(entry.name).toLowerCase())) continue
-    result.push(fullPath)
-  }
-
-  return result
-}
-
 export const collectLocalMusicFilesFromFolders = async(folders: string[]) => {
-  return dedupePaths((await Promise.all(folders.map(async path => collectLocalMusicFilesFromDir(path)))).flat())
+  return dedupePaths(await scanLocalMusicFiles(dedupePaths(folders)))
 }
 
 const createLocalMusicInfosByPaths = async(filePaths: string[]): Promise<LX.Music.MusicInfoLocal[]> => {

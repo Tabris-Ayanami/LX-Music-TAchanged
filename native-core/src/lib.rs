@@ -1,5 +1,6 @@
 pub mod artwork;
 pub mod error;
+pub mod library;
 pub mod metadata;
 pub mod protocol;
 
@@ -11,5 +12,6 @@ pub const CAPABILITIES: &[&str] = &[
     "metadata.lyrics.read",
     "artwork.variant",
     "artwork.cache.lru",
+    "library.scan",
     "rpc.cancel",
 ];

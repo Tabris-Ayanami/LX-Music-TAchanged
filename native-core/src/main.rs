@@ -5,6 +5,7 @@ use lx_native_core::{
     CAPABILITIES, CORE_VERSION, PROTOCOL_VERSION,
     artwork::{ArtworkCache, VariantRequest},
     error::CoreError,
+    library::{self, LibraryScanRequest},
     metadata::{self, MetadataWriteRequest},
     protocol::{Handshake, MAX_FRAME_BYTES, RpcRequest, RpcResponse},
 };
@@ -228,6 +229,11 @@ async fn dispatch(request: RpcRequest, context: Context) -> Result<Value, CoreEr
             blocking(move || context.artwork.invalidate(&file_path)).await
         }
         "artwork.cache.stats" => blocking(move || context.artwork.stats()).await,
+        "library.scan" => {
+            let value: LibraryScanRequest = serde_json::from_value(request.params)
+                .map_err(|error| CoreError::InvalidArgument(error.to_string()))?;
+            blocking(move || library::scan(&value)).await
+        }
         method => Err(CoreError::NotSupported(format!(
             "unknown RPC method: {method}"
         ))),

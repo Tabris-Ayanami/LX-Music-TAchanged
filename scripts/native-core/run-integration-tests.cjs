@@ -123,13 +123,26 @@ const run = async() => {
   execFileSync('cargo', ['build', '--manifest-path', path.resolve(__dirname, '../../native-core/Cargo.toml')], { stdio: 'inherit' })
   const fixture = await generate()
   const legacyMedia = await loadTypeScriptModule(path.resolve(__dirname, '../../src/main/modules/localMusicTools/metadata.ts'))
-  const report = { formats: {}, shadowDifferences: {}, failureTests: {}, artwork: {}, root: fixture.root }
+  const report = { formats: {}, shadowDifferences: {}, failureTests: {}, artwork: {}, library: {}, root: fixture.root }
   let core = await startCore(fixture)
   try {
     const handshake = await core.client.call('core.handshake')
     assert.equal(handshake.protocolVersion, '1.0')
     assert.ok(handshake.capabilities.includes('metadata.read'))
     assert.ok(handshake.capabilities.includes('artwork.variant'))
+    assert.ok(handshake.capabilities.includes('library.scan'))
+
+    const libraryRoot = path.join(fixture.work, 'library-scan')
+    const libraryNested = path.join(libraryRoot, 'nested')
+    await fs.mkdir(libraryNested, { recursive: true })
+    await fs.copyFile(fixture.files.mp3, path.join(libraryRoot, 'one.MP3'))
+    await fs.copyFile(fixture.files.flac, path.join(libraryNested, 'two.flac'))
+    await fs.writeFile(path.join(libraryNested, 'ignore.txt'), 'not music')
+    const libraryFiles = await core.client.call('library.scan', { folders: [libraryRoot, libraryRoot] })
+    assert.equal(libraryFiles.length, 2)
+    assert.ok(libraryFiles.some(file => file.endsWith('one.MP3')))
+    assert.ok(libraryFiles.some(file => file.endsWith('two.flac')))
+    report.library.scan = { folders: 1, files: libraryFiles.length, duplicateRootsRemoved: true }
 
     const cancellationTarget = path.join(fixture.work, 'cancellation-target.wav')
     await fs.copyFile(fixture.files.wav, cancellationTarget)

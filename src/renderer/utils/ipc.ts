@@ -762,6 +762,10 @@ export const invalidateLocalArtwork = async(filePath: string) => {
   return rendererInvoke<string>(WIN_MAIN_RENDERER_EVENT_NAME.invalidate_local_artwork, filePath)
 }
 
+export const scanLocalMusicFiles = async(folders: string[]) => {
+  return rendererInvoke<string[], string[]>(WIN_MAIN_RENDERER_EVENT_NAME.scan_local_music_files, folders)
+}
+
 /**
  * 退出应用
  */
