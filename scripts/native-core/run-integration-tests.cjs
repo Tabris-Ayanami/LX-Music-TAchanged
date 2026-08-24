@@ -2,6 +2,8 @@ const assert = require('node:assert/strict')
 const { spawn, execFileSync } = require('node:child_process')
 const { createHash, randomUUID } = require('node:crypto')
 const fs = require('node:fs/promises')
+const fsSync = require('node:fs')
+const os = require('node:os')
 const net = require('node:net')
 const http = require('node:http')
 const path = require('node:path')
@@ -10,6 +12,28 @@ const ts = require('typescript')
 const { generate, formats } = require('./media-fixtures.cjs')
 
 const executable = path.resolve(__dirname, '../../native-core/target/debug/lx-native-core.exe')
+const sourceRoot = path.resolve(__dirname, '../../src')
+const kgShimPath = path.join(os.tmpdir(), 'lx-native-core-kg-shim.cjs')
+const kgSource = fsSync.readFileSync(path.join(sourceRoot, 'common/utils/lyricUtils/kg.js'), 'utf8')
+  .replace("import { inflate } from 'zlib'", "const { inflate } = require('node:zlib')")
+  .replace("import { decodeName } from './util'", "const decodeName = (str = '') => str.replace(/(?:&amp;|&lt;|&gt;|&quot;|&apos;|&#039;|&nbsp;)/gm, value => ({ '&nbsp;': ' ', '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '\"', '&apos;': \"'\", '&#039;': \"'\" })[value] ?? '')")
+  .replace('export const decodeKrc =', 'exports.decodeKrc =')
+fsSync.writeFileSync(kgShimPath, kgSource, 'utf8')
+const originalResolveFilename = Module._resolveFilename
+Module._resolveFilename = function(request, parent, ...rest) {
+  if (request == '@common/utils/lyricUtils/kg') return kgShimPath
+  const alias = request.startsWith('@common/')
+    ? path.join(sourceRoot, 'common', request.slice('@common/'.length))
+    : request.startsWith('@main/')
+      ? path.join(sourceRoot, 'main', request.slice('@main/'.length))
+      : null
+  if (alias) {
+    for (const candidate of [alias, `${alias}.ts`, `${alias}.js`, `${alias}.json`, path.join(alias, 'index.ts'), path.join(alias, 'index.js')]) {
+      try { return originalResolveFilename.call(this, candidate, parent, ...rest) } catch {}
+    }
+  }
+  return originalResolveFilename.call(this, request, parent, ...rest)
+}
 const hashFile = async(file) => createHash('sha256').update(await fs.readFile(file)).digest('hex')
 const wait = async(ms) => new Promise(resolve => setTimeout(resolve, ms))
 const loadTypeScriptModule = async(file) => {

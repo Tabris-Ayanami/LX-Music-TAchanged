@@ -27,6 +27,7 @@ Checks passed in this increment:
 - `npm run build:main`
 - `npm run build:renderer`
 - `npm run check:backend-boundaries`
+- `npm run test:native-core` (all format/shadow/failure/artwork/library/FFmpeg/HTTP/libmpv checks green; test loader now resolves `@common/@main` and the legacy KRC ESM helper)
 - targeted ESLint and `git diff --check`
 - `node --test tests/regression/renderer-ipc-listener-lifecycle.test.cjs`
 - `npm run smoke:renderer -- --port=9375` (startup, discover/search/local/download/settings routes, playback, volume, visuals, route restore)
