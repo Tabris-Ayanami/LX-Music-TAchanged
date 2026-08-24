@@ -18,7 +18,26 @@ const loadIpc = ipcRenderer => {
   loaded.filename = filename
   loaded.paths = Module._nodeModulePaths(path.dirname(filename))
   const defaultRequire = loaded.require.bind(loaded)
-  loaded.require = request => request == 'electron' ? { ipcRenderer } : defaultRequire(request)
+  let nextSubscriptionId = 1
+  const subscriptions = new Map()
+  const bridge = {
+    ipc: {
+      on(name, callback) {
+        const subscriptionId = nextSubscriptionId++
+        const wrapper = (_event, params) => { callback(params) }
+        subscriptions.set(subscriptionId, { name, wrapper })
+        ipcRenderer.on(name, wrapper)
+        return subscriptionId
+      },
+      off(subscriptionId) {
+        const subscription = subscriptions.get(subscriptionId)
+        if (!subscription) return
+        subscriptions.delete(subscriptionId)
+        ipcRenderer.removeListener(subscription.name, subscription.wrapper)
+      },
+    },
+  }
+  loaded.require = request => request == './hostBridge' ? { getHostBridge: () => bridge } : defaultRequire(request)
   loaded._compile(output, filename)
   return loaded.exports
 }

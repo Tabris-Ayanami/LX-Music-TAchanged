@@ -105,6 +105,9 @@ export const createWindow = () => {
   })
 
   const { shouldUseDarkColors, theme } = global.lx.theme
+  const preload = process.env.NODE_ENV !== 'production'
+    ? path.join(__dirname, '../dist/main-window-preload.js')
+    : path.join(__dirname, 'main-window-preload.js')
 
   /**
    * Initial window options
@@ -131,6 +134,7 @@ export const createWindow = () => {
     alwaysOnTop: isAlwaysOnTop,
     skipTaskbar: !isShowTaskbar,
     webPreferences: {
+      preload,
       contextIsolation: false,
       webSecurity: false,
       sandbox: false,

@@ -1,18 +1,18 @@
-import { ipcRenderer } from 'electron'
+import { getHostBridge } from './hostBridge'
 
 type IpcListener = (...args: any[]) => any
-const listenerWrappers = new Map<string, Map<IpcListener, IpcListener[]>>()
+const listenerWrappers = new Map<string, Map<IpcListener, number[]>>()
 
 export function rendererSend(name: string): void
 export function rendererSend<T>(name: string, params: T): void
 export function rendererSend<T>(name: string, params?: T): void {
-  ipcRenderer.send(name, params)
+  getHostBridge().ipc.send(name, params)
 }
 
 export function rendererSendSync(name: string): void
 export function rendererSendSync<T>(name: string, params: T): void
 export function rendererSendSync<T>(name: string, params?: T): void {
-  ipcRenderer.sendSync(name, params)
+  getHostBridge().ipc.sendSync(name, params)
 }
 
 export async function rendererInvoke(name: string): Promise<void>
@@ -20,48 +20,46 @@ export async function rendererInvoke<V>(name: string): Promise<V>
 export async function rendererInvoke<T>(name: string, params: T): Promise<void>
 export async function rendererInvoke<T, V>(name: string, params: T): Promise<V>
 export async function rendererInvoke <T, V>(name: string, params?: T): Promise<V> {
-  return ipcRenderer.invoke(name, params)
+  return getHostBridge().ipc.invoke(name, params) as Promise<V>
 }
 
 export function rendererOn(name: string, listener: LX.IpcRendererEventListener): void
 export function rendererOn<T>(name: string, listener: LX.IpcRendererEventListenerParams<T>): void
 export function rendererOn<T>(name: string, listener: LX.IpcRendererEventListenerParams<T>): void {
-  const wrapper = (event: Electron.IpcRendererEvent, params: T) => {
-    listener({ event, params })
-  }
-  ipcRenderer.on(name, wrapper)
+  const subscriptionId = getHostBridge().ipc.on(name, params => {
+    listener({ event: undefined as never, params: params as T })
+  })
   let wrappersByListener = listenerWrappers.get(name)
   if (!wrappersByListener) {
     wrappersByListener = new Map()
     listenerWrappers.set(name, wrappersByListener)
   }
-  const wrappers = wrappersByListener.get(listener) ?? []
-  wrappers.push(wrapper)
-  wrappersByListener.set(listener, wrappers)
+  const subscriptions = wrappersByListener.get(listener) ?? []
+  subscriptions.push(subscriptionId)
+  wrappersByListener.set(listener, subscriptions)
 }
 
 export function rendererOnce(name: string, listener: LX.IpcRendererEventListener): void
 export function rendererOnce<T>(name: string, listener: LX.IpcRendererEventListenerParams<T>): void
 export function rendererOnce<T>(name: string, listener: LX.IpcRendererEventListenerParams<T>): void {
-  ipcRenderer.once(name, (event, params) => {
-    listener({ event, params })
+  getHostBridge().ipc.once(name, params => {
+    listener({ event: undefined as never, params: params as T })
   })
 }
 
 export const rendererOff = (name: string, listener: (...args: any[]) => any) => {
   const wrappersByListener = listenerWrappers.get(name)
-  const wrappers = wrappersByListener?.get(listener)
-  const wrapper = wrappers?.shift()
-  if (wrapper) {
-    ipcRenderer.removeListener(name, wrapper)
-    if (!wrappers?.length) wrappersByListener?.delete(listener)
+  const subscriptions = wrappersByListener?.get(listener)
+  const subscriptionId = subscriptions?.shift()
+  if (subscriptionId != null) {
+    getHostBridge().ipc.off(subscriptionId)
+    if (!subscriptions?.length) wrappersByListener?.delete(listener)
     if (!wrappersByListener?.size) listenerWrappers.delete(name)
     return
   }
-  ipcRenderer.removeListener(name, listener)
 }
 
 export const rendererOffAll = (name: string) => {
-  ipcRenderer.removeAllListeners(name)
+  getHostBridge().ipc.offAll(name)
   listenerWrappers.delete(name)
 }

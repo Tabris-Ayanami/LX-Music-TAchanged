@@ -1,4 +1,4 @@
-import { shell, clipboard } from 'electron'
+import { getHostBridge } from '../hostBridge'
 
 
 /**
@@ -6,7 +6,7 @@ import { shell, clipboard } from 'electron'
  * @param {string} dir
  */
 export const openDirInExplorer = (dir: string) => {
-  shell.showItemInFolder(dir)
+  getHostBridge().platform.showItemInFolder(dir)
 }
 
 
@@ -16,7 +16,7 @@ export const openDirInExplorer = (dir: string) => {
  */
 export const openUrl = async(url: string) => {
   if (!/^https?:\/\//.test(url)) return
-  await shell.openExternal(url)
+  await getHostBridge().platform.openExternal(url)
 }
 
 
@@ -25,7 +25,7 @@ export const openUrl = async(url: string) => {
  * @param str
  */
 export const clipboardWriteText = (str: string) => {
-  clipboard.writeText(str)
+  getHostBridge().platform.clipboardWriteText(str)
 }
 
 /**
@@ -33,7 +33,7 @@ export const clipboardWriteText = (str: string) => {
  * @returns
  */
 export const clipboardReadText = (): string => {
-  return clipboard.readText()
+  return getHostBridge().platform.clipboardReadText()
 }
 
 

@@ -137,6 +137,9 @@ export const createWindow = () => {
   const ses = session.fromPartition('persist:win-main')
   const proxy = getProxy()
   setSesProxy(ses, proxy?.host, proxy?.port)
+  const preload = process.env.NODE_ENV !== 'production'
+    ? path.join(__dirname, '../dist/main-window-preload.js')
+    : path.join(__dirname, 'main-window-preload.js')
 
   /**
    * Initial window options
@@ -156,6 +159,7 @@ export const createWindow = () => {
     roundedCorners: global.envParams.cmdParams.dt,
     show: false,
     webPreferences: {
+      preload,
       session: ses,
       nodeIntegrationInWorker: true,
       contextIsolation: false,
