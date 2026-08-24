@@ -30,12 +30,15 @@ Checks passed in this increment:
 - `npm run smoke:renderer -- --port=9375` (startup, discover/search/local/download/settings routes, playback, volume, visuals, route restore)
 - production preload IPC probe for `winMain_create_local_music_infos` on a generated WAV fixture (title/artist/album/duration/path all matched)
 - `node --test tests/regression/local-music-detail-shell-and-grid.test.cjs tests/regression/local-music-search-refresh.test.cjs` (5/5)
+- populated metadata IPC probe: 16 mixed-format fixtures, 15 valid tracks (one intentionally malformed fixture skipped); first call 251.4 ms, warm repeats 54.0–64.6 ms with stable output ordering and fields
 
 The existing native-core integration suite remains green, including FFmpeg, HTTP fresh/resume byte equality, cancellation, library scan, metadata/artwork, and libmpv capability probing.
 
 ## Resource interpretation
 
 This slice primarily reduces Renderer worker code, keeps `music-metadata` out of that worker, and moves scan-time file parsing to Main/native metadata. The main startup bundle stayed at about 2.96 MiB. A dedicated memory delta is not claimed yet because the scan probe used one fixture; the next acceptance probe should scan a populated folder and compare renderer private memory and scan wall time.
+
+The populated probe's post-scan capture reported JS heap 14.7 MiB, browser private bytes 82.98 MiB, 3.6% one-core CPU, 39 threads, and 487 handles. The capture path exposed only the browser process for this temporary profile, so these values are a reproducibility record, not a whole-tree comparison.
 
 After switching the legacy artwork fallback from a renderer data URL to a Main-side cache file, a repeated 10-second production capture on the populated smoke profile reported: FCP 268 ms, renderer private 188.12 MiB, whole Electron tree private 756.11 MiB, CPU 8.1% of one core, 264 threads, and 4,090 handles. The preceding capture in the same run was treated as warm-up because its renderer counters were transiently inflated; the repeated sample is the stable comparison point. The historical reference was FCP 420 ms, renderer private 216.82 MiB, whole private 1059.19 MiB, CPU 18.2%, 320 threads, and 4,628 handles. Process count differs (6 here versus 7 in the reference), so the whole-tree reduction is indicative rather than an isolated attribution claim.
 
