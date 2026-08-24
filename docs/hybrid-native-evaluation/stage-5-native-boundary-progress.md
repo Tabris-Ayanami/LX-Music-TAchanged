@@ -8,6 +8,7 @@ Branch: `hybrid-native`
 - Routed local artwork and lyric reads through Main/backend. The lyric path preserves same-name `.lrc`, `.krc`, embedded lyrics, encoding detection, KRC decoding, and `[awlrc:...]` parsing.
 - Routed download post-processing (metadata tags and `.lrc` writing) through Main/backend. The existing proxy, embedded lyric switches, GBK/UTF-8 BOM behavior, and legacy fallback remain available.
 - Routed local-library file metadata construction through a Main IPC endpoint. Native metadata mode now avoids artwork materialization during scans; electron/shadow modes retain the legacy metadata reader and per-file failure behavior.
+- Routed downloaded-file path resolution through Main/backend. The existing completed-state, `.ape` exclusion, direct-path preference, and save-directory fallback semantics are unchanged.
 - Removed the corresponding Node `fs/path/crypto`, `music-metadata`, and post-processing code from the Renderer main/download workers.
 
 ## Evidence
@@ -31,6 +32,7 @@ Checks passed in this increment:
 - production preload IPC probe for `winMain_create_local_music_infos` on a generated WAV fixture (title/artist/album/duration/path all matched)
 - `node --test tests/regression/local-music-detail-shell-and-grid.test.cjs tests/regression/local-music-search-refresh.test.cjs` (5/5)
 - populated metadata IPC probe: 16 mixed-format fixtures, 15 valid tracks (one intentionally malformed fixture skipped); first call 251.4 ms, warm repeats 54.0–64.6 ms with stable output ordering and fields
+- downloaded-file path IPC probe passed direct path, save-directory fallback, and `.ape` rejection branches
 
 The existing native-core integration suite remains green, including FFmpeg, HTTP fresh/resume byte equality, cancellation, library scan, metadata/artwork, and libmpv capability probing.
 
