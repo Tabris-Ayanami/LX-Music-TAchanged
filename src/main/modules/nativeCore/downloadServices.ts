@@ -6,7 +6,10 @@ import { buildDownloadLyrics } from '@common/utils/lyricUtils/download'
 import { getNativeCoreSupervisor, resolveFfmpeg } from './supervisor'
 
 const CONVERT_TIMEOUT_MS = 30 * 60 * 1000
-const DOWNLOAD_POLL_MS = 250
+// Two progress updates per second are sufficient for the download UI and
+// match the legacy Downloader's roughly one-second emission cadence without
+// keeping the Main process in a 4x-per-second native status loop.
+const DOWNLOAD_POLL_MS = 500
 
 interface NativeTask {
   request: LX.Download.NativeDownloadRequest
