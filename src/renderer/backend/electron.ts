@@ -32,6 +32,7 @@ const capabilities = new Set<BackendCapability>([
   'artwork.legacy-electron',
   'artwork.native-variants',
   'download.legacy-electron',
+  'download.native-ffmpeg',
   'source.javascript',
   'settings.electron',
   'platform.electron',
@@ -182,6 +183,7 @@ export class ElectronBackendAdapter implements BackendApi {
     updatePersistedTasks: async list => call(() => legacyIpc.downloadTasksUpdate(list)),
     removePersistedTasks: async ids => call(() => legacyIpc.downloadTasksRemove(ids)),
     clearPersistedTasks: async() => call(legacyIpc.downloadListClear),
+    convertAudio: async(request, signal) => call(() => legacyIpc.convertDownloadedAudio(request), signal),
   }
 
   readonly source: BackendApi['source'] = {

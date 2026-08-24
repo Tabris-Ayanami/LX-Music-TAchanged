@@ -1,5 +1,6 @@
 import { WIN_MAIN_RENDERER_EVENT_NAME } from '@common/ipcNames'
 import { mainHandle } from '@common/mainIpc'
+import { convertDownloadedAudio } from '@main/modules/nativeCore/downloadServices'
 
 
 export default () => {
@@ -17,5 +18,8 @@ export default () => {
   })
   mainHandle(WIN_MAIN_RENDERER_EVENT_NAME.download_list_clear, async() => {
     await global.lx.worker.dbService.downloadInfoClear()
+  })
+  mainHandle<LX.Download.AudioConvertRequest>(WIN_MAIN_RENDERER_EVENT_NAME.convert_download_audio, async({ params }) => {
+    await convertDownloadedAudio(params)
   })
 }

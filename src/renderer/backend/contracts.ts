@@ -14,6 +14,7 @@ export type BackendCapability =
   | 'artwork.legacy-electron'
   | 'artwork.native-variants'
   | 'download.legacy-electron'
+  | 'download.native-ffmpeg'
   | 'source.javascript'
   | 'settings.electron'
   | 'platform.electron'
@@ -242,6 +243,7 @@ export interface DownloadService {
   updatePersistedTasks: (list: LX.Download.ListItem[]) => Promise<void>
   removePersistedTasks: (ids: string[]) => Promise<void>
   clearPersistedTasks: () => Promise<void>
+  convertAudio: (request: LX.Download.AudioConvertRequest, signal?: AbortSignal) => Promise<void>
 }
 
 export interface SourceService {

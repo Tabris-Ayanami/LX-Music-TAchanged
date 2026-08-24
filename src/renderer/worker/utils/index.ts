@@ -53,6 +53,6 @@ const createLazyWorker = <T extends object>(factory: () => T): T => {
 export const createMainWorkerProxy = (): MainTypes => createLazyWorker(createMainWorker)
 export const createDownloadWorkerProxy = (): DownloadTypes => createLazyWorker(createDownloadWorker)
 
-export const proxyCallback = <Args extends any[]>(callback: (...T: Args) => void) => {
+export const proxyCallback = <Args extends any[], Result = void>(callback: (...T: Args) => Result) => {
   return Comlink.proxy(callback)
 }

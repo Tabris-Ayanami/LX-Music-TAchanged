@@ -24,6 +24,13 @@ declare global {
         writeQueue: number
       }
 
+      interface AudioConvertRequest {
+        inputPath: string
+        outputPath: string
+        extension: Extract<FileExt, 'mp3' | 'flac' | 'wav'>
+        quality: LX.Quality
+      }
+
       interface DownloadTaskActionBase <A> {
         action: A
       }

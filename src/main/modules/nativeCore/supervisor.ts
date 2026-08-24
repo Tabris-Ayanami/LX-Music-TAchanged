@@ -52,7 +52,7 @@ const resolveExecutable = () => {
   return path.join(process.cwd(), 'native-core', 'target', globalThis.process.env.LX_NATIVE_RELEASE == 'true' ? 'release' : 'debug', 'lx-native-core.exe')
 }
 
-const resolveFfmpeg = () => {
+export const resolveFfmpeg = () => {
   if (globalThis.process.env.LX_NATIVE_FFMPEG_PATH) return path.resolve(globalThis.process.env.LX_NATIVE_FFMPEG_PATH)
   const candidate = path.join(process.cwd(), 'node_modules', '@ffmpeg-installer', 'win32-x64', 'ffmpeg.exe')
   return existsSync(candidate) ? candidate : null
@@ -71,10 +71,10 @@ export class NativeCoreSupervisor {
     return this.ensureStarted()
   }
 
-  async call<T>(method: string, params: unknown, signal?: AbortSignal): Promise<T> {
+  async call<T>(method: string, params: unknown, signal?: AbortSignal, timeoutMs = REQUEST_TIMEOUT_MS): Promise<T> {
     if (signal?.aborted) throw this.createError('aborted', 'Native request cancelled')
     await this.ensureStarted()
-    return this.sendRequest<T>(method, params, signal)
+    return this.sendRequest<T>(method, params, signal, timeoutMs)
   }
 
   async stop() {
@@ -157,7 +157,7 @@ export class NativeCoreSupervisor {
     })
   }
 
-  private async sendRequest<T>(method: string, params: unknown, signal?: AbortSignal): Promise<T> {
+  private async sendRequest<T>(method: string, params: unknown, signal?: AbortSignal, timeoutMs = REQUEST_TIMEOUT_MS): Promise<T> {
     const socket = this.socket
     if (!socket || socket.destroyed) throw this.createError('backend_unavailable', 'Native core is not connected')
     const requestId = randomUUID()
@@ -169,8 +169,10 @@ export class NativeCoreSupervisor {
     return new Promise<T>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(requestId)
+        signal?.removeEventListener('abort', onAbort)
+        if (method != 'rpc.cancel') void this.sendCancellation(requestId)
         reject(this.createError('backend_unavailable', `Native request timed out: ${method}`))
-      }, REQUEST_TIMEOUT_MS)
+      }, timeoutMs)
       const onAbort = () => {
         void this.sendCancellation(requestId)
         const pending = this.pending.get(requestId)

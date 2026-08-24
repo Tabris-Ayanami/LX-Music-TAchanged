@@ -4,6 +4,7 @@ use clap::Parser;
 use lx_native_core::{
     CAPABILITIES, CORE_VERSION, PROTOCOL_VERSION,
     artwork::{ArtworkCache, VariantRequest},
+    download::{self, AudioConvertRequest},
     error::CoreError,
     library::{self, LibraryScanRequest},
     metadata::{self, MetadataWriteRequest},
@@ -233,6 +234,13 @@ async fn dispatch(request: RpcRequest, context: Context) -> Result<Value, CoreEr
             let value: LibraryScanRequest = serde_json::from_value(request.params)
                 .map_err(|error| CoreError::InvalidArgument(error.to_string()))?;
             blocking(move || library::scan(&value)).await
+        }
+        "download.ffmpeg.convert" => {
+            let value: AudioConvertRequest = serde_json::from_value(request.params)
+                .map_err(|error| CoreError::InvalidArgument(error.to_string()))?;
+            let ffmpeg_path = context.ffmpeg_path.clone();
+            let result = download::convert_audio(ffmpeg_path.as_deref(), value).await?;
+            serde_json::to_value(result).map_err(|error| CoreError::Internal(error.to_string()))
         }
         method => Err(CoreError::NotSupported(format!(
             "unknown RPC method: {method}"

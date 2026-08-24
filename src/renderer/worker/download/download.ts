@@ -1,6 +1,6 @@
 import { createDownload, type DownloaderType, type Options as DownloadOptions } from '@common/utils/download'
 // import music from '@renderer/utils/musicSdk'
-import { convertAudio, createDownloadInfo, shouldConvertDownload } from './utils'
+import { createDownloadInfo, shouldConvertDownload } from './utils'
 // import {
 //   filterFileName,
 // } from '@common/utils/common'
@@ -57,7 +57,7 @@ export const createDownloadTasks = (
   // }
 }
 
-const createTask = async(downloadInfo: LX.Download.ListItem, savePath: string, skipExistFile: boolean, proxy?: { host: string, port: number }) => {
+const createTask = async(downloadInfo: LX.Download.ListItem, savePath: string, skipExistFile: boolean, convertAudio: (request: LX.Download.AudioConvertRequest) => Promise<void>, proxy?: { host: string, port: number }) => {
   // console.log('createTask', downloadInfo, savePath)
   // 开始任务
   /* commit('onStart', downloadInfo)
@@ -129,7 +129,12 @@ const createTask = async(downloadInfo: LX.Download.ListItem, savePath: string, s
         return
       }
       sendAction(downloadInfo.id, { action: 'statusText', data: `正在转换为 ${downloadInfo.metadata.ext.toUpperCase()}` })
-      convertAudio(rawFilePath, downloadInfo.metadata.filePath, downloadInfo.metadata.ext, downloadInfo.metadata.quality).then(() => {
+      convertAudio({
+        inputPath: rawFilePath,
+        outputPath: downloadInfo.metadata.filePath,
+        extension: downloadInfo.metadata.ext as LX.Download.AudioConvertRequest['extension'],
+        quality: downloadInfo.metadata.quality,
+      }).then(() => {
         void removeFile(rawFilePath).catch(err => {
           console.log(`删除临时文件失败：${basename(rawFilePath)}`, err.message)
         })
@@ -271,7 +276,7 @@ export const updateUrl = (id: string, url: string) => {
   })
 }
 
-export const startTask = async(downloadInfo: LX.Download.ListItem, savePath: string, skipExistFile: boolean, callback: (action: LX.Download.DownloadTaskActions) => void, proxy?: { host: string, port: number }) => {
+export const startTask = async(downloadInfo: LX.Download.ListItem, savePath: string, skipExistFile: boolean, callback: (action: LX.Download.DownloadTaskActions) => void, convertAudio: (request: LX.Download.AudioConvertRequest) => Promise<void>, proxy?: { host: string, port: number }) => {
   await pauseTask(downloadInfo.id)
 
   tasks.set(downloadInfo.id, downloadInfo)
@@ -306,7 +311,7 @@ export const startTask = async(downloadInfo: LX.Download.ListItem, savePath: str
       // await dispatch('startTask')
     }
   } else {
-    await createTask(downloadInfo, savePath, skipExistFile, proxy)
+    await createTask(downloadInfo, savePath, skipExistFile, convertAudio, proxy)
     // await dispatch('handleStartTask', downloadInfo)
   }
 }

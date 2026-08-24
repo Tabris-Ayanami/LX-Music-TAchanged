@@ -163,6 +163,7 @@ const modules = {
     download_list_update: 'download_list_update',
     download_list_remove: 'download_list_remove',
     download_list_clear: 'download_list_clear',
+    convert_download_audio: 'convert_download_audio',
   },
   winLyric: {
     close: 'close',

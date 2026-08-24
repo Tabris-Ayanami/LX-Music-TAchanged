@@ -171,6 +171,7 @@ export class FakeBackendAdapter implements BackendApi {
     updatePersistedTasks: async list => { for (const item of list) { const index = this.downloadTasks.findIndex(task => task.id == item.id); if (index < 0) this.downloadTasks.push(structuredClone(item)); else this.downloadTasks[index] = structuredClone(item) } },
     removePersistedTasks: async ids => { const idSet = new Set(ids); this.downloadTasks = this.downloadTasks.filter(task => !idSet.has(task.id)) },
     clearPersistedTasks: async() => { this.downloadTasks = [] },
+    convertAudio: async() => {},
   }
 
   readonly source: BackendApi['source'] = {

@@ -123,7 +123,7 @@ const run = async() => {
   execFileSync('cargo', ['build', '--manifest-path', path.resolve(__dirname, '../../native-core/Cargo.toml')], { stdio: 'inherit' })
   const fixture = await generate()
   const legacyMedia = await loadTypeScriptModule(path.resolve(__dirname, '../../src/main/modules/localMusicTools/metadata.ts'))
-  const report = { formats: {}, shadowDifferences: {}, failureTests: {}, artwork: {}, library: {}, root: fixture.root }
+  const report = { formats: {}, shadowDifferences: {}, failureTests: {}, artwork: {}, library: {}, download: {}, root: fixture.root }
   let core = await startCore(fixture)
   try {
     const handshake = await core.client.call('core.handshake')
@@ -131,6 +131,7 @@ const run = async() => {
     assert.ok(handshake.capabilities.includes('metadata.read'))
     assert.ok(handshake.capabilities.includes('artwork.variant'))
     assert.ok(handshake.capabilities.includes('library.scan'))
+    assert.ok(handshake.capabilities.includes('download.ffmpeg.convert'))
 
     const libraryRoot = path.join(fixture.work, 'library-scan')
     const libraryNested = path.join(libraryRoot, 'nested')
@@ -143,6 +144,18 @@ const run = async() => {
     assert.ok(libraryFiles.some(file => file.endsWith('one.MP3')))
     assert.ok(libraryFiles.some(file => file.endsWith('two.flac')))
     report.library.scan = { folders: 1, files: libraryFiles.length, duplicateRootsRemoved: true }
+
+    const convertedAudio = path.join(fixture.work, 'native-converted.mp3')
+    const conversion = await core.client.call('download.ffmpeg.convert', {
+      inputPath: fixture.files.m4a,
+      outputPath: convertedAudio,
+      extension: 'mp3',
+      quality: '192k',
+    })
+    assert.equal(conversion.outputPath, convertedAudio)
+    const convertedMetadata = await core.client.call('metadata.read', { filePath: convertedAudio })
+    assert.ok(convertedMetadata.duration > 0)
+    report.download.ffmpeg = { extension: 'mp3', duration: convertedMetadata.duration, outputExists: true }
 
     const cancellationTarget = path.join(fixture.work, 'cancellation-target.wav')
     await fs.copyFile(fixture.files.wav, cancellationTarget)

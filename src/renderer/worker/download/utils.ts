@@ -3,10 +3,8 @@ import { filterFileName } from '@common/utils/common'
 import { buildLyrics } from './lrcTool'
 import fs from 'fs'
 import { clipFileNameLength, clipNameLength } from '@common/utils/tools'
-import { spawn } from 'node:child_process'
 
 const BILI_DOWNLOAD_QUALITYS: LX.Quality[] = ['flac24bit', '320k', '192k', '128k']
-declare const __non_webpack_require__: NodeRequire
 
 /**
  * 保存歌词文件
@@ -122,47 +120,4 @@ export const createDownloadInfo = (musicInfo: LX.Music.MusicInfoOnline, type: LX
 
 export const shouldConvertDownload = (downloadInfo: LX.Download.ListItem) => {
   return downloadInfo.metadata.musicInfo.source == 'bili' && ['mp3', 'flac', 'wav'].includes(downloadInfo.metadata.ext)
-}
-
-const getMp3Bitrate = (quality: LX.Quality) => {
-  switch (quality) {
-    case '320k':
-      return '320k'
-    case '192k':
-      return '192k'
-    case '128k':
-    default:
-      return '128k'
-  }
-}
-
-export const convertAudio = async(inputPath: string, outputPath: string, ext: LX.Download.FileExt, quality: LX.Quality) => {
-  const ffmpeg = __non_webpack_require__('@ffmpeg-installer/ffmpeg') as { path: string }
-  const args = ['-y', '-i', inputPath, '-vn']
-  switch (ext) {
-    case 'flac':
-      args.push('-codec:a', 'flac')
-      break
-    case 'wav':
-      args.push('-codec:a', 'pcm_s16le')
-      break
-    case 'mp3':
-    default:
-      args.push('-codec:a', 'libmp3lame', '-b:a', getMp3Bitrate(quality))
-      break
-  }
-  args.push(outputPath)
-
-  await new Promise<void>((resolve, reject) => {
-    const child = spawn(ffmpeg.path, args, { windowsHide: true })
-    let stderr = ''
-    child.stderr.on('data', data => {
-      stderr += String(data)
-    })
-    child.on('error', reject)
-    child.on('close', code => {
-      if (code == 0) resolve()
-      else reject(new Error(stderr.trim() || `ffmpeg exited with code ${code ?? 'unknown'}`))
-    })
-  })
 }

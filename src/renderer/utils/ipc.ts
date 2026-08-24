@@ -953,3 +953,6 @@ export const downloadTasksRemove = async(ids: string[]) => {
 export const downloadListClear = async() => {
   return rendererInvoke(WIN_MAIN_RENDERER_EVENT_NAME.download_list_clear)
 }
+export const convertDownloadedAudio = async(request: LX.Download.AudioConvertRequest) => {
+  return rendererInvoke<LX.Download.AudioConvertRequest>(WIN_MAIN_RENDERER_EVENT_NAME.convert_download_audio, request)
+}

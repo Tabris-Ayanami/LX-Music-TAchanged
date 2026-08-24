@@ -1,4 +1,5 @@
 pub mod artwork;
+pub mod download;
 pub mod error;
 pub mod library;
 pub mod metadata;
@@ -12,6 +13,7 @@ pub const CAPABILITIES: &[&str] = &[
     "metadata.lyrics.read",
     "artwork.variant",
     "artwork.cache.lru",
+    "download.ffmpeg.convert",
     "library.scan",
     "rpc.cancel",
 ];

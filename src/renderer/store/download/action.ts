@@ -304,7 +304,7 @@ const handleStartTask = async(downloadInfo: LX.Download.ListItem) => {
       default:
         break
     }
-  }), getProxy())
+  }), proxyCallback((request: LX.Download.AudioConvertRequest) => backend.download.convertAudio(request)), getProxy())
 }
 const startTask = async(downloadInfo: LX.Download.ListItem) => {
   setStatus(downloadInfo, DOWNLOAD_STATUS.RUN)
