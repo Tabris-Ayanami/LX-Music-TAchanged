@@ -1,7 +1,7 @@
 // import { throttle } from '@common/utils'
 
 import { SPLIT_CHAR } from '@common/constants'
-import { filterFileName, sortInsert, similar, arrPushByPosition, arrShuffle } from '@common/utils/common'
+import { filterFileName, similar, arrPushByPosition, arrShuffle } from '@common/utils/common'
 import { joinPath, saveStrToFile } from '@common/utils/nodejs'
 
 
@@ -257,15 +257,15 @@ export const searchListMusic = (list: LX.Music.MusicInfo[], text: string) => {
     if (rxp.test(str)) result.push(mInfo)
   }
 
-  const sortedList: Array<{ num: number, data: LX.Music.MusicInfo }> = []
-
-  for (const mInfo of result) {
-    sortInsert(sortedList, {
-      num: similar(text, `${mInfo.name}${mInfo.singer}${mInfo.meta.albumName ? mInfo.meta.albumName : ''}`),
-      data: mInfo,
-    })
-  }
-  return sortedList.map(item => item.data).reverse()
+  const sortedList = result.map((data, index) => ({
+    index,
+    data,
+    num: similar(text, `${data.name}${data.singer}${data.meta.albumName ? data.meta.albumName : ''}`),
+  }))
+  // V8's stable sort keeps the old sortInsert + reverse tie ordering while
+  // avoiding an O(k^2) sequence of array splices for large result sets.
+  sortedList.sort((a, b) => b.num - a.num || a.index - b.index)
+  return sortedList.map(item => item.data)
 }
 
 /**
