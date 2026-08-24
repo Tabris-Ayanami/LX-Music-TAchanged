@@ -26,6 +26,8 @@ The resulting `dist/renderer.main.worker.js` is 27,741 bytes. No product API or 
 - production Worker normal/fallback probes above
 - existing local music and renderer IPC lifecycle regression tests (6/6)
 
+An additional 10-second capture on the reused populated profile (`#/setting`) reported JS heap 17.47 MiB, renderer private 162.81 MiB, whole-tree private 991.18 MiB, working set 1,027.76 MiB, CPU 18.0% of one core, 302 threads, and 4,550 handles across 7 processes. This is recorded as a route/process-variance sample rather than an optimization delta: the Stage 5 stable comparison was `#/local?view=tracks` with 6 processes, while this run retained an additional renderer and a GPU private value of 492.48 MiB.
+
 ## Next
 
 Measure queue filtering with real populated lists and capture renderer private memory/CPU while repeatedly switching list routes. Only then consider further Comlink payload or cache changes.
