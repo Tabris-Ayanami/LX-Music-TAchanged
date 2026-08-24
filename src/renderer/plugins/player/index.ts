@@ -392,6 +392,7 @@ export const stopPanner = () => {
     pannerInfo.intv = null
     pannerInfo.rad = 0
   }
+  if (!panner) return
   panner.positionX.value = 0
   panner.positionY.value = 0
   panner.positionZ.value = 0
