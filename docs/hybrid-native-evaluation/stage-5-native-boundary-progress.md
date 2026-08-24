@@ -35,6 +35,7 @@ Checks passed in this increment:
 - populated metadata IPC probe: 16 mixed-format fixtures, 15 valid tracks (one intentionally malformed fixture skipped); first call 251.4 ms, warm repeats 54.0–64.6 ms with stable output ordering and fields
 - downloaded-file path IPC probe passed direct path, save-directory fallback, and `.ape` rejection branches
 - 100k-track worker probe kept output semantics (`filteredList=50,000`, `canPlayList=100,000`); on a 20k/10k duplicate-heavy comparison the old findIndex/splice loop took 90.8 ms versus 1.7 ms for the counted-ID map (53.4x faster)
+- 50k-result search probe returned the same 1,400 matches and stable first/last IDs; a 20k numeric ordering comparison retained tie order and reduced insertion work from 21.6 ms to 4.9 ms
 
 The existing native-core integration suite remains green, including FFmpeg, HTTP fresh/resume byte equality, cancellation, library scan, metadata/artwork, and libmpv capability probing.
 
