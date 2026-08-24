@@ -151,6 +151,7 @@ export class ElectronBackendAdapter implements BackendApi {
     read: async(filePath, signal) => call(() => legacyIpc.readLocalMetadata(filePath), signal),
     write: async(request, signal) => call(() => legacyIpc.writeLocalMetadata(request), signal),
     readEmbeddedLyrics: async(filePath, signal) => call(() => legacyIpc.readLocalEmbeddedLyrics(filePath), signal),
+    readLyrics: async(filePath, signal) => call(() => legacyIpc.readLocalLyrics(filePath), signal),
     writeEmbeddedLyrics: async(request, signal) => call(() => legacyIpc.writeLocalEmbeddedLyrics(request), signal),
   }
 
@@ -160,7 +161,7 @@ export class ElectronBackendAdapter implements BackendApi {
       if (window.lxData.appSetting['backend.artwork'] == 'native') {
         try { return await legacyIpc.getLocalArtworkVariant(request) } catch {}
       }
-      const value = await window.lx.worker.main.getMusicFilePic(request.filePath)
+      const value = await legacyIpc.readLocalCoverFile(request.filePath)
       if (!value) return null
       const url = /^(?:https?:|data:|blob:|file:)/i.test(value) ? value : `file:///${value.replaceAll('\\', '/')}`
       return { id: request.filePath, url, mimeType: '', width: request.size, height: request.size, byteLength: 0, sourceFingerprint: 'legacy' }

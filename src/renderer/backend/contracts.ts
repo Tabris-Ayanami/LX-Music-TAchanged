@@ -228,6 +228,7 @@ export interface MetadataService {
   read: (filePath: string, signal?: AbortSignal) => Promise<LX.LocalMusic.Metadata>
   write: (request: LX.LocalMusic.MetadataWriteRequest, signal?: AbortSignal) => Promise<LX.LocalMusic.Metadata>
   readEmbeddedLyrics: (filePath: string, signal?: AbortSignal) => Promise<string>
+  readLyrics: (filePath: string, signal?: AbortSignal) => Promise<LX.Music.LyricInfo | null>
   writeEmbeddedLyrics: (request: LX.LocalMusic.EmbeddedLyricsWriteRequest, signal?: AbortSignal) => Promise<string>
 }
 

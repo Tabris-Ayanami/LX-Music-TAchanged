@@ -1,6 +1,7 @@
 import { copyFile, chmod, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { extname, parse } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { decodeKrc } from '@common/utils/lyricUtils/kg'
 
 import type { TagInput, TagLib as TagLibClass } from 'taglib-wasm'
 import type * as TagLibSimpleModule from 'taglib-wasm/simple'
@@ -163,6 +164,57 @@ export const readLocalEmbeddedLyrics = async(filePath: string) => {
   const taglib = await loadTagLib()
   const tags = await taglib.readTags(filePath)
   return tags.lyrics?.[0]?.text ?? ''
+}
+
+const parseLyricText = (value: string): LX.Music.LyricInfo => {
+  const verifyAwlrc = (text: string) => /(?:^|\s*)\[\d+:\d+(?:\.\d+)]<\d+,\d+>.+$/m.test(text)
+  const verifyLrc = (text: string) => /(?:^|\s*)\[\d+:\d+(?:\.\d+)].+$/m.test(text)
+  const lyricTags = {
+    awlrc: { name: 'lxlyric', verify: verifyAwlrc },
+    lrc: { name: 'lyric', verify: verifyLrc },
+    tlrc: { name: 'tlyric', verify: verifyLrc },
+    rlrc: { name: 'rlyric', verify: verifyLrc },
+  } as const
+  const tagRxp = /(?:^|\n\s*)\[awlrc:([^\]]+)]/i
+  const lrcRxp = /^(lrc|awlrc|tlrc|rlrc):([^,]+)$/i
+  let parsedInfo: Partial<LX.Music.LyricInfo> = {}
+  const lyric = value.replace(tagRxp, (_match, content: string) => {
+    for (const item of content.trim().split(',')) {
+      const result = lrcRxp.exec(item.trim())
+      if (!result) continue
+      const target = lyricTags[result[1].toLowerCase() as keyof typeof lyricTags]
+      if (!target) continue
+      const data = Buffer.from(result[2], 'base64').toString('utf8').trim()
+      if (target.verify(data)) parsedInfo[target.name] = data
+    }
+    return ''
+  }).trim()
+  return { lyric, ...parsedInfo }
+}
+
+export const readLocalLyrics = async(filePath: string): Promise<LX.Music.LyricInfo | null> => {
+  const parsedPath = parse(filePath)
+  const lrcPath = `${parsedPath.dir}\\${parsedPath.name}.lrc`
+  const lrcInfo = await stat(lrcPath).catch(() => null)
+  if (lrcInfo?.isFile() && lrcInfo.size < 10 * 1024 * 1024) {
+    const data = await readFile(lrcPath)
+    const { detect } = await import('jschardet')
+    const { confidence, encoding } = detect(data)
+    if (confidence > 0.8 && encoding) {
+      const iconv = (await import('iconv-lite')).default
+      if (iconv.encodingExists(encoding)) {
+        const lyric = iconv.decode(data, encoding)
+        if (lyric) return parseLyricText(lyric)
+      }
+    }
+  }
+  const krcPath = `${parsedPath.dir}\\${parsedPath.name}.krc`
+  const krcInfo = await stat(krcPath).catch(() => null)
+  if (krcInfo?.isFile() && krcInfo.size < 10 * 1024 * 1024) {
+    try { return await decodeKrc(await readFile(krcPath)) as LX.Music.LyricInfo } catch {}
+  }
+  const lyric = await readLocalEmbeddedLyrics(filePath).catch(() => '')
+  return lyric ? parseLyricText(lyric) : null
 }
 
 export const writeLocalEmbeddedLyrics = async({ filePath, lyric }: LX.LocalMusic.EmbeddedLyricsWriteRequest) => {

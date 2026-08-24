@@ -146,6 +146,7 @@ export class FakeBackendAdapter implements BackendApi {
       return structuredClone(value)
     },
     readEmbeddedLyrics: async(filePath, signal) => { throwIfAborted(signal); return this.metadataValues.get(filePath)?.comment ?? '' },
+    readLyrics: async(filePath, signal) => { throwIfAborted(signal); return null },
     writeEmbeddedLyrics: async(request, signal) => { throwIfAborted(signal); this.record('metadata', 'writeEmbeddedLyrics', request); return request.lyric },
   }
 

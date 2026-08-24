@@ -750,6 +750,10 @@ export const readLocalEmbeddedLyrics = async(filePath: string) => {
   return rendererInvoke<string, string>(WIN_MAIN_RENDERER_EVENT_NAME.read_local_embedded_lyrics, filePath)
 }
 
+export const readLocalLyrics = async(filePath: string) => {
+  return rendererInvoke<string, LX.Music.LyricInfo | null>(WIN_MAIN_RENDERER_EVENT_NAME.read_local_lyrics, filePath)
+}
+
 export const readLocalCoverFile = async(filePath: string) => {
   return rendererInvoke<string, string>(WIN_MAIN_RENDERER_EVENT_NAME.read_local_cover_file, filePath)
 }

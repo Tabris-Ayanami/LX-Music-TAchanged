@@ -9,6 +9,7 @@ import {
 } from './online'
 import { buildLyricInfo, getCachedLyricInfo } from './utils'
 import { buildSavePath } from '@renderer/store/download/utils'
+import { backend } from '@renderer/backend'
 
 const normalizePicUrl = (pic: string) => {
   return /^(?:https?:|data:|blob:|file:)/i.test(pic) ? pic : getHostBridge().platform.pathToFileURL(pic)
@@ -37,8 +38,8 @@ export const getPicUrl = async({ musicInfo, isRefresh, listId, onToggleSource = 
   if (!isRefresh) {
     const path = await getDownloadFilePath(musicInfo, buildSavePath(musicInfo))
     if (path) {
-      const pic = await window.lx.worker.main.getMusicFilePic(path)
-      if (pic) return normalizePicUrl(pic)
+      const artwork = await backend.artwork.getLocalTrackArtwork({ filePath: path, size: 512 })
+      if (artwork?.url) return normalizePicUrl(artwork.url)
     }
 
     const onlineMusicInfo = musicInfo.metadata.musicInfo
@@ -72,8 +73,8 @@ export const getLyricInfo = async({ musicInfo, isRefresh, onToggleSource = () =>
     // 尝试读取文件内歌词
     const path = await getDownloadFilePath(musicInfo, buildSavePath(musicInfo))
     if (path) {
-      const rawlrcInfo = await window.lx.worker.main.getMusicFileLyric(path)
-      if (rawlrcInfo) return buildLyricInfo(rawlrcInfo)
+      const rawLyric = await backend.metadata.readLyrics(path)
+      if (rawLyric) return buildLyricInfo(rawLyric)
     }
 
     throw new Error('failed')

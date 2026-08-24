@@ -54,7 +54,7 @@ const refreshLyricStatus = async() => {
   if (!track.value) return
   const [cachedLyrics, fileLyrics] = await Promise.all([
     getLyricRaw(track.value).catch(() => null),
-    window.lx.worker.main.getMusicFileLyric(track.value.meta.filePath).catch(() => null),
+    backend.metadata.readLyrics(track.value.meta.filePath),
   ])
   hasLyrics.value = !!(fileLyrics?.lyric ?? cachedLyrics?.lyric)
 }

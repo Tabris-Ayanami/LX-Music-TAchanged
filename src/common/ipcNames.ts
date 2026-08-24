@@ -138,6 +138,7 @@ const modules = {
     write_local_metadata: 'write_local_metadata',
     write_local_embedded_lyrics: 'write_local_embedded_lyrics',
     read_local_embedded_lyrics: 'read_local_embedded_lyrics',
+    read_local_lyrics: 'read_local_lyrics',
     read_local_cover_file: 'read_local_cover_file',
     get_local_artwork_variant: 'get_local_artwork_variant',
     invalidate_local_artwork: 'invalidate_local_artwork',
