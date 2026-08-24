@@ -54,7 +54,7 @@ The final stable Stage 5 capture on the same populated profile (10-second sample
 
 ## Next
 
-Measure a populated local-library scan and a real native download lifecycle in the production app (start/progress/pause/resume/refresh-url/complete), then compare process private memory, CPU, thread, and handle counts against the recorded baseline before removing more Worker fallbacks.
+Stage 5 acceptance is complete. Continue with Stage 6 IPC/data-churn profiling: measure repeated list/status requests and background idle after route teardown, then target only changes with a reproducible CPU, memory, or request-count reduction. The populated local-library scan and native download lifecycle probes remain the compatibility gates for any further Worker fallback removal.
 
 ### Production IPC lifecycle probe
 
