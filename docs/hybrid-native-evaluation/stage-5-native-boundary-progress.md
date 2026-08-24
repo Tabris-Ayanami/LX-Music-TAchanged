@@ -34,6 +34,7 @@ Checks passed in this increment:
 - `node --test tests/regression/local-music-detail-shell-and-grid.test.cjs tests/regression/local-music-search-refresh.test.cjs` (5/5)
 - populated metadata IPC probe: 16 mixed-format fixtures, 15 valid tracks (one intentionally malformed fixture skipped); first call 251.4 ms, warm repeats 54.0–64.6 ms with stable output ordering and fields
 - downloaded-file path IPC probe passed direct path, save-directory fallback, and `.ape` rejection branches
+- 100k-track worker probe kept output semantics (`filteredList=50,000`, `canPlayList=100,000`); on a 20k/10k duplicate-heavy comparison the old findIndex/splice loop took 90.8 ms versus 1.7 ms for the counted-ID map (53.4x faster)
 
 The existing native-core integration suite remains green, including FFmpeg, HTTP fresh/resume byte equality, cancellation, library scan, metadata/artwork, and libmpv capability probing.
 
