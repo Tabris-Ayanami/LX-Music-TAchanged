@@ -17,6 +17,7 @@ Branch: `hybrid-native`
 | --- | ---: | ---: | --- |
 | `renderer.main.worker.js` | 33,680 B | 27,863 B | -5,817 B (-17.3%) |
 | `renderer.download.worker.js` | 355,631 B | 23,039 B | -332,592 B (-93.5%) |
+| renderer production JavaScript assets | 6.56 MiB | 6.01 MiB | -0.55 MiB; node_modules JS modules 374 → 291 |
 | synchronous `main.js` bundle | 2.95 MiB | 2.95 MiB | unchanged; metadata writer is lazy-loaded |
 | production smoke exceptions | n/a | `[]` | pass |
 
