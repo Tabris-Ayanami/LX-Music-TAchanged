@@ -14,12 +14,13 @@ const DOWNLOAD_POLL_MS = 500
 interface NativeTask {
   request: LX.Download.NativeDownloadRequest
   jobId: string
-  timer: NodeJS.Timeout | null
   paused: boolean
   removed: boolean
 }
 
 const nativeTasks = new Map<string, NativeTask>()
+let nativePollTimer: NodeJS.Timeout | null = null
+let nativePollInFlight = false
 let nativeDownloadEventSink: ((event: LX.Download.NativeDownloadAction) => void) | null = null
 
 export const setNativeDownloadEventSink = (sink: ((event: LX.Download.NativeDownloadAction) => void) | null) => {
@@ -100,29 +101,25 @@ export const writeDownloadedLyrics = async(request: LX.Download.DownloadLyricsWr
 }
 
 const clearNativeTask = (task: NativeTask) => {
-  if (task.timer) clearTimeout(task.timer)
   if (nativeTasks.get(task.request.taskId) == task) nativeTasks.delete(task.request.taskId)
+  if (!nativeTasks.size && nativePollTimer) {
+    clearTimeout(nativePollTimer)
+    nativePollTimer = null
+  }
 }
 
-const scheduleNativePoll = (task: NativeTask) => {
-  if (task.timer != null || nativeTasks.get(task.request.taskId) != task) return
-  task.timer = setTimeout(() => {
-    task.timer = null
-    void pollNativeTask(task)
+const scheduleNativePoll = () => {
+  if (nativePollTimer != null || nativePollInFlight || !nativeTasks.size) return
+  nativePollTimer = setTimeout(() => {
+    nativePollTimer = null
+    void pollNativeTasks()
   }, DOWNLOAD_POLL_MS)
 }
 
-const pollNativeTask = async(task: NativeTask): Promise<void> => {
-  if (nativeTasks.get(task.request.taskId) != task) return
-  let status: { state: string, total: number, downloaded: number, bytesPerSecond: number, statusCode?: number, error?: string }
-  try {
-    status = await getNativeCoreSupervisor().call('download.http.status', { jobId: task.jobId }, undefined, 10_000)
-  } catch (error) {
-    emitNativeDownloadAction(task.request.taskId, { action: 'error', data: { message: error instanceof Error ? error.message : String(error) } })
-    clearNativeTask(task)
-    return
-  }
+type NativeDownloadStatus = { jobId: string, state: string, total: number, downloaded: number, bytesPerSecond: number, statusCode?: number, error?: string }
 
+const handleNativeStatus = async(task: NativeTask, status: NativeDownloadStatus) => {
+  if (nativeTasks.get(task.request.taskId) != task) return
   if (status.state == 'running') {
     if (!task.paused && !task.removed) {
       const total = status.total ?? 0
@@ -137,7 +134,6 @@ const pollNativeTask = async(task: NativeTask): Promise<void> => {
         },
       })
     }
-    scheduleNativePoll(task)
     return
   }
 
@@ -173,6 +169,33 @@ const pollNativeTask = async(task: NativeTask): Promise<void> => {
     }
   }
   clearNativeTask(task)
+}
+
+const pollNativeTasks = async(): Promise<void> => {
+  if (nativePollInFlight || !nativeTasks.size) return
+  nativePollInFlight = true
+  const tasks = [...nativeTasks.values()]
+  let statuses: NativeDownloadStatus[]
+  try {
+    statuses = await getNativeCoreSupervisor().call<NativeDownloadStatus[]>('download.http.status_many', { jobIds: tasks.map(task => task.jobId) }, undefined, 10_000)
+  } catch (error) {
+    for (const task of tasks) {
+      if (nativeTasks.get(task.request.taskId) == task && !task.removed) {
+        emitNativeDownloadAction(task.request.taskId, { action: 'error', data: { message: error instanceof Error ? error.message : String(error) } })
+      }
+      clearNativeTask(task)
+    }
+    nativePollInFlight = false
+    return
+  }
+  nativePollInFlight = false
+  const statusByJobId = new Map(statuses.map(status => [status.jobId, status]))
+  await Promise.all(tasks.map(async task => {
+    const status = statusByJobId.get(task.jobId)
+    if (status) await handleNativeStatus(task, status)
+    else if (nativeTasks.get(task.request.taskId) == task) clearNativeTask(task)
+  }))
+  scheduleNativePoll()
 }
 
 const cancelNativeTask = async(task: NativeTask) => {
@@ -216,10 +239,10 @@ export const startNativeDownloadTask = async(request: LX.Download.NativeDownload
     outputPath: request.outputPath,
     proxy: request.proxy,
   }, undefined, 30_000)
-  const task: NativeTask = { request, jobId: result.jobId, timer: null, paused: false, removed: false }
+  const task: NativeTask = { request, jobId: result.jobId, paused: false, removed: false }
   nativeTasks.set(request.taskId, task)
   emitNativeDownloadAction(request.taskId, { action: 'start' })
-  scheduleNativePoll(task)
+  scheduleNativePoll()
 }
 
 export const pauseNativeDownloadTask = async(taskId: string) => {

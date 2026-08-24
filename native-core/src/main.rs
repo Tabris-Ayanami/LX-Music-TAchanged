@@ -4,7 +4,7 @@ use clap::Parser;
 use lx_native_core::{
     CAPABILITIES, CORE_VERSION, PROTOCOL_VERSION,
     artwork::{ArtworkCache, VariantRequest},
-    download::{self, AudioConvertRequest, DownloadJobs, HttpDownloadRequest},
+    download::{self, AudioConvertRequest, DownloadJobs, HttpDownloadRequest, HttpDownloadStatusBatchRequest},
     error::CoreError,
     library::{self, LibraryScanRequest},
     metadata::{self, MetadataBatchRequest, MetadataWriteRequest},
@@ -264,6 +264,13 @@ async fn dispatch(request: RpcRequest, context: Context) -> Result<Value, CoreEr
         "download.http.status" => {
             let job_id = required_string(&request.params, "jobId")?;
             serde_json::to_value(context.downloads.status(&job_id)?)
+                .map_err(|error| CoreError::Internal(error.to_string()))
+        }
+        "download.http.status_many" => {
+            let value: HttpDownloadStatusBatchRequest = serde_json::from_value(request.params)
+                .map_err(|error| CoreError::InvalidArgument(error.to_string()))?;
+            let statuses = context.downloads.statuses(&value.job_ids)?;
+            serde_json::to_value(statuses)
                 .map_err(|error| CoreError::Internal(error.to_string()))
         }
         "download.http.cancel" => {

@@ -87,13 +87,23 @@ const startDownloadServer = async(body) => {
   }
 }
 
-const waitForDownload = async(client, jobId) => {
+const waitForDownloads = async(client, jobIds) => {
+  const pending = new Set(jobIds)
+  const completed = new Map()
+  let rpcCalls = 0
   for (let attempt = 0; attempt < 500; attempt++) {
-    const status = await client.call('download.http.status', { jobId })
-    if (status.state != 'running') return status
+    const statuses = await client.call('download.http.status_many', { jobIds: [...pending] })
+    rpcCalls++
+    for (const status of statuses) {
+      if (status.state != 'running') {
+        completed.set(status.jobId, status)
+        pending.delete(status.jobId)
+      }
+    }
+    if (!pending.size) return { statuses: jobIds.map(jobId => completed.get(jobId)), rpcCalls }
     await wait(20)
   }
-  throw new Error(`download job did not finish: ${jobId}`)
+  throw new Error(`download jobs did not finish: ${jobIds.join(', ')}`)
 }
 
 class RpcClient {
@@ -196,6 +206,7 @@ const run = async() => {
     assert.ok(handshake.capabilities.includes('library.scan'))
     assert.ok(handshake.capabilities.includes('download.ffmpeg.convert'))
     assert.ok(handshake.capabilities.includes('download.http.job'))
+    assert.ok(handshake.capabilities.includes('download.http.status_many'))
     assert.ok(handshake.capabilities.includes('player.libmpv.probe'))
     const playerProbe = await core.client.call('player.probe')
     assert.equal(playerProbe.available, false)
@@ -239,18 +250,17 @@ const run = async() => {
     try {
       const downloadedPath = path.join(fixture.work, 'native-http-download.mp3')
       const started = await core.client.call('download.http.start', { url: downloadServer.url, outputPath: downloadedPath })
-      const completed = await waitForDownload(core.client, started.jobId)
-      assert.equal(completed.state, 'completed')
-      assert.equal(completed.downloaded, downloadBody.length)
-      assert.deepEqual(await fs.readFile(downloadedPath), downloadBody)
-
       const resumedPath = path.join(fixture.work, 'native-http-resume.mp3')
       await fs.writeFile(resumedPath, downloadBody.subarray(0, Math.floor(downloadBody.length / 2)))
       const resumed = await core.client.call('download.http.start', { url: downloadServer.url, outputPath: resumedPath })
-      const resumeCompleted = await waitForDownload(core.client, resumed.jobId)
+      const completedBatch = await waitForDownloads(core.client, [started.jobId, resumed.jobId])
+      const [completed, resumeCompleted] = completedBatch.statuses
+      assert.equal(completed.state, 'completed')
+      assert.equal(completed.downloaded, downloadBody.length)
+      assert.deepEqual(await fs.readFile(downloadedPath), downloadBody)
       assert.equal(resumeCompleted.state, 'completed')
       assert.deepEqual(await fs.readFile(resumedPath), downloadBody)
-      report.download.http = { bytes: downloadBody.length, fresh: 'passed', resume: 'passed' }
+      report.download.http = { bytes: downloadBody.length, fresh: 'passed', resume: 'passed', statusMany: { jobCount: 2, rpcCalls: completedBatch.rpcCalls, rpcCallsPerPoll: 1, estimatedSeparateCalls: completedBatch.rpcCalls * 2 } }
     } finally {
       await downloadServer.close()
     }

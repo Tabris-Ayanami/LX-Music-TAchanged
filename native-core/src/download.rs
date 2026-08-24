@@ -64,6 +64,12 @@ pub struct HttpDownloadStatus {
     pub error: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HttpDownloadStatusBatchRequest {
+    pub job_ids: Vec<String>,
+}
+
 struct DownloadJob {
     status: Arc<Mutex<HttpDownloadStatus>>,
     cancellation: CancellationToken,
@@ -127,6 +133,21 @@ impl DownloadJobs {
             jobs.remove(job_id);
         }
         Ok(status)
+    }
+
+    pub fn statuses(&self, job_ids: &[String]) -> Result<Vec<HttpDownloadStatus>, CoreError> {
+        let mut jobs = self.jobs.lock();
+        let mut statuses = Vec::with_capacity(job_ids.len());
+        for job_id in job_ids {
+            let Some(job) = jobs.get(job_id) else { continue };
+            let status = job.status.lock().clone();
+            let finished = status.state != "running";
+            statuses.push(status);
+            if finished {
+                jobs.remove(job_id);
+            }
+        }
+        Ok(statuses)
     }
 
     pub fn cancel(&self, job_id: &str) -> Result<HttpDownloadStatus, CoreError> {
