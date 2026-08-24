@@ -13,6 +13,8 @@ The player now exposes the active deck state and starts the panner interval only
 
 - `npm run typecheck` passed for common, main, and renderer projects.
 - `npm run build:renderer` passed; the production renderer remains 6.01 MiB of JavaScript across 291 node_modules modules.
+- `npm run build:main` passed; `main.js` remains 2.96 MiB.
+- `npm run check:backend-boundaries` passed (legacy transport 57/57, direct runtime 29/33, no new violations).
 - Existing Node regression tests were run; their pre-existing UI fixture failures remain unrelated to this player-only change, and no new assertion was added by the patch.
 
 ## Native sidecar idle lifetime
