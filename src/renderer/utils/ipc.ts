@@ -774,6 +774,10 @@ export const scanLocalMusicFiles = async(folders: string[]) => {
   return rendererInvoke<string[], string[]>(WIN_MAIN_RENDERER_EVENT_NAME.scan_local_music_files, folders)
 }
 
+export const createLocalMusicInfos = async(filePaths: string[]) => {
+  return rendererInvoke<string[], LX.Music.MusicInfoLocal[]>(WIN_MAIN_RENDERER_EVENT_NAME.create_local_music_infos, filePaths)
+}
+
 /**
  * 退出应用
  */

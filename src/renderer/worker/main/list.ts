@@ -3,7 +3,6 @@
 import { SPLIT_CHAR } from '@common/constants'
 import { filterFileName, sortInsert, similar, arrPushByPosition, arrShuffle } from '@common/utils/common'
 import { joinPath, saveStrToFile } from '@common/utils/nodejs'
-import { createLocalMusicInfo } from '@renderer/utils/music'
 
 
 /**
@@ -286,22 +285,6 @@ export const createSortedList = (list: LX.Music.MusicInfo[], position: number, i
  * 创建本地列表音乐信息
  * @param filePaths 文件路径
  */
-export const createLocalMusicInfos = async(filePaths: string[]): Promise<LX.Music.MusicInfoLocal[]> => {
-  const concurrency = Math.min(4, Math.max(filePaths.length, 1))
-  const results: Array<LX.Music.MusicInfoLocal | null> = Array(filePaths.length).fill(null)
-  let nextIndex = 0
-
-  const runWorker = async() => {
-    while (nextIndex < filePaths.length) {
-      const index = nextIndex++
-      results[index] = await createLocalMusicInfo(filePaths[index])
-    }
-  }
-
-  await Promise.all(Array.from({ length: concurrency }, runWorker))
-  return results.filter((musicInfo): musicInfo is LX.Music.MusicInfoLocal => musicInfo != null)
-}
-
 /**
  * 导出列表到txt文件
  * @param savePath 保存路径

@@ -2,7 +2,7 @@ import { createUserList, getListMusics, getUserLists, addListMusics, overwriteLi
 import { userLists } from '@renderer/store/list/state'
 import { playMusicInfo } from '@renderer/store/player/state'
 import { playMusicsInDefaultList, queueNextInDefaultList } from './playDefaultList'
-import { scanLocalMusicFiles } from './ipc'
+import { createLocalMusicInfos, scanLocalMusicFiles } from './ipc'
 import { getHostBridge } from '@common/hostBridge'
 
 export const LOCAL_MUSIC_LIST_ID = 'userlist_local_music'
@@ -140,7 +140,7 @@ export const collectLocalMusicFilesFromFolders = async(folders: string[]) => {
 const createLocalMusicInfosByPaths = async(filePaths: string[]): Promise<LX.Music.MusicInfoLocal[]> => {
   const result: LX.Music.MusicInfoLocal[] = []
   for (let index = 0; index < filePaths.length; index += LOCAL_MUSIC_IMPORT_BATCH_SIZE) {
-    result.push(...await window.lx.worker.main.createLocalMusicInfos(filePaths.slice(index, index + LOCAL_MUSIC_IMPORT_BATCH_SIZE)))
+    result.push(...await createLocalMusicInfos(filePaths.slice(index, index + LOCAL_MUSIC_IMPORT_BATCH_SIZE)))
   }
   return result
 }

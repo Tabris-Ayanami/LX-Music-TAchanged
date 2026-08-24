@@ -144,6 +144,7 @@ const modules = {
     get_legacy_artwork_path: 'get_legacy_artwork_path',
     invalidate_local_artwork: 'invalidate_local_artwork',
     scan_local_music_files: 'scan_local_music_files',
+    create_local_music_infos: 'create_local_music_infos',
 
     open_api_action: 'open_api_action',
     sync_action: 'sync_action',

@@ -169,6 +169,22 @@ export const getArtworkVariant = async(request: LX.LocalMusic.ArtworkVariantRequ
   }
 }
 
+/**
+ * Read only the fields needed to build a local-library track. Unlike the
+ * interactive metadata path this deliberately skips artwork materialization;
+ * a library scan must not allocate a cover payload for every track.
+ */
+export const readMetadataForLibrary = async(filePath: string): Promise<LX.LocalMusic.Metadata> => {
+  if (global.lx.appSetting['backend.metadata'] != 'native') return readLocalMetadata(filePath)
+  try {
+    const native = await getNativeCoreSupervisor().call<NativeMetadata>('metadata.read', { filePath })
+    return compactMetadata({ ...native, coverDataUrl: '' })
+  } catch (error) {
+    console.warn(JSON.stringify({ level: 'warn', event: 'library_metadata_native_fallback', component: 'native-core', message: error instanceof Error ? error.message : String(error) }))
+    return readLocalMetadata(filePath)
+  }
+}
+
 export const getLegacyArtworkPath = async(filePath: string): Promise<string> => {
   const parsed = path.parse(filePath)
   for (const extension of ['.jpg', '.png']) {

@@ -2,7 +2,7 @@ import { WIN_MAIN_RENDERER_EVENT_NAME } from '@common/ipcNames'
 import { mainHandle } from '@common/mainIpc'
 import { readLocalCoverFile, readLocalEmbeddedLyrics, readLocalLyrics, writeLocalEmbeddedLyrics } from '@main/modules/localMusicTools/metadata'
 import { getArtworkVariant, getLegacyArtworkPath, invalidateArtwork, readMetadataWithBackend, writeMetadataWithBackend } from '@main/modules/nativeCore/mediaServices'
-import { scanLocalMusicFiles } from '@main/modules/nativeCore/libraryServices'
+import { createLocalMusicInfos, scanLocalMusicFiles } from '@main/modules/nativeCore/libraryServices'
 
 
 export default () => {
@@ -16,6 +16,7 @@ export default () => {
   mainHandle<string, string>(WIN_MAIN_RENDERER_EVENT_NAME.get_legacy_artwork_path, async({ params }) => getLegacyArtworkPath(params))
   mainHandle<string>(WIN_MAIN_RENDERER_EVENT_NAME.invalidate_local_artwork, async({ params }) => invalidateArtwork(params))
   mainHandle<string[], string[]>(WIN_MAIN_RENDERER_EVENT_NAME.scan_local_music_files, async({ params }) => scanLocalMusicFiles(params))
+  mainHandle<string[], LX.Music.MusicInfoLocal[]>(WIN_MAIN_RENDERER_EVENT_NAME.create_local_music_infos, async({ params }) => createLocalMusicInfos(params))
 
   // =========================歌词=========================
   mainHandle<string, LX.Player.LyricInfo>(WIN_MAIN_RENDERER_EVENT_NAME.get_palyer_lyric, async({ params: id }) => {
