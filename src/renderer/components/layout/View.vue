@@ -16,7 +16,8 @@ import { useRoute } from '@common/utils/vueRouter'
 
 const route = useRoute()
 const routeViewKey = computed(() => {
-  if (route.path == '/local') return route.path
+  // /local 与 /list 通过 query 切换内部状态，不应重建整页
+  if (route.path == '/local' || route.path == '/list') return route.path
   const query = route.query ? JSON.stringify(route.query) : ''
   return `${route.path}::${query}`
 })

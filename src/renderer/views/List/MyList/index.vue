@@ -189,7 +189,9 @@ export default {
     }
 
     const handleListToggle = (id) => {
-      if (id == props.listId) return
+      // 不做本地去重，交给 Vue Router 处理：
+      // 重复点击同一列表会抛 NavigationDuplicated 被 catch 吞掉；
+      // 快速切换时后一次 replace 会覆盖前一次，避免用旧的 props.listId 误吞点击。
       router.replace({
         path: '/list',
         query: { id },

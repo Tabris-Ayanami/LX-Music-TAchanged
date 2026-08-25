@@ -32,6 +32,8 @@ export default ({ props, onLoadedList }) => {
     getListMusics(id).then(l => {
       if (requestId != loadRequestId || id != props.listId || Array.isArray(props.musicList)) return
       list.value = [...l]
+      // 切换列表时把滚动位置归零，避免新列表沿用旧列表的 scrollTop 造成纵向跳动
+      listRef.value?.scrollTo(0)
       onLoadedList()
     })
   }, {

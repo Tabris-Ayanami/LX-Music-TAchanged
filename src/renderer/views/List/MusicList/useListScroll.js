@@ -1,7 +1,6 @@
 import { onMounted, onBeforeUnmount, nextTick } from '@common/utils/vueTools'
 import { useRoute, useRouter } from '@common/utils/vueRouter'
-import { setListPosition, getListPosition } from '@renderer/utils/data'
-import { appSetting } from '@renderer/store/setting'
+import { setListPosition } from '@renderer/utils/data'
 
 export default ({ props, listRef, list, handleRestoreScroll }) => {
   const route = useRoute()
@@ -29,16 +28,9 @@ export default ({ props, listRef, list, handleRestoreScroll }) => {
   const restoreScroll = async(index, isAnimation) => {
     // console.log(index, isAnimation)
     if (!list.value.length) return
+    if (index == null) return
     const controller = await getListController()
     if (!controller) return
-    if (index == null) {
-      let location = await getListPosition(props.listId) || 0
-      if (appSetting['list.isSaveScrollLocation'] && location != null) {
-        controller.scrollTo(location)
-      }
-      return
-    }
-
     await handleScrollList(index, isAnimation)
   }
 

@@ -39,11 +39,6 @@ export default {
     const scrollIndex = to.query.scrollIndex
     const isAnimation = from.query.id == to.query.id
     this.$refs.musicList?.handleRestoreScroll(scrollIndex, isAnimation)
-
-    return {
-      path: '/list',
-      query: { id, updated: true },
-    }
   },
   beforeRouteLeave(to, from) {
     this.$refs.musicList?.saveListPosition()
