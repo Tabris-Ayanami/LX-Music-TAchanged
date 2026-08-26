@@ -162,8 +162,8 @@ export const writeLocalMetadata = async(request: LX.LocalMusic.MetadataWriteRequ
 export const readLocalEmbeddedLyrics = async(filePath: string) => {
   await assertSupportedFile(filePath)
   const taglib = await loadTagLib()
-  const tags = await taglib.readTags(filePath)
-  return tags.lyrics?.[0]?.text ?? ''
+  const { tags } = await taglib.readMetadata(filePath)
+  return tags.lyrics?.map(item => item.text.trim()).find(Boolean) ?? ''
 }
 
 const parseLyricText = (value: string): LX.Music.LyricInfo => {

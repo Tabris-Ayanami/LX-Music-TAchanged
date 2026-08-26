@@ -208,6 +208,9 @@ const modules = {
     get_comment: 'get_comment',
     get_songlist_detail: 'get_songlist_detail',
   },
+  ncmApi: {
+    request: 'request',
+  },
 }
 
 
@@ -233,3 +236,4 @@ export const WIN_MAIN_RENDERER_EVENT_NAME = modules.winMain
 export const WIN_LYRIC_RENDERER_EVENT_NAME = modules.winLyric
 export const HOTKEY_RENDERER_EVENT_NAME = modules.hotKey
 export const BILI_RENDERER_EVENT_NAME = modules.bili
+export const NCM_API_RENDERER_EVENT_NAME = modules.ncmApi

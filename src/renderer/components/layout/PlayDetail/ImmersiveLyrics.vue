@@ -139,6 +139,7 @@
       :mv-status="mvStatus"
       :mv-error="mvError"
       :active-mv-key="activeMvKey"
+      :active-mv-candidate="activeMvCandidate"
       @select-mv="selectMvCandidate"
       @select-lyric="selectLyricCandidate"
       @retry-mv="loadMv"
@@ -163,6 +164,7 @@ import { appSetting } from '@renderer/store/setting'
 import { dynamicCoverUrlImmersive, dynamicCoverPoster } from '@renderer/store/player/dynamicCover'
 import DynamicArtworkVideo from '@renderer/components/player/DynamicArtworkVideo.vue'
 import { biliSearch, getBiliLyricSource, getBiliVideoUrl } from '@renderer/utils/ipc'
+import { getMvUrl as getNeteaseMvUrl, searchMv as searchNeteaseMv } from '@renderer/utils/musicSdk/wy/ncmApi'
 
 defineEmits(['close'])
 
@@ -183,6 +185,7 @@ const mvOverride = ref(null)
 const mvStatus = ref('idle')
 const mvError = ref('')
 const activeMvKey = ref('')
+const activeMvCandidate = ref(null)
 const originalLyric = ref(null)
 let originalLyricTrackId = ''
 let lyricRequestId = 0
@@ -192,6 +195,33 @@ let mvSyncTimer = 0
 let mvLoadQueued = false
 let biliSearchKey = ''
 let biliSearchPromise = null
+
+const normalizeActiveMvCandidate = track => {
+  if (!track) return null
+  if (track.type == 'netease') {
+    return {
+      type: 'netease',
+      mvid: Number(track.mvid),
+      title: track.title,
+      artist: track.artist,
+      cover: track.cover || musicInfo.pic || '',
+      duration: track.duration,
+      pageTitle: track.pageTitle || track.title,
+    }
+  }
+  return {
+    type: 'bili',
+    bvid: track.bvid,
+    cid: track.cid,
+    page: track.page,
+    title: track.title,
+    author: track.author || track.artist,
+    artist: track.artist || track.author,
+    cover: track.cover || musicInfo.pic || '',
+    duration: track.duration,
+    pageTitle: track.pageTitle || track.title,
+  }
+}
 
 const effect = computed(() => appSetting['playDetail.immersiveEffect'] ?? 'classic')
 const background = computed(() => appSetting['playDetail.immersiveBackground'] ?? 'aura')
@@ -268,12 +298,29 @@ const scoreMvCandidate = (candidate, title, artistName, duration) => {
   return score
 }
 
+const searchNeteaseMvTrack = async() => {
+  const identity = trackIdentity.value
+  const query = [identity.title, identity.artist].filter(Boolean).join(' ')
+  if (!query) return null
+  const normalizedTitle = normalizeMatchText(identity.title)
+  const normalizedArtist = normalizeMatchText(identity.artist)
+  const targetDuration = Number(playProgress.maxPlayTime || 0)
+  const list = await searchNeteaseMv(query, 8)
+  return [...list].sort((a, b) => (
+    scoreMvCandidate(b, normalizedTitle, normalizedArtist, targetDuration) -
+    scoreMvCandidate(a, normalizedTitle, normalizedArtist, targetDuration)
+  ))[0] ?? null
+}
+
 const resolveMvTrack = async() => {
   if (mvOverride.value) return mvOverride.value
   const source = appSetting['playDetail.immersiveMvSource'] ?? 'auto'
-  if (source == 'current') return biliTrack.value
-  if (biliTrack.value) return biliTrack.value
-  return searchBiliTrack()
+  // 兼容旧设置里保存的 current 值
+  if (source == 'netease' || source == 'current') return searchNeteaseMvTrack()
+  if (source == 'bili') return biliTrack.value ?? await searchBiliTrack()
+  const neteaseTrack = await searchNeteaseMvTrack().catch(() => null)
+  if (neteaseTrack) return neteaseTrack
+  return biliTrack.value ?? await searchBiliTrack()
 }
 
 const syncMvPlayback = async() => {
@@ -296,6 +343,7 @@ const loadMv = async() => {
     releaseMvVideo()
     mvUrl.value = ''
     activeMvKey.value = ''
+    activeMvCandidate.value = null
     mvStatus.value = 'idle'
     return
   }
@@ -307,28 +355,36 @@ const loadMv = async() => {
     releaseMvVideo()
     mvUrl.value = ''
     activeMvKey.value = ''
+    activeMvCandidate.value = null
     mvStatus.value = 'error'
     mvError.value = window.i18n.t('setting__play_detail_immersive_mv_no_track')
     return
   }
   try {
-    // Vue refs expose nested objects as reactive proxies. Structured clone used
-    // by Electron IPC cannot clone those proxies, so keep the IPC boundary
-    // explicitly serializable.
-    const requestTrack = {
-      bvid: String(track.bvid ?? ''),
-      cid: track.cid == null ? undefined : Number(track.cid),
-      page: track.page == null ? undefined : Number(track.page),
-      title: track.title == null ? undefined : String(track.title),
-      artist: track.artist == null ? undefined : String(track.artist),
-      duration: track.duration == null ? undefined : Number(track.duration),
+    let result
+    if (track.type == 'netease') {
+      if (!track.mvid) throw new Error(window.i18n.t('setting__play_detail_immersive_mv_no_track'))
+      result = await getNeteaseMvUrl(track.mvid)
+    } else {
+      // Vue refs expose nested objects as reactive proxies. Structured clone used
+      // by Electron IPC cannot clone those proxies, so keep the IPC boundary
+      // explicitly serializable.
+      const requestTrack = {
+        bvid: String(track.bvid ?? ''),
+        cid: track.cid == null ? undefined : Number(track.cid),
+        page: track.page == null ? undefined : Number(track.page),
+        title: track.title == null ? undefined : String(track.title),
+        artist: track.artist == null ? undefined : String(track.artist),
+        duration: track.duration == null ? undefined : Number(track.duration),
+      }
+      if (!requestTrack.bvid) throw new Error(window.i18n.t('setting__play_detail_immersive_mv_no_track'))
+      result = await getBiliVideoUrl(requestTrack)
     }
-    if (!requestTrack.bvid) throw new Error(window.i18n.t('setting__play_detail_immersive_mv_no_track'))
-    const result = await getBiliVideoUrl(requestTrack)
     if (requestId != mvRequestId || background.value != 'mv') return
     if (mvUrl.value && mvUrl.value != result.url) releaseMvVideo()
     mvUrl.value = result.url
-    activeMvKey.value = `${track.bvid}:${track.cid ?? track.page ?? 1}`
+    activeMvKey.value = track.type == 'netease' ? `netease:${track.mvid}` : `${track.bvid}:${track.cid ?? track.page ?? 1}`
+    activeMvCandidate.value = normalizeActiveMvCandidate(track)
     mvStatus.value = 'ready'
     await nextTick()
     await syncMvPlayback()
@@ -337,6 +393,7 @@ const loadMv = async() => {
       releaseMvVideo()
       mvUrl.value = ''
       activeMvKey.value = ''
+      activeMvCandidate.value = null
       mvStatus.value = 'error'
       mvError.value = err instanceof Error ? err.message : String(err)
       console.warn('[ImmersiveLyrics] Bilibili MV unavailable, using album background', err)
@@ -354,13 +411,24 @@ const scheduleMvLoad = () => {
 }
 
 const selectMvCandidate = candidate => {
-  mvOverride.value = {
-    bvid: candidate.bvid,
-    cid: candidate.cid,
-    page: candidate.page,
-    title: candidate.title,
-    artist: candidate.author,
-  }
+  mvOverride.value = candidate.type == 'netease'
+    ? {
+        type: 'netease',
+        mvid: Number(candidate.mvid),
+        title: candidate.title,
+        artist: candidate.artist,
+        duration: Number(candidate.duration) || undefined,
+      }
+    : {
+        type: 'bili',
+        bvid: candidate.bvid,
+        cid: candidate.cid,
+        page: candidate.page,
+        title: candidate.title,
+        artist: candidate.author,
+        duration: candidate.duration,
+      }
+  activeMvCandidate.value = normalizeActiveMvCandidate(candidate)
   mvStatus.value = 'loading'
   mvError.value = ''
   scheduleMvLoad()
@@ -651,6 +719,7 @@ watch(() => [background.value, biliTrackKey.value, musicInfo.id], () => {
 
 watch(() => appSetting['playDetail.immersiveMvSource'], () => {
   mvOverride.value = null
+  activeMvCandidate.value = null
   scheduleMvLoad()
 })
 
@@ -660,6 +729,7 @@ watch(() => appSetting['playDetail.immersiveLyricSource'], () => {
 
 watch(() => musicInfo.id, () => {
   mvOverride.value = null
+  activeMvCandidate.value = null
   originalLyricTrackId = ''
   originalLyric.value = null
   void applyLyricSource()

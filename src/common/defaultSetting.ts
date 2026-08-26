@@ -77,6 +77,7 @@ const baseDefaultSetting: LX.AppSetting = {
   'playDetail.isShowLyricProgressSetting': false,
   'playDetail.style.fontSize': 140,
   'playDetail.style.align': 'center',
+  'playDetail.lyricStyle': 'classic',
   'playDetail.isDelayScroll': true,
   'playDetail.immersiveEffect': 'classic',
   'playDetail.immersiveAudioVisualization': false,

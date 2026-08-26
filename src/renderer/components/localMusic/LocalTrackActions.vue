@@ -12,6 +12,8 @@
     v-model:show="metadataVisible"
     :music-info="track"
     :lyric-status="lyricStatus"
+    :teleport-target="teleportTarget"
+    :read-only="metadataReadOnly"
     @saved="handleSaved"
     @lyrics-applied="handleLyricsApplied"
   />
@@ -31,10 +33,11 @@ import MetadataEditModal from './MetadataEditModal.vue'
 import LyricsMatchModal from './LyricsMatchModal.vue'
 import { buildLocalTrackMenuItems, type LocalTrackMenuItem } from './localTrackMenu'
 
-const props = withDefaults(defineProps<{ withMenu?: boolean, listId?: string, canRemoveFromList?: boolean }>(), {
+const props = withDefaults(defineProps<{ withMenu?: boolean, listId?: string, canRemoveFromList?: boolean, teleportTarget?: string }>(), {
   withMenu: false,
   listId: LOCAL_MUSIC_LIST_ID,
   canRemoveFromList: false,
+  teleportTarget: '#view',
 })
 const emit = defineEmits<{
   updated: [track: LX.Music.MusicInfoLocal]
@@ -43,6 +46,7 @@ const emit = defineEmits<{
 const track = ref<LX.Music.MusicInfoLocal | null>(null)
 const menuVisible = ref(false)
 const metadataVisible = ref(false)
+const metadataReadOnly = ref(false)
 const lyricsVisible = ref(false)
 const addVisible = ref(false)
 const hasLyrics = ref(false)
@@ -75,9 +79,12 @@ const showMenu = (event: MouseEvent, value: LX.Music.MusicInfoLocal) => {
   void nextTick(() => { menuVisible.value = true })
 }
 
-const openMetadata = (value?: LX.Music.MusicInfoLocal) => {
+const openMetadata = (value?: LX.Music.MusicInfoLocal, readOnly = false) => {
   if (value) setTrack(value)
-  if (track.value) metadataVisible.value = true
+  if (track.value) {
+    metadataReadOnly.value = readOnly
+    metadataVisible.value = true
+  }
 }
 const openLyrics = (_force = false, value?: LX.Music.MusicInfoLocal) => {
   if (value) setTrack(value)

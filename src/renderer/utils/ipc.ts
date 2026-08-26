@@ -1,5 +1,5 @@
 import { rendererSend, rendererInvoke, rendererOn, rendererOff } from '@common/rendererIpc'
-import { HOTKEY_RENDERER_EVENT_NAME, WIN_MAIN_RENDERER_EVENT_NAME, CMMON_EVENT_NAME, BILI_RENDERER_EVENT_NAME } from '@common/ipcNames'
+import { HOTKEY_RENDERER_EVENT_NAME, WIN_MAIN_RENDERER_EVENT_NAME, CMMON_EVENT_NAME, BILI_RENDERER_EVENT_NAME, NCM_API_RENDERER_EVENT_NAME } from '@common/ipcNames'
 import { type ProgressInfo, type UpdateDownloadedEvent, type UpdateInfo } from 'electron-updater'
 import { markRaw } from '@common/utils/vueTools'
 import * as hotKeys from '@common/hotKey'
@@ -606,6 +606,18 @@ export const getBiliComment = async(info: LX.Bili.CommentParams): Promise<LX.Bil
 
 export const getBiliSongListDetail = async(info: LX.Bili.SongListDetailParams): Promise<LX.Bili.SongListDetail> => {
   return rendererInvoke<LX.Bili.SongListDetailParams, LX.Bili.SongListDetail>(BILI_RENDERER_EVENT_NAME.get_songlist_detail, info)
+}
+
+interface NcmApiRequestParams {
+  endpoint: string
+  params?: Record<string, any>
+}
+
+export const sendNcmApiRequest = async <T = any>(endpoint: string, params: Record<string, any> = {}): Promise<T> => {
+  return rendererInvoke<NcmApiRequestParams, T>(NCM_API_RENDERER_EVENT_NAME.request, {
+    endpoint,
+    params,
+  })
 }
 
 /**

@@ -295,7 +295,7 @@ export default {
 }
 
 .smallContainer {
-  height: 41px;
+  height: 32px;
 }
 
 .gooFilter {
@@ -638,11 +638,11 @@ export default {
   }
 
   & .main {
-    height: 41px;
+    height: 32px;
   }
 
   .main {
-    border-radius: 20.5px;
+    border-radius: 16px;
   }
 
   .collapseLabel {
@@ -652,15 +652,14 @@ export default {
   }
 
   .gooLayerMain {
-    height: 41px;
-    border-radius: 20.5px;
+    height: 32px;
+    border-radius: 16px;
   }
 
   .gooLayerButton {
-    width: 38px;
-    height: 38px;
-    /* 小号胶囊圆角 20.5px，圆心即右缘 129.5px，38px 圆钮左缘为 110.5px → 偏移 -39.5px */
-    transform: translateX(-39.5px) scale(.4);
+    width: 30px;
+    height: 30px;
+    transform: translateX(-31.5px) scale(.4);
   }
 
   .input {
@@ -669,19 +668,19 @@ export default {
   }
 
   .searchBtn {
-    width: 38px;
-    height: 38px;
-    transform: translateX(-39.5px);
+    width: 30px;
+    height: 30px;
+    transform: translateX(-31.5px);
 
     svg {
-      width: 17px;
-      height: 17px;
+      width: 15px;
+      height: 15px;
     }
   }
 
   .list {
-    top: 47px;
-    width: calc(100% - 54px); /* 胶囊宽 = 容器 - 圆球38 - 间距16 */
+    top: 38px;
+    width: calc(100% - 46px); /* 胶囊宽 = 容器 - 圆球30 - 间距16 */
 
     li {
       padding: 10px 12px;

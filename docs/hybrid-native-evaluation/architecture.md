@@ -191,7 +191,6 @@ UI 只持有：
 
 - 本轮不改现有 Electron 行为。
 - 不继续 WinUI Slice 2；实验成果仅由 `winui-poc` 分支保留，不进入当前 Hybrid 工作树。
-- 不 Fork 或链接 fooyin Core。
 - 不自研完整 WASAPI 播放器。
 - 不把所有网络协议、设置和 UI 状态迁到原生层。
 - 不以进程数、语言或安装包体积代替端到端内存与稳定性测量。
@@ -211,7 +210,6 @@ UI 只持有：
 - `src/renderer/worker/download/*`
 - `src/main/modules/userApi/*`
 - `src/main/modules/bilibili/*`
-- `docs/migration/*` 中仍有效的历史决策记录
 
 外部接口约束参考 [Electron MessagePort](https://www.electronjs.org/docs/latest/tutorial/message-ports)、[Tauri sidecar](https://v2.tauri.app/develop/sidecar/) 以及 [Wails Windows/WebView2](https://wails.io/docs/next/guides/windows/)。
 

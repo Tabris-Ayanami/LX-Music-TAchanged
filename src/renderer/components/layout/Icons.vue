@@ -265,6 +265,11 @@
         <circle cx="12" cy="14.8" r="2" fill="currentColor" stroke="none" />
         <circle cx="18" cy="8.3" r="2" fill="currentColor" stroke="none" />
       </g>
+      <g id="icon-info-modern" stroke="currentColor" fill="none" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M12 10.8v5.2" />
+        <circle cx="12" cy="7.8" r="1.2" fill="currentColor" stroke="none" />
+      </g>
       <g id="icon-prev-amll" fill="currentColor">
         <path d="M6.5 6.4a1 1 0 0 1 1 1v9.2a1 1 0 1 1-2 0V7.4a1 1 0 0 1 1-1Z" />
         <path d="M18.65 6.87c.78-.47 1.77.09 1.77 1V16.13c0 .91-.99 1.48-1.77 1l-6.87-4.14a1.17 1.17 0 0 1 0-2l6.87-4.12Z" />

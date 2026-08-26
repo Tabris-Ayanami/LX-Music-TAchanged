@@ -56,14 +56,14 @@ const toggleTheme = () => {
 
 <style lang="less" module>
 .hitArea {
-  width: 64px;
-  height: 44px;
+  width: 56px;
+  height: 30px;
   border: 0;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 64px;
+  flex: 0 0 56px;
   color: inherit;
   background: transparent;
   cursor: pointer;
@@ -86,9 +86,9 @@ const toggleTheme = () => {
 }
 
 .switch {
-  --toggle-height: 24px;
-  --toggle-width: 58px;
-  --orb-size: 20px;
+  --toggle-height: 20px;
+  --toggle-width: 50px;
+  --orb-size: 16px;
   --orb-offset: 2px;
 
   position: relative;
@@ -157,8 +157,8 @@ const toggleTheme = () => {
 }
 
 .halo {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   top: 50%;
   left: var(--orb-offset);
   border-radius: 50%;
@@ -231,7 +231,7 @@ const toggleTheme = () => {
   }
 
   .halo {
-    transform: translate(calc(var(--toggle-width) - 34px), -50%);
+    transform: translate(calc(var(--toggle-width) - 30px), -50%);
   }
 
   .orb {

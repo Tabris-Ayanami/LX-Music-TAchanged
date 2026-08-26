@@ -61,11 +61,7 @@ div(:class="$style.page")
       h2(:class="$style.sectionTitle") {{ $t('discover__daily_recommend') }}
       div(:class="$style.sectionHeadRight")
         span(v-if="dailyList.length" :class="$style.sectionSub") {{ dailyList.length }} {{ $t('discover__songs_unit') }}
-        button(
-          :class="$style.playAll" :disabled="!dailyList.length" @click="playAllDaily"
-          @pointerenter="onPlayAllEnter" @pointerleave="onPlayAllLeave" @pointermove="onPlayAllMove" @pointerdown="onPlayAllDown" @pointerup="onPlayAllUp"
-        )
-          span(:class="$style.playAllFill" :style="playAllFillStyle")
+        origin-button(:disabled="!dailyList.length" @click="playAllDaily")
           span(:class="$style.playAllLabel")
             span {{ $t('discover__play_all') }}
     template(v-if="hasWYCookie")
@@ -131,6 +127,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from '@common/utils/
 import { onActivated, onDeactivated } from 'vue'
 import { useRouter } from '@common/utils/vueRouter'
 import OriginChip from '@renderer/components/common/OriginChip.vue'
+import OriginButton from '@renderer/components/common/OriginButton.vue'
 import { appSetting } from '@renderer/store/setting'
 import { musicInfo, isPlay, playInfo } from '@renderer/store/player/state'
 import { getList } from '@renderer/store/player/action'
@@ -368,57 +365,6 @@ const playAllDaily = async() => {
   if (!dailyList.value.length) return
   await playMusicsInDefaultList(dailyList.value, 0)
 }
-
-// ===== 播放全部按钮：落点扩散填充动效（OriginButton 风格） =====
-const playAllOrigin = ref({ x: 0, y: 0 })
-const playAllSize = ref(0)
-const playAllShow = ref(false)
-
-const getCoverDiameter = (w, h, x, y) => Math.ceil(2 * Math.max(
-  Math.hypot(x, y),
-  Math.hypot(w - x, y),
-  Math.hypot(x, h - y),
-  Math.hypot(w - x, h - y),
-))
-
-const onPlayAllMove = event => {
-  const rect = event.currentTarget.getBoundingClientRect()
-  playAllOrigin.value = {
-    x: event.clientX - rect.left,
-    y: event.clientY - rect.top,
-  }
-  playAllSize.value = getCoverDiameter(rect.width, rect.height, playAllOrigin.value.x, playAllOrigin.value.y)
-}
-const onPlayAllEnter = event => {
-  if (event.currentTarget.disabled) return
-  const rect = event.currentTarget.getBoundingClientRect()
-  playAllOrigin.value = {
-    x: rect.width / 2,
-    y: rect.height / 2,
-  }
-  playAllSize.value = getCoverDiameter(rect.width, rect.height, playAllOrigin.value.x, playAllOrigin.value.y)
-  playAllShow.value = true
-}
-const onPlayAllLeave = () => {
-  playAllShow.value = false
-}
-const onPlayAllDown = event => {
-  const rect = event.currentTarget.getBoundingClientRect()
-  playAllOrigin.value = {
-    x: event.clientX - rect.left,
-    y: event.clientY - rect.top,
-  }
-  playAllSize.value = getCoverDiameter(rect.width, rect.height, playAllOrigin.value.x, playAllOrigin.value.y)
-}
-const onPlayAllUp = () => {}
-
-const playAllFillStyle = computed(() => ({
-  left: `${playAllOrigin.value.x}px`,
-  top: `${playAllOrigin.value.y}px`,
-  width: `${playAllSize.value}px`,
-  height: `${playAllSize.value}px`,
-  transform: `translate(-50%, -50%) scale(${playAllShow.value && playAllSize.value > 0 ? 1 : 0})`,
-}))
 
 // ===== 热搜 =====
 const loadHot = async() => {
@@ -741,48 +687,8 @@ onBeforeUnmount(deactivateDiscoverResources)
   }
 }
 
-.playAll {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 96px;
-  height: 30px;
-  padding: 0 18px;
-  border-radius: 999px;
-  border: none;
-  overflow: hidden;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 6px 16px var(--color-primary-alpha-600), inset 0 1px 0 rgba(255, 255, 255, .35);
-  transition: transform @transition-fast;
-
-  &:hover {
-    transform: translateY(-1px);
-  }
-
-  &:disabled {
-    opacity: .45;
-    cursor: default;
-    transform: none;
-  }
-}
-
-/* 从指针落点扩散的填充圆（深色对比，便于看出动画） */
-.playAllFill {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(6, 44, 30, 0.9);
-  pointer-events: none;
-  transition: transform .5s cubic-bezier(.16, 1, .3, 1);
-}
-
+// ===== 每日推荐：横向滚动 =====
 .playAllLabel {
-  position: relative;
-  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -791,7 +697,6 @@ onBeforeUnmount(deactivateDiscoverResources)
   white-space: nowrap;
 }
 
-// ===== 每日推荐：横向滚动 =====
 .dailyRail {
   display: flex;
   gap: 14px;
@@ -1038,8 +943,6 @@ onBeforeUnmount(deactivateDiscoverResources)
   .npCover,
   .npMeta,
   .npPlay,
-  .playAll,
-  .playAllFill,
   .dailyCard,
   .dailyCoverWrap,
   .dailyOverlay,

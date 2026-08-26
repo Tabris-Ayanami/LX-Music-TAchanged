@@ -3,6 +3,19 @@ dt#play_detail(v-if="!embedded") {{ $t('setting__play_detail') }}
 dd(v-else)
   h3#appearance_play_detail(:class="$style.embeddedTitle") {{ $t('setting__play_detail') }}
 dd
+  h3#play_detail_lyric_style {{ $t('setting__play_detail_lyric_style') }}
+  div
+    base-checkbox.gap-left(id="setting_play_detail_lyric_style_classic" :model-value="appSetting['playDetail.lyricStyle']" need value="classic" :label="$t('setting__play_detail_lyric_style_classic')" @update:model-value="updateSetting({ 'playDetail.lyricStyle': $event })")
+    base-checkbox.gap-left(id="setting_play_detail_lyric_style_amll" :model-value="appSetting['playDetail.lyricStyle']" need value="amll" :label="$t('setting__play_detail_lyric_style_amll')" @update:model-value="updateSetting({ 'playDetail.lyricStyle': $event })")
+
+dd(v-if="appSetting['playDetail.lyricStyle'] == 'classic'")
+  h3#play_detail_align {{ $t('setting__play_detail_align') }}
+  div
+    base-checkbox.gap-left(id="setting_play_detail_align_left" :model-value="appSetting['playDetail.style.align']" need value="left" :label="$t('setting__play_detail_align_left')" @update:model-value="updateSetting({ 'playDetail.style.align': $event })")
+    base-checkbox.gap-left(id="setting_play_detail_align_center" :model-value="appSetting['playDetail.style.align']" need value="center" :label="$t('setting__play_detail_align_center')" @update:model-value="updateSetting({ 'playDetail.style.align': $event })")
+    base-checkbox.gap-left(id="setting_play_detail_align_right" :model-value="appSetting['playDetail.style.align']" need value="right" :label="$t('setting__play_detail_align_right')" @update:model-value="updateSetting({ 'playDetail.style.align': $event })")
+
+dd(v-if="appSetting['playDetail.lyricStyle'] == 'classic'")
   .gap-top
     base-checkbox(id="setting_play_detail_font_zoom_enable" :model-value="appSetting['playDetail.isZoomActiveLrc']" :label="$t('setting__play_detail_font_zoom')" @update:model-value="updateSetting({'playDetail.isZoomActiveLrc': $event})")
   .gap-top
@@ -11,48 +24,23 @@ dd
     base-checkbox(id="setting_play_detail_lyric_progress_enable" :model-value="appSetting['playDetail.isShowLyricProgressSetting']" :label="$t('setting__play_detail_lyric_progress')" @update:model-value="updateSetting({'playDetail.isShowLyricProgressSetting': $event})")
 
 dd
-  h3#play_detail_immersive_effect {{ $t('setting__play_detail_immersive_effect') }}
-  p(:class="$style.immersiveEffectTip") {{ $t('setting__play_detail_immersive_effect_tip') }}
-  div(:class="$style.immersiveAudioOption")
-    base-checkbox(
-      id="setting_play_detail_immersive_audio_visualization"
-      :model-value="appSetting['playDetail.immersiveAudioVisualization']"
-      :label="$t('setting__play_detail_immersive_audio_visualization')"
-      @update:model-value="updateSetting({ 'playDetail.immersiveAudioVisualization': $event })"
-    )
-    small {{ $t('setting__play_detail_immersive_audio_visualization_tip') }}
-  div(:class="$style.immersiveDelayControl")
-    label(for="setting_play_detail_immersive_control_hide_delay") {{ $t('setting__play_detail_immersive_control_hide_delay', { value: appSetting['playDetail.immersiveControlHideDelay'] }) }}
-    div(:class="$style.delayAdjuster")
-      button(type="button" :class="$style.delayStep" :aria-label="$t('setting__play_detail_immersive_control_hide_delay_decrease')" :disabled="appSetting['playDetail.immersiveControlHideDelay'] <= 1" @click="adjustImmersiveControlHideDelay(-1)") −
-      base-slider-bar(
-        id="setting_play_detail_immersive_control_hide_delay"
-        :class-name="$style.delaySlider"
-        :value="appSetting['playDetail.immersiveControlHideDelay']"
-        :min="1"
-        :max="10"
-        :step="1"
-        @change="updateSetting({ 'playDetail.immersiveControlHideDelay': $event })"
-      )
-      output(:class="$style.delayValue" for="setting_play_detail_immersive_control_hide_delay") {{ appSetting['playDetail.immersiveControlHideDelay'] }}s
-      button(type="button" :class="$style.delayStep" :aria-label="$t('setting__play_detail_immersive_control_hide_delay_increase')" :disabled="appSetting['playDetail.immersiveControlHideDelay'] >= 10" @click="adjustImmersiveControlHideDelay(1)") +
-    small {{ $t('setting__play_detail_immersive_control_hide_delay_tip') }}
-  div(:class="$style.immersiveEffectGrid")
+  h3#play_detail_layout {{ $t('setting__play_detail_layout') }}
+  p(:class="$style.settingTip") {{ $t('setting__play_detail_layout_tip') }}
+  div(:class="$style.optionGrid")
     button(
-      v-for="item in immersiveEffectOptions"
+      v-for="item in layoutOptions"
       :key="item.id"
       type="button"
-      :class="[$style.immersiveEffectCard, { [$style.active]: appSetting['playDetail.immersiveEffect'] == item.id }]"
-      :aria-pressed="appSetting['playDetail.immersiveEffect'] == item.id"
-      @click="updateSetting({ 'playDetail.immersiveEffect': item.id })"
+      :class="[$style.optionCard, { [$style.active]: appSetting['playDetail.layoutStyle'] == item.id }]"
+      :aria-pressed="appSetting['playDetail.layoutStyle'] == item.id"
+      @click="updateSetting({ 'playDetail.layoutStyle': item.id })"
     )
-      span(:class="[$style.immersivePreview, $style[`immersivePreview-${item.id}`]]" aria-hidden="true")
-        i {{ item.id == 'classic' ? '流光' : item.name }}
-      span(:class="$style.immersiveEffectBody")
+      span(:class="[$style.layoutPreview, $style[`layout-${item.id}`]]" aria-hidden="true")
+      span(:class="$style.optionBody")
         strong {{ item.name }}
         small {{ item.description }}
 
-dd
+dd(v-if="appSetting['playDetail.layoutStyle'] != 'pixel'")
   h3#play_detail_background {{ $t('setting__play_detail_background') }}
   p(:class="$style.settingTip") {{ $t('setting__play_detail_background_tip') }}
   div(:class="$style.optionGrid")
@@ -80,35 +68,10 @@ dd
       )
       small {{ $t('setting__play_detail_background_dynamic_cover_tip') }}
 
-dd
-  h3#play_detail_layout {{ $t('setting__play_detail_layout') }}
-  p(:class="$style.settingTip") {{ $t('setting__play_detail_layout_tip') }}
-  div(:class="$style.optionGrid")
-    button(
-      v-for="item in layoutOptions"
-      :key="item.id"
-      type="button"
-      :class="[$style.optionCard, { [$style.active]: appSetting['playDetail.layoutStyle'] == item.id }]"
-      :aria-pressed="appSetting['playDetail.layoutStyle'] == item.id"
-      @click="updateSetting({ 'playDetail.layoutStyle': item.id })"
-    )
-      span(:class="[$style.layoutPreview, $style[`layout-${item.id}`]]" aria-hidden="true")
-      span(:class="$style.optionBody")
-        strong {{ item.name }}
-        small {{ item.description }}
-
-dd
-  h3#play_detail_align {{ $t('setting__play_detail_align') }}
-  div
-    base-checkbox.gap-left(id="setting_play_detail_align_left" :model-value="appSetting['playDetail.style.align']" need value="left" :label="$t('setting__play_detail_align_left')" @update:model-value="updateSetting({ 'playDetail.style.align': $event })")
-    base-checkbox.gap-left(id="setting_play_detail_align_center" :model-value="appSetting['playDetail.style.align']" need value="center" :label="$t('setting__play_detail_align_center')" @update:model-value="updateSetting({ 'playDetail.style.align': $event })")
-    base-checkbox.gap-left(id="setting_play_detail_align_right" :model-value="appSetting['playDetail.style.align']" need value="right" :label="$t('setting__play_detail_align_right')" @update:model-value="updateSetting({ 'playDetail.style.align': $event })")
-
 </template>
 
 <script>
 import { appSetting, updateSetting } from '@renderer/store/setting'
-import { getImmersiveEffectOptions } from '@renderer/components/layout/PlayDetail/immersiveEffects'
 
 export default {
   name: 'SettingPlayDetail',
@@ -119,11 +82,6 @@ export default {
     },
   },
   setup() {
-    const adjustImmersiveControlHideDelay = delta => {
-      const current = Number(appSetting['playDetail.immersiveControlHideDelay'] ?? 3)
-      updateSetting({ 'playDetail.immersiveControlHideDelay': Math.min(10, Math.max(1, current + delta)) })
-    }
-    const immersiveEffectOptions = getImmersiveEffectOptions(key => window.i18n.t(key))
     const backgroundOptions = [
       {
         id: 'aura',
@@ -157,8 +115,6 @@ export default {
     return {
       appSetting,
       updateSetting,
-      adjustImmersiveControlHideDelay,
-      immersiveEffectOptions,
       backgroundOptions,
       layoutOptions,
     }

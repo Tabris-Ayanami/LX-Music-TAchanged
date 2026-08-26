@@ -1,15 +1,17 @@
-import { createUserList, getListMusics, getUserLists, addListMusics, overwriteListMusics, setFetchingListStatus } from '@renderer/store/list/action'
+import { createUserList, getListMusics, getUserLists, addListMusics, overwriteListMusics, removeUserList, setFetchingListStatus } from '@renderer/store/list/action'
 import { userLists } from '@renderer/store/list/state'
 import { playMusicInfo } from '@renderer/store/player/state'
 import { playMusicsInDefaultList, queueNextInDefaultList } from './playDefaultList'
 import { createLocalMusicInfos, scanLocalMusicFiles } from './ipc'
 import { getHostBridge } from '@common/hostBridge'
+import { basename, dirname, toMD5 } from '@common/utils/nodejs'
 
 export const LOCAL_MUSIC_LIST_ID = 'userlist_local_music'
 export const LOCAL_MUSIC_LIST_NAME = '本地音乐'
 export const LOCAL_MUSIC_LIBRARY_FOLDERS_KEY = 'lx_local_music_library_folders'
 
 const LOCAL_MUSIC_IMPORT_BATCH_SIZE = 200
+const LOCAL_MUSIC_FOLDER_LIST_PREFIX = 'userlist_local_folder_'
 
 export interface LocalMusicGroupItem {
   index: number
@@ -105,6 +107,32 @@ const isTrackInFolders = (track: LX.Music.MusicInfo, folders: string[]) => {
   return folders.some(folder => isFileUnderFolder(track.meta.filePath, folder))
 }
 
+const getFolderListId = (folderPath: string) => {
+  return `${LOCAL_MUSIC_FOLDER_LIST_PREFIX}${toMD5(normalizeComparablePath(folderPath))}`
+}
+
+const resolveLeafMusicFolders = (filePaths: string[]) => {
+  const musicDirectories = dedupePaths(filePaths.map(filePath => dirname(normalizeLibraryFolder(filePath))))
+  return musicDirectories.filter(folder => {
+    return !musicDirectories.some(candidate => candidate != folder && isFileUnderFolder(candidate, folder))
+  })
+}
+
+const getFolderListName = (folderPath: string, folders: string[]) => {
+  const folderName = basename(folderPath)
+  const sameNameFolders = folders.filter(folder => basename(folder) == folderName)
+  if (sameNameFolders.length <= 1) return folderName
+
+  const parentName = basename(dirname(folderPath))
+  const disambiguatedName = parentName ? `${parentName}/${folderName}` : folderName
+  return folders.filter(folder => {
+    const parent = basename(dirname(folder))
+    return parent ? `${parent}/${basename(folder)}` : basename(folder)
+  }).filter(name => name == disambiguatedName).length <= 1
+    ? disambiguatedName
+    : folderPath
+}
+
 export const getLocalMusicLibraryFolders = () => {
   try {
     const folders = JSON.parse(window.localStorage.getItem(LOCAL_MUSIC_LIBRARY_FOLDERS_KEY) ?? '[]')
@@ -121,13 +149,6 @@ export const setLocalMusicLibraryFolders = (folders: string[]) => {
   return nextFolders
 }
 
-export const addLocalMusicLibraryFolders = (folders: string[]) => {
-  return setLocalMusicLibraryFolders([
-    ...getLocalMusicLibraryFolders(),
-    ...folders,
-  ])
-}
-
 export const removeLocalMusicLibraryFolder = (folderPath: string) => {
   const targetPath = normalizeComparablePath(folderPath)
   return setLocalMusicLibraryFolders(getLocalMusicLibraryFolders().filter(path => normalizeComparablePath(path) != targetPath))
@@ -135,6 +156,15 @@ export const removeLocalMusicLibraryFolder = (folderPath: string) => {
 
 export const collectLocalMusicFilesFromFolders = async(folders: string[]) => {
   return dedupePaths(await scanLocalMusicFiles(dedupePaths(folders)))
+}
+
+export const addLocalMusicLibraryFolders = async(folders: string[]) => {
+  const rootFolders = dedupePaths([
+    ...getLocalMusicLibraryFolders(),
+    ...folders,
+  ])
+  const filePaths = await collectLocalMusicFilesFromFolders(rootFolders)
+  return setLocalMusicLibraryFolders(resolveLeafMusicFolders(filePaths))
 }
 
 const createLocalMusicInfosByPaths = async(filePaths: string[]): Promise<LX.Music.MusicInfoLocal[]> => {
@@ -158,14 +188,47 @@ export const importLocalMusicFiles = async(listId: string, filePaths: string[]) 
   }
 }
 
+const syncLocalFolderLists = async(folders: string[], scannedTracks: LX.Music.MusicInfoLocal[]) => {
+  await getUserLists()
+
+  const desiredIds = new Set(folders.map(folder => getFolderListId(folder)))
+  const staleListIds = userLists
+    .filter(item => item.id.startsWith(LOCAL_MUSIC_FOLDER_LIST_PREFIX) && !desiredIds.has(item.id))
+    .map(item => item.id)
+  if (staleListIds.length) await removeUserList(staleListIds)
+
+  for (const folder of folders) {
+    const listId = getFolderListId(folder)
+    const folderTracks = scannedTracks.filter(track => isFileUnderFolder(track.meta.filePath, folder))
+
+    if (!userLists.some(item => item.id == listId)) {
+      try {
+        await createUserList({
+          id: listId,
+          name: getFolderListName(folder, folders),
+        })
+      } catch (error) {
+        if (!isDuplicateListError(error)) throw error
+      }
+      await getUserLists()
+    }
+
+    await overwriteListMusics({
+      listId,
+      musicInfos: folderTracks,
+    })
+  }
+}
+
 export const rescanLocalMusicLibrary = async() => {
   const list = await ensureLocalMusicList()
-  const folders = getLocalMusicLibraryFolders()
+  const rootFolders = getLocalMusicLibraryFolders()
   setFetchingListStatus(list.id, true)
   try {
     const currentTracks = await getListMusics(list.id)
-    const unmanagedTracks = currentTracks.filter(track => !isTrackInFolders(track, folders))
-    const filePaths = await collectLocalMusicFilesFromFolders(folders)
+    const unmanagedTracks = currentTracks.filter(track => !isTrackInFolders(track, rootFolders))
+    const filePaths = await collectLocalMusicFilesFromFolders(rootFolders)
+    const leafFolders = resolveLeafMusicFolders(filePaths)
     const scannedTracks = await createLocalMusicInfosByPaths(filePaths)
     const nextTracks = dedupeMusicInfos([
       ...unmanagedTracks,
@@ -175,10 +238,12 @@ export const rescanLocalMusicLibrary = async() => {
       listId: list.id,
       musicInfos: nextTracks,
     })
+    setLocalMusicLibraryFolders(leafFolders)
+    await syncLocalFolderLists(leafFolders, scannedTracks)
     setCachedLocalTracks(nextTracks.filter((track): track is LX.Music.MusicInfoLocal => track.source == 'local'))
     return {
       listId: list.id,
-      folderCount: folders.length,
+      folderCount: leafFolders.length,
       scannedFileCount: filePaths.length,
       importedCount: scannedTracks.length,
       totalCount: nextTracks.length,
@@ -200,6 +265,7 @@ export const removeLocalMusicLibraryFolderTracks = async(folderPath: string) => 
       listId: list.id,
       musicInfos: nextTracks,
     })
+    await removeUserList([getFolderListId(folderPath)])
     setCachedLocalTracks(nextTracks.filter((track): track is LX.Music.MusicInfoLocal => track.source == 'local'))
     return nextTracks.length
   } finally {

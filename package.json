@@ -1,6 +1,6 @@
 {
   "name": "lx-music-desktop",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "一个免费的音乐查找助手",
   "main": "./dist/main.js",
   "scripts": {
@@ -195,8 +195,17 @@
     "webpack-merge": "^6.0.1"
   },
   "dependencies": {
+    "@applemusic-like-lyrics/core": "^0.5.2",
     "@chenglou/pretext": "^0.0.8",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@neteasecloudmusicapienhanced/api": "^4.40.1",
+    "@pixi/app": "^7.4.3",
+    "@pixi/core": "^7.4.3",
+    "@pixi/display": "^7.4.3",
+    "@pixi/filter-blur": "^7.4.3",
+    "@pixi/filter-bulge-pinch": "^5.1.1",
+    "@pixi/filter-color-matrix": "^7.4.3",
+    "@pixi/sprite": "^7.4.3",
     "@react-three/fiber": "^9.6.1",
     "@simonwep/pickr": "^1.9.1",
     "better-sqlite3": "^12.6.2",

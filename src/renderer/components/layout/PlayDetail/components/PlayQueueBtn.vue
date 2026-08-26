@@ -624,6 +624,17 @@ onBeforeUnmount(() => {
   pointer-events: none;
   transition: opacity @transition-fast, color @transition-fast, background-color @transition-fast;
 
+  &::before {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border: 1px solid transparent;
+    border-radius: 50%;
+    background: transparent;
+    content: '';
+    transition: background-color @transition-fast, border-color @transition-fast, transform @transition-fast;
+  }
+
   .itemRow:hover &,
   .itemRow:focus-within & {
     opacity: 1;
@@ -632,10 +643,18 @@ onBeforeUnmount(() => {
 
   &:hover {
     color: rgba(228, 83, 83, 0.96);
-    background: rgba(206, 213, 224, 0.32);
+    background: transparent;
+
+    &::before {
+      border-color: rgba(206, 213, 224, 0.46);
+      background: rgba(206, 213, 224, 0.32);
+      transform: scale(1.04);
+    }
   }
 
   svg {
+    position: relative;
+    z-index: 1;
     width: 16px;
     height: 16px;
     fill: currentColor;
@@ -737,7 +756,12 @@ onBeforeUnmount(() => {
 
     &:hover {
       color: rgba(255, 112, 112, .96);
-      background: rgba(255, 255, 255, .08);
+      background: transparent;
+
+      &::before {
+        border-color: rgba(255, 255, 255, .22);
+        background: rgba(255, 255, 255, .08);
+      }
     }
   }
 }

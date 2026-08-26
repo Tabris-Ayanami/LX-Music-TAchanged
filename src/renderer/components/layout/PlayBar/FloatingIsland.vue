@@ -675,7 +675,10 @@ export default {
 .playBtn {
   width: 34px;
   height: 34px;
-  color: color-mix(in srgb, var(--shell-accent, var(--color-primary)) 72%, var(--shell-text, #182236) 28%);
+  color: #fff;
+  border-color: transparent;
+  background: var(--shell-accent, var(--color-primary));
+  box-shadow: none;
   transform: translateY(-2px);
   transition-property: transform, opacity, background-color, box-shadow, color, border-color, backdrop-filter;
 
@@ -685,41 +688,25 @@ export default {
   }
 
   &::before {
-    top: 2px;
-    left: 5px;
-    right: 5px;
-    height: 42%;
-    opacity: .64;
+    display: none;
+  }
+
+  &::after {
+    display: none;
+  }
+
+  &:hover,
+  &:active {
+    background: var(--shell-accent, var(--color-primary));
+    box-shadow: none;
   }
 }
 
 .playing {
-  color: rgba(255, 255, 255, 0.96);
-  border-color: color-mix(in srgb, var(--shell-accent, var(--color-primary)) 24%, rgba(255, 255, 255, 0.62));
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--shell-accent, var(--color-primary)) 76%, white 24%), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 72%, #2f65c8 28%));
-  box-shadow:
-    0 18px 30px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 24%, transparent),
-    0 8px 14px rgba(27, 39, 65, 0.16),
-    0 1px 0 rgba(255, 255, 255, 0.42) inset,
-    0 -1px 0 rgba(20, 38, 76, 0.18) inset,
-    0 0 0 1px rgba(255, 255, 255, 0.24) inset;
-
-  &:hover {
-    background:
-      linear-gradient(180deg, color-mix(in srgb, var(--shell-accent, var(--color-primary)) 70%, white 30%), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 66%, #2f65c8 34%));
-    box-shadow:
-      0 22px 34px color-mix(in srgb, var(--shell-accent, var(--color-primary)) 26%, transparent),
-      0 10px 16px rgba(27, 39, 65, 0.18),
-      0 1px 0 rgba(255, 255, 255, 0.46) inset,
-      0 -1px 0 rgba(20, 38, 76, 0.18) inset,
-      0 0 0 1px rgba(255, 255, 255, 0.28) inset;
-  }
-
-  &:active {
-    background:
-      linear-gradient(180deg, color-mix(in srgb, var(--shell-accent, var(--color-primary)) 74%, #1b3f92 26%), color-mix(in srgb, var(--shell-accent, var(--color-primary)) 62%, #244f9c 38%));
-  }
+  color: #fff;
+  border-color: transparent;
+  background: var(--shell-accent, var(--color-primary));
+  box-shadow: none;
 }
 
 .compactPlayBtn {

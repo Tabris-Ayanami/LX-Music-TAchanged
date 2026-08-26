@@ -1328,6 +1328,9 @@ export default {
   bottom: 24px;
   z-index: 12;
   width: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   pointer-events: auto;
 }
 
@@ -1336,8 +1339,17 @@ export default {
 }
 
 .pixelPlayBar :global(.playDetailHeaderRow .popupAnchor),
-.pixelPlayBar :global(.playDetailHeaderRow .moreBtn) {
+.pixelPlayBar :global(.playDetailSongInfoBtn) {
   pointer-events: auto;
+}
+
+.pixelPlayBar :global(.playDetailQualityCapsule) {
+  padding: 2px 7px;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(7, 9, 15, 0.22);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .pixelPlayBar :global(.playDetailTimeRow) {

@@ -1,7 +1,7 @@
 <template>
   <teleport to="#root">
     <div ref="dom_menu" :class="$style.container" :style="menuStyles" :aria-hidden="!modelValue">
-      <div :class="$style.group">
+      <div v-if="appSetting['playDetail.lyricStyle'] != 'amll'" :class="$style.group">
         <div :class="$style.subGroup">
           <div :class="$style.title">{{ $t('lyric_menu__align') }}</div>
         </div>

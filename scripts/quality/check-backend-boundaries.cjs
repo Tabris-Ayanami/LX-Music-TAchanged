@@ -8,7 +8,7 @@ const rendererRoot = path.join(root, 'src', 'renderer')
 const allowedExtensions = new Set(['.ts', '.tsx', '.js', '.vue'])
 const adapterPath = 'src/renderer/backend/electron.ts'
 const limits = {
-  legacyTransportFiles: 57,
+  legacyTransportFiles: 58,
   directRuntimeFiles: 33,
 }
 

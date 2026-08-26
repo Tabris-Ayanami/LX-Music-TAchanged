@@ -2,7 +2,7 @@
   <div :class="['right', $style.right]" :style="lrcFontSize">
     <transition name="motion-fade">
       <div
-        v-show="!isShowLrcSelectContent"
+        v-show="!isAmllStyle && !isShowLrcSelectContent"
         ref="dom_lyric"
         :class="['lyric', $style.lyric, { [$style.draging]: isMsDown }, { [$style.lrcActiveZoom]: isZoomActiveLrc }]" :style="lrcStyles"
         @wheel="handleWheel" @mousedown="handleLyricMouseDown" @touchstart="handleLyricTouchStart"
@@ -14,7 +14,7 @@
       </div>
     </transition>
     <transition name="motion-fade">
-      <div v-if="isShowLyricProgressSetting" v-show="isStopScroll && !isShowLrcSelectContent" :class="$style.skip">
+      <div v-if="!isAmllStyle && isShowLyricProgressSetting" v-show="isStopScroll && !isShowLrcSelectContent" :class="$style.skip">
         <div ref="dom_skip_line" :class="$style.line" />
         <base-btn
           :class="$style.skipBtn"
@@ -29,7 +29,7 @@
       </div>
     </transition>
     <transition name="motion-fade">
-      <div v-if="isShowLrcSelectContent" ref="dom_lrc_select_content" tabindex="-1" :class="[$style.lyricSelectContent, 'select', 'scroll', 'lyricSelectContent']" @contextmenu="handleCopySelectText">
+      <div v-if="!isAmllStyle && isShowLrcSelectContent" ref="dom_lrc_select_content" tabindex="-1" :class="[$style.lyricSelectContent, 'select', 'scroll', 'lyricSelectContent']" @contextmenu="handleCopySelectText">
         <div v-for="(info, index) in lyric.lines" :key="index" :class="[$style.lyricSelectline, { [$style.lrcActive]: lyric.line == index }]">
           <span>{{ info.text }}</span>
           <template v-for="(lrc, i) in info.extendedLyrics" :key="i">
@@ -39,6 +39,14 @@
         </div>
       </div>
     </transition>
+    <AmllLyricPlayer
+      v-if="isAmllStyle"
+      :lines="amllLines"
+      :current-time="amllCurrentTime"
+      :playing="isPlay"
+      @line-click="handleAmllLineClick"
+      @line-contextmenu="handleShowLyricMenu"
+    />
     <LyricMenu v-model="lyricMenuVisible" :xy="lyricMenuXY" :lyric-info="lyricInfo" @update-lyric="handleUpdateLyric" />
   </div>
 </template>
@@ -57,9 +65,12 @@ import {
 import {
   setMusicInfo,
 } from '@renderer/store/player/action'
+import { play } from '@renderer/core/player/action'
 import { onMounted, onBeforeUnmount, computed, reactive, ref, nextTick, watch } from '@common/utils/vueTools'
 import useLyric from '@renderer/utils/compositions/useLyric'
 import LyricMenu from './components/LyricMenu.vue'
+import AmllLyricPlayer from './AmllLyricPlayer.vue'
+import { toAmllLyricLines } from '@renderer/utils/amllLyric'
 import { appSetting } from '@renderer/store/setting'
 import { setLyricOffset } from '@renderer/core/lyric'
 import useSelectAllLrc from './useSelectAllLrc'
@@ -67,10 +78,12 @@ import useSelectAllLrc from './useSelectAllLrc'
 export default {
   components: {
     LyricMenu,
+    AmllLyricPlayer,
   },
   setup() {
     const isZoomActiveLrc = computed(() => appSetting['playDetail.isZoomActiveLrc'])
     const isShowLyricProgressSetting = computed(() => appSetting['playDetail.isShowLyricProgressSetting'])
+    const isAmllStyle = computed(() => appSetting['playDetail.lyricStyle'] == 'amll')
 
     const {
       dom_lyric,
@@ -137,6 +150,27 @@ export default {
       setLyricOffset(offset)
     }
 
+    const amllLines = computed(() => toAmllLyricLines({
+      lrc: playerMusicInfo.lrc ?? '',
+      tlrc: playerMusicInfo.tlrc ?? '',
+      rlrc: playerMusicInfo.rlrc ?? '',
+      lxlrc: playerMusicInfo.lxlrc ?? '',
+      useLxlrc: appSetting['player.isPlayLxlrc'],
+      showTranslation: appSetting['player.isShowLyricTranslation'],
+      showRoma: appSetting['player.isShowLyricRoma'],
+      swapTranslationAndRoma: appSetting['player.isSwapLyricTranslationAndRoma'],
+    }))
+    const amllCurrentTime = computed(() => Math.max(0, Math.round(
+      playProgress.nowPlayTime * 1000 + lyric.offset + lyric.tempOffset,
+    )))
+    const handleAmllLineClick = event => {
+      const line = amllLines.value[event.lineIndex]
+      if (!line) return
+      const time = Math.max((line.startTime - lyric.offset - lyric.tempOffset) / 1000, 0)
+      window.app_event.setProgress(Math.min(time, playProgress.maxPlayTime))
+      if (!isPlay.value) play()
+    }
+
     const lrcStyles = computed(() => {
       return {
         textAlign: appSetting['playDetail.style.align'],
@@ -180,6 +214,10 @@ export default {
       isShowLyricProgressSetting,
       isZoomActiveLrc,
       isStopScroll,
+      isAmllStyle,
+      amllLines,
+      amllCurrentTime,
+      handleAmllLineClick,
       lyricMenuVisible,
       lyricMenuXY,
       handleShowLyricMenu,

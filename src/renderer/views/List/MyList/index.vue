@@ -27,9 +27,6 @@
           </svg>
         </div> -->
         <span :class="$style.listsLabel">
-          <transition name="list-active">
-            <svg-icon v-if="defaultList.id == listId" name="angle-right-solid" :class="$style.activeIcon" />
-          </transition>
           {{ $t(defaultList.name) }}
         </span>
       </li>
@@ -39,27 +36,21 @@
         @contextmenu="handleListsItemRigthClick($event, -1)" @click="handleListToggle(loveList.id)"
       >
         <span :class="$style.listsLabel">
-          <transition name="list-active">
-            <svg-icon v-if="loveList.id == listId" name="angle-right-solid" :class="$style.activeIcon" />
-          </transition>
           {{ $t(loveList.name) }}
         </span>
       </li>
       <li
-        v-for="(item, index) in userLists"
-        :key="item.id" class="user-list"
-        :class="[$style.listsItem, {[$style.active]: item.id == listId}, {[$style.clicked]: rightClickItemIndex == index}, {[$style.fetching]: fetchingListStatus[item.id]}]"
-        :data-index="index" :aria-label="item.name" :aria-selected="defaultList.id == listId" @contextmenu="handleListsItemRigthClick($event, index)"
+        v-for="entry in visibleUserLists"
+        :key="entry.item.id" class="user-list"
+        :class="[$style.listsItem, {[$style.active]: entry.item.id == listId}, {[$style.clicked]: rightClickItemIndex == entry.index}, {[$style.fetching]: fetchingListStatus[entry.item.id]}]"
+        :data-index="entry.index" :aria-label="entry.item.name" :aria-selected="defaultList.id == listId" @contextmenu="handleListsItemRigthClick($event, entry.index)"
       >
-        <span :class="$style.listsLabel" @click="handleListToggle(item.id, index + 2)">
-          <transition name="list-active">
-            <svg-icon v-if="item.id == listId" name="angle-right-solid" :class="$style.activeIcon" />
-          </transition>
-          {{ item.name }}
+        <span :class="$style.listsLabel" @click="handleListToggle(entry.item.id, entry.index + 2)">
+          {{ entry.item.name }}
         </span>
         <base-input
-          :class="$style.listsInput" type="text" :value="item.name"
-          :placeholder="item.name" @keyup.enter="handleSaveListName(index, $event)" @blur="handleSaveListName(index, $event)"
+          :class="$style.listsInput" type="text" :value="entry.item.name"
+          :placeholder="entry.item.name" @keyup.enter="handleSaveListName(entry.index, $event)" @blur="handleSaveListName(entry.index, $event)"
         />
       </li>
       <transition name="motion-inline" @after-leave="isNewListLeave = false" @after-enter="$refs.dom_listsNewInput.focus()">
@@ -89,9 +80,10 @@ import ListUpdateModal from './components/ListUpdateModal.vue'
 import { defaultList, loveList, userLists, fetchingListStatus } from '@renderer/store/list/state'
 import { removeUserList } from '@renderer/store/list/action'
 
-import { ref, watch } from '@common/utils/vueTools'
+import { computed, ref, watch } from '@common/utils/vueTools'
 import { useRouter } from '@common/utils/vueRouter'
 import { LIST_IDS } from '@common/constants'
+import { LOCAL_MUSIC_LIST_ID } from '@renderer/utils/localMusic'
 
 import { dialog } from '@renderer/plugins/Dialog'
 
@@ -129,6 +121,9 @@ export default {
 
     const dom_lists_list = ref(null)
     const rightClickItemIndex = ref(-10)
+    const visibleUserLists = computed(() => userLists
+      .map((item, index) => ({ item, index }))
+      .filter(entry => entry.item.id != LOCAL_MUSIC_LIST_ID))
 
     const { handleImportList, handleExportList } = useShare()
     const { isShowListUpdateModal, handleUpdateSourceList } = useListUpdate()
@@ -227,6 +222,7 @@ export default {
       defaultList,
       loveList,
       userLists,
+      visibleUserLists,
       fetchingListStatus,
       dom_lists_list,
       isShowListUpdateModal,
@@ -343,19 +339,6 @@ export default {
   transition-property: color, background-color, opacity;
   background-color: transparent;
 
-  &::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 9px;
-    bottom: 9px;
-    width: 3px;
-    border-radius: 0 3px 3px 0;
-    background: var(--color-primary);
-    opacity: 0;
-    transition: opacity @transition-fast;
-  }
-
   &:not(.active) {
     &:hover {
       background-color: var(--shell-list-hover, var(--color-primary-background-hover));
@@ -365,10 +348,6 @@ export default {
   &.active {
     color: var(--color-primary-dark-100, var(--color-primary));
     background-color: color-mix(in srgb, var(--color-primary) 9%, transparent);
-
-    &::before {
-      opacity: 1;
-    }
 
     .listsLabel {
       font-weight: 700;
@@ -393,12 +372,6 @@ export default {
       display: block !important;
     }
   }
-}
-.activeIcon {
-  height: .9em;
-  width: .9em;
-  margin-left: -0.45em;
-  vertical-align: -0.05em;
 }
 .listsLabel {
   display: block;

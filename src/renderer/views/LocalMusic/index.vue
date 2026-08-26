@@ -1469,7 +1469,7 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
   height: 100%;
   display: flex;
   flex-flow: column nowrap;
-  padding: 16px 18px 18px;
+  padding: 0;
   box-sizing: border-box;
   color: var(--shell-text, var(--color-font));
   overflow: auto;
@@ -2241,6 +2241,10 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
   border-radius: 32px;
 }
 
+.artistSlide {
+  border-radius: 32px;
+}
+
 .flyingCover {
   position: absolute;
   left: 50%;
@@ -2624,8 +2628,8 @@ const playTrack = (track: LX.Music.MusicInfoLocal) => {
 
 :global(.themeShellDark) {
   .contentCard {
-    background: rgba(10, 11, 13, .82);
-    border-color: rgba(255, 255, 255, .08);
+    background: transparent;
+    border-color: transparent;
   }
 
   .gridShell,

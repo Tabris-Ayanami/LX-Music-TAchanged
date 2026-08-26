@@ -7,6 +7,7 @@ import registerWinLyric from './winLyric'
 import registerCommonRenderers from './commonRenderers'
 import registerBili from './bili'
 import registerNativeCore from './nativeCore'
+import registerNcmApi from './ncmApi'
 
 let isRegistered = false
 export default () => {
@@ -20,5 +21,6 @@ export default () => {
   registerWinLyric()
   registerBili()
   registerNativeCore()
+  registerNcmApi()
   isRegistered = true
 }

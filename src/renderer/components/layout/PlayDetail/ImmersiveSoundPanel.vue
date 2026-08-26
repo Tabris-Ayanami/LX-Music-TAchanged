@@ -31,6 +31,22 @@
         <base-slider-bar :value="volume" :min="0" :max="1" :step="0.01" @change="handleUpdateVolume" />
         <span>{{ Math.round(volume * 100) }}%</span>
       </div>
+      <div :class="$style.playbackRow">
+        <div :class="$style.playbackHead">
+          <span>{{ $t('player__playback_rate') }}</span>
+          <strong>{{ playbackRate.toFixed(2) }}x</strong>
+        </div>
+        <base-checkbox
+          id="player__playback_preserves_pitch_sound"
+          :model-value="appSetting['player.preservesPitch']"
+          :label="$t('player__playback_preserves_pitch')"
+          @update:model-value="updatePreservesPitch"
+        />
+        <div :class="$style.playbackControls">
+          <base-slider-bar :value="playbackRate * 100" :min="50" :max="200" @change="handleUpdatePlaybackRate" />
+          <base-btn min @click="handleUpdatePlaybackRate(100)">{{ $t('player__playback_rate_reset_btn') }}</base-btn>
+        </div>
+      </div>
       <div :class="[$style.columns, 'scroll']">
         <div :class="$style.column">
           <AudioConvolution />
@@ -50,8 +66,9 @@ import AudioConvolution from '@renderer/components/common/SoundEffectBtn/AudioCo
 import AudioPanner from '@renderer/components/common/SoundEffectBtn/AudioPanner.vue'
 import BiquadFilter from '@renderer/components/common/SoundEffectBtn/BiquadFilter.vue'
 import PitchShifter from '@renderer/components/common/SoundEffectBtn/PitchShifter.vue'
+import { playbackRate } from '@renderer/store/player/playbackRate'
 import { isMute, volume } from '@renderer/store/player/volume'
-import { saveVolumeIsMute } from '@renderer/store/setting'
+import { appSetting, saveVolumeIsMute, updateSetting } from '@renderer/store/setting'
 
 defineProps({
   show: {
@@ -64,6 +81,8 @@ const emit = defineEmits(['update:show'])
 const close = () => { emit('update:show', false) }
 const toggleMute = () => { saveVolumeIsMute(!isMute.value) }
 const handleUpdateVolume = value => { window.app_event.setVolume(value) }
+const handleUpdatePlaybackRate = value => { window.app_event.setPlaybackRate(Math.round(value) / 100) }
+const updatePreservesPitch = enabled => { updateSetting({ 'player.preservesPitch': enabled }) }
 </script>
 
 <style lang="less" module>
@@ -174,6 +193,50 @@ const handleUpdateVolume = value => { window.app_event.setVolume(value) }
   font-size: 12px;
 }
 
+.playbackRow {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px 18px;
+  margin: -4px 0 18px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .05);
+}
+
+.playbackHead {
+  min-width: 0;
+
+  span,
+  strong {
+    display: block;
+  }
+
+  span {
+    color: rgba(255, 255, 255, .62);
+    font-size: 12px;
+  }
+
+  strong {
+    margin-top: 4px;
+    color: rgba(255, 255, 255, .92);
+    font-size: 16px;
+  }
+}
+
+.playbackControls {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  > :global(.base-slider-bar) {
+    flex: auto;
+    min-width: 0;
+  }
+}
+
 .volumeButton {
   width: 30px;
   height: 30px;
@@ -235,6 +298,10 @@ const handleUpdateVolume = value => { window.app_event.setVolume(value) }
 
   .panel {
     padding: 16px;
+  }
+
+  .playbackRow {
+    grid-template-columns: 1fr;
   }
 
   .columns {

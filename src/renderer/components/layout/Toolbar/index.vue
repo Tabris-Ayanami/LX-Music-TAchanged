@@ -39,10 +39,10 @@ const currentLyric = computed(() => {
 .toolbar {
   display: grid;
   grid-template-columns: minmax(220px, 300px) minmax(0, 1fr) auto;
-  min-height: 48px;
+  min-height: 40px;
   align-items: center;
   gap: 12px;
-  padding: 8px 16px 7px 18px;
+  padding: 5px 14px 5px 18px;
   -webkit-app-region: drag;
   z-index: 2;
   color: var(--shell-text, var(--color-font));
@@ -97,7 +97,7 @@ const currentLyric = computed(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  min-height: 38px;
+  min-height: 30px;
   padding: 0;
   -webkit-app-region: no-drag;
 }
@@ -110,9 +110,9 @@ const currentLyric = computed(() => {
 }
 
 .settingBtn {
-  width: 30px;
-  height: 30px;
-  border-radius: 11px;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
   border: 1px solid transparent;
   display: inline-flex;
   align-items: center;

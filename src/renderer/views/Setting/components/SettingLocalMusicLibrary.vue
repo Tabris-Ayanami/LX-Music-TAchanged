@@ -31,14 +31,14 @@
   </dd>
 
   <dd>
-    <h3 id="local_music_library_folders">添加的文件夹</h3>
+    <h3 id="local_music_library_folders">扫描到的子文件夹</h3>
     <div :class="$style.folderList">
       <div v-for="folder in folders" :key="folder" :class="$style.folderItem">
         <span :class="$style.folderPath" :title="folder">{{ folder }}</span>
         <base-btn class="btn" min :disabled="isBusy" @click="handleRemoveFolder(folder)">移除</base-btn>
       </div>
       <div v-if="!folders.length" :class="$style.emptyState">
-        暂无文件夹。添加文件夹后可在这里统一重新扫描本地音乐库。
+        暂无子文件夹。添加文件夹并扫描后，这里会按最细粒度列出所有含音乐的文件夹。
       </div>
     </div>
   </dd>

@@ -14,7 +14,7 @@ Stage 0 已完成。Renderer 现有功能仍由 Electron/Node、既有 worker、
 - 开始时 `git status --short`：无输出，工作树干净。
 - `git ls-files native`、`git ls-files references/fooyin`：均无输出。
 - 根目录浅层检查未发现当前仓库内的 `native/`、`references/fooyin`、fooyin 副本或 WinUI PoC 源码目录。
-- 因未发现可确认的残留，本轮未删除任何旧实验文件；`docs/hybrid-native-evaluation/` 与 `docs/migration/` 保留。
+- 因未发现可确认的残留，本轮未删除任何旧实验文件；WinUI 迁移文档已于 2026-08-25 随路线放弃一并删除，当前以 `docs/hybrid-native-evaluation/` 为准。
 
 ## Backend API 结构
 

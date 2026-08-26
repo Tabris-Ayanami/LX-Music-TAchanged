@@ -5,30 +5,20 @@
         <h2 :class="$style.title">{{ playTitle }}</h2>
         <div v-if="musicArtistLine" :class="$style.metaSubline">{{ musicArtistLine }}</div>
       </div>
-      <material-popup-btn :class="$style.popupAnchor" :popup-class="$style.popupFrame" :list-class="$style.popupFrameList" no-arrow>
-        <button type="button" :class="[$style.iconBtn, $style.moreBtn]" :aria-label="$t('player__playback_rate')">
+      <div :class="$style.headerActions">
+        <span v-if="formatLabel" :class="[$style.qualityCapsule, 'playDetailQualityCapsule']">{{ formatLabel }}</span>
+        <button
+          type="button"
+          :class="[$style.iconBtn, $style.songInfoBtn, 'playDetailSongInfoBtn']"
+          aria-label="查看歌曲信息"
+          :disabled="!canEditMetadata"
+          @click.stop="handleOpenSongInfo"
+        >
           <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" space="preserve">
-            <use xlink:href="#icon-dots-horizontal" />
+            <use xlink:href="#icon-info-modern" />
           </svg>
         </button>
-        <template #content>
-          <div :class="$style.popupPanel" :style="popupThemeStyle">
-            <div :class="$style.popupInfo">
-              <span>{{ playbackRate.toFixed(2) }}x</span>
-              <div :class="$style.popupActions">
-                <base-checkbox
-                  id="player__playback_preserves_pitch_detail"
-                  :model-value="appSetting['player.preservesPitch']"
-                  :label="$t('player__playback_preserves_pitch')"
-                  @update:model-value="updatePreservesPitch"
-                />
-                <base-btn min @click="handleUpdatePlaybackRate(100)">{{ $t('player__playback_rate_reset_btn') }}</base-btn>
-              </div>
-            </div>
-            <base-slider-bar :class="$style.popupSlider" :value="playbackRate * 100" :min="50" :max="200" @change="handleUpdatePlaybackRate" />
-          </div>
-        </template>
-      </material-popup-btn>
+      </div>
     </div>
 
     <div :class="[$style.progressTrack, 'playDetailProgressTrack']">
@@ -94,20 +84,23 @@
     </div>
 
     <ImmersiveSoundPanel v-model:show="soundEffectVisible" />
+    <LocalTrackActions ref="localTrackActionsRef" :list-id="metadataListId" teleport-target="#root" />
   </div>
 </template>
 
 <script setup>
 import { formatPlayTime2 } from '@common/utils/common'
-import { computed, onBeforeUnmount, onMounted, ref } from '@common/utils/vueTools'
+import { computed, ref } from '@common/utils/vueTools'
 import { playNext, playPrev, togglePlay } from '@renderer/core/player'
-import { playbackRate } from '@renderer/store/player/playbackRate'
+import { getPlayQuality } from '@renderer/core/music/utils'
 import { playProgress } from '@renderer/store/player/playProgress'
 import { isPlay, playMusicInfo } from '@renderer/store/player/state'
 import { isMute, volume } from '@renderer/store/player/volume'
-import { appSetting, saveVolumeIsMute, setTogglePlayMode, updateSetting } from '@renderer/store/setting'
+import { appSetting, saveVolumeIsMute, setTogglePlayMode } from '@renderer/store/setting'
+import { LOCAL_MUSIC_LIST_ID } from '@renderer/utils/localMusic'
 import usePlayProgress from '@renderer/utils/compositions/usePlayProgress'
 import ImmersiveSoundPanel from './ImmersiveSoundPanel.vue'
+import LocalTrackActions from '@renderer/components/localMusic/LocalTrackActions.vue'
 
 const {
   nowPlayTimeStr,
@@ -117,47 +110,10 @@ const {
 } = usePlayProgress()
 
 const soundEffectVisible = ref(false)
-const popupThemeStyle = ref({})
-let popupThemeObserver = null
-
-const updatePopupThemeStyle = () => {
-  const themeHost = document.getElementById('container')
-  const hostStyles = themeHost ? window.getComputedStyle(themeHost) : null
-  const rootStyles = window.getComputedStyle(document.documentElement)
-  const popupAccent = [
-    hostStyles?.getPropertyValue('--shell-accent')?.trim(),
-    hostStyles?.getPropertyValue('--color-primary')?.trim(),
-    rootStyles.getPropertyValue('--color-primary').trim(),
-  ].find(color => color) ?? 'rgb(77, 175, 124)'
-
-  popupThemeStyle.value = {
-    '--popup-accent': popupAccent,
-  }
-}
-
-onMounted(() => {
-  updatePopupThemeStyle()
-  popupThemeObserver = new MutationObserver(updatePopupThemeStyle)
-  const themeHost = document.getElementById('container')
-  if (themeHost) popupThemeObserver.observe(themeHost, { attributes: true, attributeFilter: ['class', 'style'] })
-  popupThemeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style'] })
-})
-
-onBeforeUnmount(() => {
-  popupThemeObserver?.disconnect()
-  popupThemeObserver = null
-})
+const localTrackActionsRef = ref(null)
 
 const handleUpdateVolume = val => {
   window.app_event.setVolume(val)
-}
-
-const handleUpdatePlaybackRate = val => {
-  window.app_event.setPlaybackRate(Math.round(val) / 100)
-}
-
-const updatePreservesPitch = enabled => {
-  updateSetting({ 'player.preservesPitch': enabled })
 }
 
 const togglePlayModes = ['listLoop', 'random', 'list', 'singleLoop', 'none']
@@ -176,10 +132,41 @@ const toggleNextPlayMode = () => {
   setTogglePlayMode(nextMode)
 }
 
-const playTitle = computed(() => playMusicInfo.musicInfo?.name || '')
+const currentDownloadItem = computed(() => {
+  const item = playMusicInfo.musicInfo
+  return item && 'metadata' in item ? item : null
+})
+
+const currentMusicInfo = computed(() => {
+  const item = playMusicInfo.musicInfo
+  if (!item) return null
+  return 'metadata' in item ? item.metadata.musicInfo : item
+})
+
+const formatLabel = computed(() => {
+  const download = currentDownloadItem.value
+  if (download) return download.metadata.ext.toUpperCase()
+
+  const info = currentMusicInfo.value
+  if (!info) return ''
+  if (info.source == 'local') return info.meta.ext.toUpperCase()
+  if (info.source == 'bili') return 'BILI'
+  return getPlayQuality(appSetting['player.playQuality'], info).toUpperCase()
+})
+
+const canEditMetadata = computed(() => currentMusicInfo.value?.source == 'local')
+const metadataListId = computed(() => playMusicInfo.listId ?? LOCAL_MUSIC_LIST_ID)
+
+const handleOpenSongInfo = () => {
+  const info = currentMusicInfo.value
+  if (!info || info.source != 'local') return
+  localTrackActionsRef.value?.openMetadata(info, true)
+}
+
+const playTitle = computed(() => currentMusicInfo.value?.name ?? '')
 
 const musicArtistLine = computed(() => {
-  const info = playMusicInfo.musicInfo
+  const info = currentMusicInfo.value
   if (!info) return ''
   const items = []
   if (info.singer) items.push(info.singer)
@@ -264,10 +251,28 @@ const isTogglePlayActive = computed(() => currentTogglePlayMode.value != 'none')
   .mixin-ellipsis-1();
 }
 
-.popupAnchor {
-  position: relative;
-  z-index: 3;
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex: none;
+}
+
+.qualityCapsule {
+  flex: none;
+  min-width: 0;
+  padding: 3px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.15;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .iconBtn,
@@ -308,96 +313,25 @@ const isTogglePlayActive = computed(() => currentTogglePlayMode.value != 'none')
   }
 }
 
-.moreBtn {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(18px) saturate(132%);
-  -webkit-backdrop-filter: blur(18px) saturate(132%);
+.songInfoBtn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
 
   svg {
-    width: 16px;
-    height: 16px;
+    width: 12px;
+    height: 12px;
   }
 
   &:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-}
-
-.popupFrame {
-  border-radius: 18px !important;
-  background: rgba(15, 19, 29, .96) !important;
-  border: 1px solid rgba(255, 255, 255, .18) !important;
-  box-shadow: 0 22px 48px rgba(0, 0, 0, .42) !important;
-  backdrop-filter: blur(24px) saturate(132%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(132%) !important;
-  filter: none !important;
-}
-
-.popupFrameList {
-  padding: 0 !important;
-}
-
-.popupPanel {
-  --popup-accent: var(--shell-accent, #4da7d0);
-  --color-primary: var(--popup-accent);
-  --color-primary-font: color-mix(in srgb, var(--popup-accent) 88%, white 12%);
-  --color-font-label: rgba(255, 255, 255, 0.66);
-  --color-button-font: color-mix(in srgb, var(--popup-accent) 84%, white 16%);
-  --color-button-background: color-mix(in srgb, var(--popup-accent) 14%, transparent);
-  --color-button-background-hover: color-mix(in srgb, var(--popup-accent) 20%, transparent);
-  --color-button-background-active: color-mix(in srgb, var(--popup-accent) 26%, transparent);
-  --slider-track-color: rgba(255, 255, 255, 0.16);
-  --slider-fill-color: color-mix(in srgb, var(--popup-accent) 74%, white 26%);
-  width: min(258px, calc(100vw - 32px));
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  border-radius: 20px;
-  background: transparent;
-  border: none;
-  color: rgba(248, 250, 255, .96);
-  box-shadow: none;
-}
-
-.popupInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-
-  span {
-    font-size: 18px;
-    font-weight: 800;
-    color: rgba(248, 250, 255, .96);
-  }
-}
-
-.popupActions {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 10px;
-
-  :global(.base-checkbox-label) {
-    color: rgba(238, 243, 251, .9);
-    font-size: 15px;
-    font-weight: 700;
+    background: rgba(255, 255, 255, 0.18);
   }
 
-  :global(.base-btn) {
-    --color-button-font: rgba(245, 248, 255, .94);
-    --color-button-background: rgba(255, 255, 255, .1);
-    --color-button-background-hover: rgba(255, 255, 255, .16);
-    border-radius: 10px;
-    align-self: flex-end;
+  &:disabled {
+    opacity: .38;
+    cursor: not-allowed;
   }
-}
-
-.popupSlider {
-  width: 100%;
 }
 
 .progressTrack {

@@ -48,9 +48,9 @@
         <p v-if="loading" :class="$style.tip">{{ $t('setting__play_detail_immersive_searching') }}</p>
         <p v-else-if="!candidates.length" :class="$style.tip">{{ $t('setting__play_detail_immersive_no_candidates') }}</p>
         <div v-else :class="$style.candidates">
-          <button v-for="candidate in candidates" :key="`${candidate.bvid}:${candidate.page}`" type="button" :class="[$style.candidate, { [$style.active]: activeMvKey == `${candidate.bvid}:${candidate.cid ?? candidate.page ?? 1}` }]" @click="selectCandidate(candidate)">
+          <button v-for="candidate in candidates" :key="candidateKey(candidate)" type="button" :class="[$style.candidate, { [$style.active]: activeMvKey == candidateKey(candidate) }]" @click="selectCandidate(candidate)">
             <img :src="candidate.cover" alt="" loading="lazy">
-            <span><strong>{{ candidate.title }}</strong><small>{{ candidate.author }} · {{ candidate.pageTitle }}</small></span>
+            <span><strong>{{ candidate.title }}</strong><small>{{ candidate.author || candidate.artist }} · {{ candidate.pageTitle }}</small></span>
           </button>
         </div>
       </section>
@@ -88,6 +88,7 @@
 import { ref, watch } from '@common/utils/vueTools'
 import { appSetting, updateSetting } from '@renderer/store/setting'
 import { biliSearch, getBiliLyricSourceCandidates, getBiliPic } from '@renderer/utils/ipc'
+import { searchMv as searchNeteaseMv } from '@renderer/utils/musicSdk/wy/ncmApi'
 
 const props = defineProps({
   show: Boolean,
@@ -98,6 +99,7 @@ const props = defineProps({
   mvStatus: { type: String, default: 'idle' },
   mvError: { type: String, default: '' },
   activeMvKey: { type: String, default: '' },
+  activeMvCandidate: { type: Object, default: null },
 })
 const emit = defineEmits(['update:show', 'select-mv', 'select-lyric', 'retry-mv'])
 const close = () => {
@@ -109,12 +111,14 @@ const lyricLoading = ref(false)
 const lyricCandidates = ref([])
 let searchCacheKey = ''
 let searchPromise = null
+let lyricSearchCacheKey = ''
+let lyricSearchPromise = null
 const candidatesResultKey = ref('')
 const lyricResultKey = ref('')
 const mvSources = [
-  { id: 'auto', name: window.i18n.t('setting__play_detail_immersive_source_auto'), description: '优先当前来源，再自动匹配' },
-  { id: 'current', name: window.i18n.t('setting__play_detail_immersive_source_current'), description: '仅使用当前歌曲的 MV' },
-  { id: 'bili', name: window.i18n.t('setting__play_detail_immersive_source_bili'), description: '从 B 站搜索匹配候选' },
+  { id: 'auto', name: window.i18n.t('setting__play_detail_immersive_source_auto'), description: window.i18n.t('setting__play_detail_immersive_source_auto_desc') },
+  { id: 'netease', name: window.i18n.t('setting__play_detail_immersive_source_netease'), description: window.i18n.t('setting__play_detail_immersive_source_netease_desc') },
+  { id: 'bili', name: window.i18n.t('setting__play_detail_immersive_source_bili'), description: window.i18n.t('setting__play_detail_immersive_source_bili_desc') },
 ]
 const lyricSources = [
   { id: 'auto', name: window.i18n.t('setting__play_detail_immersive_source_auto'), description: 'B 站优先，失败后在线匹配' },
@@ -130,14 +134,49 @@ const getLyricKey = () => [
   props.biliTrack?.bvid ?? '',
   props.biliTrack?.cid ?? props.biliTrack?.page ?? '',
 ].join('\u0000')
-const getSearchResults = () => {
-  const key = getSearchKey()
+const candidateKey = candidate => candidate.type == 'netease'
+  ? `netease:${candidate.mvid}`
+  : `bili:${candidate.bvid}:${candidate.cid ?? candidate.page ?? 1}`
+
+const getSourceKey = () => `${getSearchKey()}\u0000${appSetting['playDetail.immersiveMvSource'] ?? 'auto'}\u0000${props.activeMvKey}`
+
+const getBiliSearchResults = () => {
   if (!String(props.title ?? '').trim()) return Promise.resolve([])
+  const key = `${getSearchKey()}\u0000bili`
+  if (key != lyricSearchCacheKey || !lyricSearchPromise) {
+    lyricSearchCacheKey = key
+    const keyword = [props.title, props.artist].filter(Boolean).join(' ')
+    lyricSearchPromise = biliSearch({ keyword, page: 1, limit: 8 })
+      .then(result => (result.list ?? []).map(item => ({ ...item, type: 'bili' })))
+      .catch(error => {
+        if (lyricSearchCacheKey == key) lyricSearchPromise = null
+        throw error
+      })
+  }
+  return lyricSearchPromise
+}
+
+const getSearchResults = () => {
+  const key = getSourceKey()
+  if (!String(props.title ?? '').trim()) return Promise.resolve([])
+  const source = appSetting['playDetail.immersiveMvSource'] ?? 'auto'
+  if (source == 'auto' || source == 'current') {
+    return props.activeMvCandidate
+      ? Promise.resolve([props.activeMvCandidate])
+      : Promise.resolve([])
+  }
   if (key != searchCacheKey || !searchPromise) {
     searchCacheKey = key
     const keyword = [props.title, props.artist].filter(Boolean).join(' ')
-    searchPromise = biliSearch({ keyword, page: 1, limit: 8 })
-      .then(result => result.list ?? [])
+    const biliPromise = getBiliSearchResults()
+    const neteasePromise = searchNeteaseMv(keyword, 8)
+      .catch(() => [])
+    const providerPromise = source == 'netease' || source == 'current'
+      ? neteasePromise
+      : source == 'bili'
+        ? biliPromise
+        : neteasePromise.then(list => list.length ? list : biliPromise)
+    searchPromise = providerPromise
       .catch(error => {
         if (searchCacheKey == key) searchPromise = null
         throw error
@@ -147,22 +186,24 @@ const getSearchResults = () => {
 }
 const searchCandidates = async() => {
   if (!props.title) return
-  const requestKey = getSearchKey()
+  const requestKey = getSourceKey()
   if (candidatesResultKey.value == requestKey) return
   loading.value = true
   try {
-    const list = await getSearchResults()
+    const list = await getBiliSearchResults()
     const nextCandidates = await Promise.all(list.map(async(candidate) => ({
       ...candidate,
-      cover: await getBiliPic(candidate).catch(() => candidate.cover),
+      cover: candidate.type == 'netease'
+        ? candidate.cover
+        : await getBiliPic(candidate).catch(() => candidate.cover),
     })))
-    if (requestKey != getSearchKey()) return
+    if (requestKey != getSourceKey()) return
     candidates.value = nextCandidates
     candidatesResultKey.value = requestKey
   } catch {
-    if (requestKey == getSearchKey()) candidates.value = []
+    if (requestKey == getSourceKey()) candidates.value = []
   } finally {
-    if (requestKey == getSearchKey()) loading.value = false
+    if (requestKey == getSourceKey()) loading.value = false
   }
 }
 const searchLyricCandidates = async() => {
@@ -204,7 +245,7 @@ const selectLyricSource = id => {
 }
 const selectCandidate = candidate => {
   updateSetting({
-    'playDetail.immersiveMvSource': 'bili',
+    'playDetail.immersiveMvSource': candidate.type == 'netease' ? 'netease' : 'bili',
     'playDetail.immersiveBackground': 'mv',
   })
   emit('select-mv', candidate)
@@ -223,9 +264,10 @@ watch(() => [
   props.biliTrack?.bvid,
   props.biliTrack?.cid,
   props.biliTrack?.page,
+  props.activeMvKey,
 ], ([show]) => {
   if (!show) return
-  const key = getSearchKey()
+  const key = getSourceKey()
   if (candidatesResultKey.value != key) candidates.value = []
   if (lyricResultKey.value != getLyricKey()) lyricCandidates.value = []
   void searchCandidates()

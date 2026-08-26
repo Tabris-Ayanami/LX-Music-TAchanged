@@ -198,6 +198,46 @@
           </div>
         </div>
       </section>
+      <div :class="$style.delayControl">
+        <div :class="$style.delayHead">
+          <strong>
+            {{ $t('setting__play_detail_immersive_control_hide_delay', { value: appSetting['playDetail.immersiveControlHideDelay'] }) }}
+          </strong>
+          <small>{{ $t('setting__play_detail_immersive_control_hide_delay_tip') }}</small>
+        </div>
+        <div :class="$style.delayAdjuster">
+          <button
+            type="button"
+            :class="$style.delayStep"
+            :aria-label="$t('setting__play_detail_immersive_control_hide_delay_decrease')"
+            :disabled="appSetting['playDetail.immersiveControlHideDelay'] <= 1"
+            @click="adjustImmersiveControlHideDelay(-1)"
+          >
+            −
+          </button>
+          <base-slider-bar
+            id="immersive_control_hide_delay"
+            :class-name="$style.delaySlider"
+            :value="appSetting['playDetail.immersiveControlHideDelay']"
+            :min="1"
+            :max="10"
+            :step="1"
+            @change="updateSetting({ 'playDetail.immersiveControlHideDelay': $event })"
+          />
+          <output :class="$style.delayValue" for="immersive_control_hide_delay">
+            {{ appSetting['playDetail.immersiveControlHideDelay'] }}s
+          </output>
+          <button
+            type="button"
+            :class="$style.delayStep"
+            :aria-label="$t('setting__play_detail_immersive_control_hide_delay_increase')"
+            :disabled="appSetting['playDetail.immersiveControlHideDelay'] >= 10"
+            @click="adjustImmersiveControlHideDelay(1)"
+          >
+            +
+          </button>
+        </div>
+      </div>
     </div>
   </material-modal>
 </template>
@@ -216,6 +256,10 @@ defineProps({
 
 const emit = defineEmits(['update:show'])
 const close = () => { emit('update:show', false) }
+const adjustImmersiveControlHideDelay = delta => {
+  const current = Number(appSetting['playDetail.immersiveControlHideDelay'] ?? 3)
+  updateSetting({ 'playDetail.immersiveControlHideDelay': Math.min(10, Math.max(1, current + delta)) })
+}
 const activeTab = ref('lyrics')
 const tabs = [
   { id: 'lyrics', name: window.i18n.t('setting__play_detail_immersive_tab_lyrics') },
@@ -993,6 +1037,82 @@ const backgroundOptions = [
   }
 }
 
+.delayControl {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.15fr);
+  align-items: center;
+  gap: 12px 20px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .035);
+}
+
+.delayHead {
+  min-width: 0;
+
+  strong,
+  small {
+    display: block;
+  }
+
+  strong {
+    color: rgba(248, 250, 255, .94);
+    font-size: 13px;
+  }
+
+  small {
+    margin-top: 4px;
+    color: rgba(203, 211, 224, .68);
+    font-size: 11px;
+    line-height: 1.4;
+  }
+}
+
+.delayAdjuster {
+  display: grid;
+  grid-template-columns: 32px minmax(120px, 1fr) 38px 32px;
+  align-items: center;
+  gap: 8px;
+}
+
+.delaySlider {
+  width: 100%;
+}
+
+.delayValue {
+  color: rgba(222, 228, 238, .82);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.delayStep {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 9px;
+  color: rgba(248, 250, 255, .88);
+  background: rgba(255, 255, 255, .08);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color .18s ease, background-color .18s ease, border-color .18s ease;
+
+  &:hover:not(:disabled) {
+    color: #fff;
+    border-color: rgba(185, 215, 255, .72);
+    background: rgba(185, 215, 255, .14);
+  }
+
+  &:disabled {
+    opacity: .38;
+    cursor: default;
+  }
+}
+
 @media (max-width: 760px) {
   .lyricStyleGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1008,6 +1128,10 @@ const backgroundOptions = [
 
   .panel {
     padding: 16px;
+  }
+
+  .delayControl {
+    grid-template-columns: 1fr;
   }
 
   .effectCard,
