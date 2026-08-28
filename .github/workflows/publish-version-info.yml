@@ -9,12 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Repository Dispatch
-        if: ${{ secrets.PAT != '' }}
+        if: ${{ secrets.PAT != null && secrets.PAT != '' }}
         uses: peter-evans/repository-dispatch@v2
         with:
           token: ${{ secrets.PAT }}
           repository: lyswhut/lx-music-desktop-version-info
           event-type: npm-release
       - name: Skip dispatch when PAT is missing
-        if: ${{ secrets.PAT == '' }}
+        if: ${{ secrets.PAT == null || secrets.PAT == '' }}
         run: echo "secrets.PAT is not configured, skipping repository dispatch."
