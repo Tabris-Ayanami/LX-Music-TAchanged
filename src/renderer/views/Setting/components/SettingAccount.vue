@@ -201,7 +201,7 @@ export default {
       wyQrText.value = message || window.i18n.t('setting__account_wy_test_failed')
     }
 
-const pollWyQrLogin = async unikey => {
+    const pollWyQrLogin = async unikey => {
       stopWyQrTimer()
       let result
       try {

@@ -46,7 +46,7 @@ export default {
     return musicDetailApi.filterList(detailBody)
   },
 
-/**
+  /**
    * 创建网易云扫码登录二维码
    */
   async createQrLogin() {
