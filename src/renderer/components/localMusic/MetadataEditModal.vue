@@ -199,6 +199,28 @@ watch(() => props.show, async visible => {
 
 const close = () => { if (!saving.value) emit('update:show', false) }
 
+const buildMetadataWriteRequest = (): LX.LocalMusic.MetadataWriteRequest => ({
+  filePath: props.musicInfo.meta.filePath,
+  metadata: {
+    title: String(metadata.value.title),
+    artists: Array.from(metadata.value.artists, String),
+    album: String(metadata.value.album),
+    albumArtists: Array.from(metadata.value.albumArtists, String),
+    trackNumber: Number(metadata.value.trackNumber) || 0,
+    totalTracks: Number(metadata.value.totalTracks) || 0,
+    discNumber: Number(metadata.value.discNumber) || 0,
+    totalDiscs: Number(metadata.value.totalDiscs) || 0,
+    year: Number(metadata.value.year) || 0,
+    genre: Array.from(metadata.value.genre, String),
+    comment: String(metadata.value.comment),
+    composer: Array.from(metadata.value.composer, String),
+    coverDataUrl: String(metadata.value.coverDataUrl),
+    duration: Number(metadata.value.duration) || 0,
+  },
+  coverChanged: Boolean(coverChanged.value),
+  ...(coverSourcePath.value ? { coverSourcePath: String(coverSourcePath.value) } : {}),
+})
+
 const selectCover = async() => {
   if (props.readOnly) return
   const result = await backend.platform.select({
@@ -232,12 +254,7 @@ const save = async() => {
   if (props.readOnly || saving.value) return
   saving.value = true
   try {
-    const result = await backend.metadata.write({
-      filePath: props.musicInfo.meta.filePath,
-      metadata: metadata.value,
-      coverChanged: coverChanged.value,
-      coverSourcePath: coverSourcePath.value || undefined,
-    })
+    const result = await backend.metadata.write(buildMetadataWriteRequest())
     emit('saved', result)
     emit('update:show', false)
     void dialog('歌曲信息已覆写并重新读取验证。')
