@@ -4,6 +4,7 @@ import { type ProgressInfo, type UpdateDownloadedEvent, type UpdateInfo } from '
 import { markRaw } from '@common/utils/vueTools'
 import * as hotKeys from '@common/hotKey'
 import { APP_EVENT_NAMES, DATA_KEYS, DEFAULT_SETTING } from '@common/constants'
+import type { NcmApiRequestParams, NcmApiResponse } from '@common/types/wyAccount'
 
 type RemoveListener = () => void
 
@@ -608,13 +609,8 @@ export const getBiliSongListDetail = async(info: LX.Bili.SongListDetailParams): 
   return rendererInvoke<LX.Bili.SongListDetailParams, LX.Bili.SongListDetail>(BILI_RENDERER_EVENT_NAME.get_songlist_detail, info)
 }
 
-interface NcmApiRequestParams {
-  endpoint: string
-  params?: Record<string, any>
-}
-
-export const sendNcmApiRequest = async <T = any>(endpoint: string, params: Record<string, any> = {}): Promise<T> => {
-  return rendererInvoke<NcmApiRequestParams, T>(NCM_API_RENDERER_EVENT_NAME.request, {
+export const sendNcmApiRequest = async<TBody = unknown>(endpoint: string, params: Record<string, unknown> = {}): Promise<NcmApiResponse<TBody>> => {
+  return rendererInvoke<NcmApiRequestParams, NcmApiResponse<TBody>>(NCM_API_RENDERER_EVENT_NAME.request, {
     endpoint,
     params,
   })

@@ -201,17 +201,22 @@ export default {
       wyQrText.value = message || window.i18n.t('setting__account_wy_test_failed')
     }
 
-    const pollWyQrLogin = async unikey => {
+const pollWyQrLogin = async unikey => {
       stopWyQrTimer()
       let result
       try {
         result = await music.wy.account.checkQrLogin(unikey)
       } catch (err) {
-        console.log(err)
-        setWyQrError(window.i18n.t('setting__account_wy_test_failed'))
+        console.warn(err)
+        wyQrText.value = window.i18n.t('setting__account_wy_test_failed')
         return
       }
-      if (result.code == 803 && result.cookie) {
+      if (result.code == 803) {
+        if (!result.cookie) {
+          console.warn('[wy] qr login succeeded but cookie is empty')
+          wyQrText.value = window.i18n.t('setting__account_wy_test_failed')
+          return
+        }
         wyCookie.value = result.cookie
         syncSetting('account.wy.cookie', result.cookie)
         const info = await music.wy.account.getAccountInfo()
@@ -229,7 +234,8 @@ export default {
         setWyQrError(window.i18n.t('setting__account_wy_qr_expired'))
         return
       } else {
-        setWyQrError(result.message || window.i18n.t('setting__account_wy_test_failed'))
+        console.warn('[wy] qr login check failed with code', result.code, result.message)
+        wyQrText.value = result.message || window.i18n.t('setting__account_wy_test_failed')
         return
       }
       wyQrTimer = setTimeout(() => {

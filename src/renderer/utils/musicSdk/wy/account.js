@@ -1,5 +1,6 @@
 import musicDetailApi from './musicDetail'
 import { getWYCookie } from './utils/index'
+import { extractLoginCookie } from '@common/wyAccountCookie'
 import { request, requestBody } from './ncmApi'
 
 export default {
@@ -8,10 +9,16 @@ export default {
    */
   async getAccountInfo() {
     const cookie = getWYCookie()
-    if (!cookie) return { hasCookie: false, isLogin: false }
+    if (!cookie) {
+      console.warn('[wy] get account info skipped: cookie not set')
+      return { hasCookie: false, isLogin: false }
+    }
     try {
       const body = await requestBody('user_account')
-      if (!body.profile) return { hasCookie: true, isLogin: false }
+      if (!body.profile) {
+        console.warn('[wy] get account info failed: user_account profile missing, cookie may be invalid')
+        return { hasCookie: true, isLogin: false }
+      }
       return {
         hasCookie: true,
         isLogin: true,
@@ -39,20 +46,22 @@ export default {
     return musicDetailApi.filterList(detailBody)
   },
 
-  /**
+/**
    * 创建网易云扫码登录二维码
    */
   async createQrLogin() {
     const keyBody = await requestBody('login_qr_key')
-    const unikey = keyBody.data?.unikey
+    const unikey = keyBody.data?.unikey ?? keyBody.data?.data?.unikey
     if (!unikey) throw new Error('获取登录二维码失败')
     const qrBody = await requestBody('login_qr_create', {
       key: unikey,
       qrimg: true,
     })
+    const qrimg = qrBody.data?.qrimg ?? ''
+    if (typeof qrimg != 'string' || !qrimg.startsWith('data:')) throw new Error('获取登录二维码失败')
     return {
       unikey,
-      qrimg: qrBody.data?.qrimg ?? '',
+      qrimg,
     }
   },
 
@@ -65,8 +74,8 @@ export default {
     const body = response?.body ?? {}
     return {
       code: Number(body.code ?? 0),
-      cookie: typeof body.cookie == 'string' ? body.cookie : '',
-      message: body.message || body.msg || '',
+      cookie: extractLoginCookie(typeof body.cookie == 'string' ? body.cookie : ''),
+      message: body.message ?? body.msg ?? '未知状态',
     }
   },
 }
