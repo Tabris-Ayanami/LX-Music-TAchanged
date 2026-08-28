@@ -5,6 +5,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const beforePack = require('./build-before-pack')
 const afterPack = require('./build-after-pack')
+const patchDependencies = require('./dependencies-patch')
 const nativeCorePath = path.join(__dirname, '../native-core/target/release/lx-native-core.exe')
 
 /**
@@ -278,6 +279,7 @@ const createTarget = {
  * @param {'onTagOrDraft' | 'always' | 'never'} publishType 发布类型
  */
 const build = async(target, arch, packageType, publishType) => {
+  await patchDependencies()
   if (target == 'dir') {
     await builder.build({
       dir: true,

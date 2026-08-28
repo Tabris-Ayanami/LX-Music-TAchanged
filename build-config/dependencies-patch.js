@@ -28,7 +28,7 @@ const patchs = [
   ],
 ]
 
-;(async() => {
+const patchDependencies = async() => {
   for (const [filePath, fromStr, toStr] of patchs) {
     console.log(`Patching ${filePath.replace(rootPath, '')}`)
     try {
@@ -39,5 +39,9 @@ const patchs = [
     }
   }
   console.log('\nDependencies patch finished.\n')
-})()
+}
+
+module.exports = patchDependencies
+
+if (require.main === module) patchDependencies()
 
