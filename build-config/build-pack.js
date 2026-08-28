@@ -8,6 +8,35 @@ const afterPack = require('./build-after-pack')
 const patchDependencies = require('./dependencies-patch')
 const nativeCorePath = path.join(__dirname, '../native-core/target/release/lx-native-core.exe')
 
+const collectDependencyFiles = (packagePath, visited = new Set()) => {
+  const packageJsonPath = path.join(packagePath, 'package.json')
+  if (visited.has(packageJsonPath) || !fs.existsSync(packageJsonPath)) return []
+  visited.add(packageJsonPath)
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
+  const files = [path.relative(path.join(__dirname, '..'), `${packagePath}/**/*`).replaceAll('\\', '/')]
+  const dependencyNames = new Set([
+    ...Object.keys(packageJson.dependencies ?? {}),
+    ...Object.keys(packageJson.optionalDependencies ?? {}),
+    ...Object.keys(packageJson.peerDependencies ?? {}),
+  ])
+  for (const dependencyName of dependencyNames) {
+    let dependencyEntry
+    try {
+      dependencyEntry = require.resolve(dependencyName, { paths: [packagePath] })
+    } catch {
+      continue
+    }
+    let dependencyPath = path.dirname(dependencyEntry)
+    while (dependencyPath !== path.dirname(dependencyPath) && !fs.existsSync(path.join(dependencyPath, 'package.json'))) {
+      dependencyPath = path.dirname(dependencyPath)
+    }
+    files.push(...collectDependencyFiles(dependencyPath, visited))
+  }
+  return files
+}
+
+const ncmApiFiles = collectDependencyFiles(path.join(__dirname, '../node_modules/@neteasecloudmusicapienhanced/api'))
+
 /**
 * @type {import('electron-builder').Configuration}
 * @see https://www.electron.build/configuration/configuration
@@ -33,7 +62,7 @@ const options = {
     'node_modules/better-sqlite3/lib',
     'node_modules/better-sqlite3/package.json',
     'node_modules/better-sqlite3/build/Release/better_sqlite3.node',
-    'node_modules/@neteasecloudmusicapienhanced/api/**/*',
+    ...ncmApiFiles,
     'node_modules/electron-font-manager/index.js',
     'node_modules/electron-font-manager/package.json',
     'node_modules/electron-font-manager/build/Release/font_manager.node',
