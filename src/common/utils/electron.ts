@@ -2,15 +2,6 @@ import { getHostBridge } from '../hostBridge'
 
 
 /**
- * 在资源管理器中打开目录
- * @param {string} dir
- */
-export const openDirInExplorer = (dir: string) => {
-  getHostBridge().platform.showItemInFolder(dir)
-}
-
-
-/**
  * 在浏览器打开URL
  * @param {*} url
  */

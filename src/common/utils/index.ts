@@ -1,3 +1,5 @@
+import type {} from '../hostBridge'
+
 interface OptionalNodeProcess {
   platform?: NodeJS.Platform
   env?: { NODE_ENV?: string }

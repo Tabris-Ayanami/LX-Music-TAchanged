@@ -11,7 +11,6 @@ import { isMac } from '@common/utils'
 import log from '@common/utils/nodeLog'
 import createWorkers from './worker'
 import { migrateDBData } from './utils/migrate'
-import { openDirInExplorer } from '@common/utils/electron'
 import { setProxyByHost } from '@common/utils/request'
 
 export const initGlobalData = () => {
@@ -314,7 +313,7 @@ const backupDB = (backupPath: string) => {
   try {
     renameSync(`${dbPath}-shm`, `${backupPath}-shm`)
   } catch {}
-  openDirInExplorer(backupPath)
+  shell.showItemInFolder(backupPath)
 }
 
 let isInitialized = false

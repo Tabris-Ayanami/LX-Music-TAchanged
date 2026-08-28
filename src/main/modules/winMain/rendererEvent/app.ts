@@ -1,5 +1,5 @@
 // const path = require('path')
-import { app } from 'electron'
+import { app, shell } from 'electron'
 import { mainHandle, mainOn } from '@common/mainIpc'
 import { WIN_MAIN_RENDERER_EVENT_NAME } from '@common/ipcNames'
 // import { name as defaultName } from '../../../../../package.json'
@@ -24,8 +24,6 @@ import {
 } from '@main/modules/winMain'
 import { quitApp } from '@main/app'
 import { getAllThemes, removeTheme, saveTheme, setPowerSaveBlocker } from '@main/utils'
-import { openDirInExplorer } from '@common/utils/electron'
-
 export default () => {
   // 设置应用名称
   // mainOn(WIN_MAIN_RENDERER_EVENT_NAME.set_app_name, ({ params: name }) => {
@@ -82,8 +80,8 @@ export default () => {
     return showSaveDialog(params)
   })
   // 在资源管理器中定位文件
-  mainOn<string>(WIN_MAIN_RENDERER_EVENT_NAME.open_dir_in_explorer, async({ params }) => {
-    return openDirInExplorer(params)
+  mainOn<string>(WIN_MAIN_RENDERER_EVENT_NAME.open_dir_in_explorer, ({ params }) => {
+    shell.showItemInFolder(params)
   })
 
 
