@@ -32,8 +32,8 @@ test('RG-011: play-detail close transition reuses live compact-cover transform',
   )
   assert.match(
     playDetailSource,
-    /transform: snapshot\.coverTransform \|\| 'translateZ\(0\)'/m,
-    'Motion cover element should reuse the captured cover transform instead of resetting to zero angle',
+    /composeFlipWithTransform\(\s*getFlipTransform\(snapshot\.coverRect, artworkTargetRect\),\s*getCoverTransform\(snapshot\.coverTransform\)/m,
+    'Motion cover frames should compose the captured live cover transform with the FLIP motion instead of resetting the angle',
   )
   assert.match(
     playDetailSource,
@@ -42,7 +42,7 @@ test('RG-011: play-detail close transition reuses live compact-cover transform',
   )
   assert.match(
     playDetailSource,
-    /const coverFrames = opening[\s\S]*transform: getCoverTransform\(snapshot\.coverTransform\)[\s\S]*transform: 'translateZ\(0\)'[\s\S]*transform: getCoverTransform\(snapshot\.coverTransform\)/m,
-    'Cover motion frames should animate compact-cover rotation back to the detail artwork baseline while preserving the live angle for the return trip',
+    /const coverFrames = opening[\s\S]*transform: coverStartTransform[\s\S]*transform: IDENTITY_TRANSFORM[\s\S]*transform: coverStartTransform/m,
+    'Cover motion frames should launch and land with the composed live-angle transform while settling to the identity baseline at the artwork',
   )
 })

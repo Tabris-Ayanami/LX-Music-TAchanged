@@ -32,7 +32,12 @@ test('RG-025: play-detail motion shell interpolates the floating island glass vi
   )
   assert.match(
     playDetailSource,
-    /const shellFrames = opening[\s\S]*\.\.\.getShellVisualStyles\(snapshot\)[\s\S]*\.\.\.shellTargetVisual[\s\S]*:\s*\[[\s\S]*\.\.\.shellTargetVisual[\s\S]*\.\.\.getShellVisualStyles\(snapshot\)/m,
+    /const islandVisual = withoutBackdropFilter\(getShellVisualStyles\(snapshot\)\)/m,
+    'The motion shell should snapshot the floating island visual state (minus backdrop blur) for flight frames',
+  )
+  assert.match(
+    playDetailSource,
+    /const shellFrames = opening[\s\S]*\.\.\.islandVisual[\s\S]*\.\.\.shellTargetVisual[\s\S]*:\s*\[[\s\S]*\.\.\.shellTargetVisual[\s\S]*\.\.\.islandVisual/m,
     'Open and close shell frames should interpolate between detail-shell and floating-island visual states',
   )
   assert.match(

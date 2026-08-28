@@ -1,8 +1,9 @@
 <template>
   <div :class="['right', $style.right]" :style="lrcFontSize">
+    <!-- 经典歌词实现（已由 AMLL 样式替代，保留以备将来恢复）
     <transition name="motion-fade">
       <div
-        v-show="!isAmllStyle && !isShowLrcSelectContent"
+        v-show="!isShowLrcSelectContent"
         ref="dom_lyric"
         :class="['lyric', $style.lyric, { [$style.draging]: isMsDown }, { [$style.lrcActiveZoom]: isZoomActiveLrc }]" :style="lrcStyles"
         @wheel="handleWheel" @mousedown="handleLyricMouseDown" @touchstart="handleLyricTouchStart"
@@ -14,7 +15,7 @@
       </div>
     </transition>
     <transition name="motion-fade">
-      <div v-if="!isAmllStyle && isShowLyricProgressSetting" v-show="isStopScroll && !isShowLrcSelectContent" :class="$style.skip">
+      <div v-if="isShowLyricProgressSetting" v-show="isStopScroll && !isShowLrcSelectContent" :class="$style.skip">
         <div ref="dom_skip_line" :class="$style.line" />
         <base-btn
           :class="$style.skipBtn"
@@ -28,8 +29,9 @@
         </base-btn>
       </div>
     </transition>
+    -->
     <transition name="motion-fade">
-      <div v-if="!isAmllStyle && isShowLrcSelectContent" ref="dom_lrc_select_content" tabindex="-1" :class="[$style.lyricSelectContent, 'select', 'scroll', 'lyricSelectContent']" @contextmenu="handleCopySelectText">
+      <div v-if="isShowLrcSelectContent" ref="dom_lrc_select_content" tabindex="-1" :class="[$style.lyricSelectContent, 'select', 'scroll', 'lyricSelectContent']" @contextmenu="handleCopySelectText">
         <div v-for="(info, index) in lyric.lines" :key="index" :class="[$style.lyricSelectline, { [$style.lrcActive]: lyric.line == index }]">
           <span>{{ info.text }}</span>
           <template v-for="(lrc, i) in info.extendedLyrics" :key="i">
@@ -40,7 +42,7 @@
       </div>
     </transition>
     <AmllLyricPlayer
-      v-if="isAmllStyle"
+      v-show="!isShowLrcSelectContent"
       :lines="amllLines"
       :current-time="amllCurrentTime"
       :playing="isPlay"
@@ -66,8 +68,8 @@ import {
   setMusicInfo,
 } from '@renderer/store/player/action'
 import { play } from '@renderer/core/player/action'
-import { onMounted, onBeforeUnmount, computed, reactive, ref, nextTick, watch } from '@common/utils/vueTools'
-import useLyric from '@renderer/utils/compositions/useLyric'
+import { onMounted, onBeforeUnmount, computed, reactive, ref, nextTick } from '@common/utils/vueTools'
+// import useLyric from '@renderer/utils/compositions/useLyric'
 import LyricMenu from './components/LyricMenu.vue'
 import AmllLyricPlayer from './AmllLyricPlayer.vue'
 import { toAmllLyricLines } from '@renderer/utils/amllLyric'
@@ -81,33 +83,32 @@ export default {
     AmllLyricPlayer,
   },
   setup() {
-    const isZoomActiveLrc = computed(() => appSetting['playDetail.isZoomActiveLrc'])
-    const isShowLyricProgressSetting = computed(() => appSetting['playDetail.isShowLyricProgressSetting'])
-    const isAmllStyle = computed(() => appSetting['playDetail.lyricStyle'] == 'amll')
+    // const isZoomActiveLrc = computed(() => appSetting['playDetail.isZoomActiveLrc'])
+    // const isShowLyricProgressSetting = computed(() => appSetting['playDetail.isShowLyricProgressSetting'])
 
-    const {
-      dom_lyric,
-      dom_lyric_text,
-      dom_skip_line,
-      isMsDown,
-      isStopScroll,
-      timeStr,
-      handleLyricMouseDown,
-      handleLyricTouchStart,
-      handleWheel,
-      handleSkipPlay,
-      handleSkipMouseEnter,
-      handleSkipMouseLeave,
-      handleScrollLrc,
-    } = useLyric({ isPlay, lyric, playProgress, isShowLyricProgressSetting })
+    // const {
+    //   dom_lyric,
+    //   dom_lyric_text,
+    //   dom_skip_line,
+    //   isMsDown,
+    //   isStopScroll,
+    //   timeStr,
+    //   handleLyricMouseDown,
+    //   handleLyricTouchStart,
+    //   handleWheel,
+    //   handleSkipPlay,
+    //   handleSkipMouseEnter,
+    //   handleSkipMouseLeave,
+    //   handleScrollLrc,
+    // } = useLyric({ isPlay, lyric, playProgress, isShowLyricProgressSetting })
 
     const dom_lrc_select_content = useSelectAllLrc()
 
-    let fullscreenScrollTimer = null
-    watch(isFullscreen, () => {
-      window.clearTimeout(fullscreenScrollTimer)
-      fullscreenScrollTimer = window.setTimeout(handleScrollLrc, 400)
-    })
+    // let fullscreenScrollTimer = null
+    // watch(isFullscreen, () => {
+    //   window.clearTimeout(fullscreenScrollTimer)
+    //   fullscreenScrollTimer = window.setTimeout(handleScrollLrc, 400)
+    // })
 
     const lyricMenuVisible = ref(false)
     const lyricMenuXY = reactive({
@@ -171,11 +172,11 @@ export default {
       if (!isPlay.value) play()
     }
 
-    const lrcStyles = computed(() => {
-      return {
-        textAlign: appSetting['playDetail.style.align'],
-      }
-    })
+    // const lrcStyles = computed(() => {
+    //   return {
+    //     textAlign: appSetting['playDetail.style.align'],
+    //   }
+    // })
     const lrcFontSize = computed(() => {
       let size = appSetting['playDetail.style.fontSize'] / 100
       if (isFullscreen.value) size = size *= 1.4
@@ -189,32 +190,16 @@ export default {
       window.app_event.on('lyricUpdated', updateMusicInfo)
     })
     onBeforeUnmount(() => {
-      window.clearTimeout(fullscreenScrollTimer)
       window.app_event.off('musicToggled', updateMusicInfo)
       window.app_event.off('lyricUpdated', updateMusicInfo)
     })
 
     return {
-      dom_lyric,
-      dom_lyric_text,
-      dom_skip_line,
+      isPlay,
       dom_lrc_select_content,
-      isMsDown,
-      timeStr,
-      handleLyricMouseDown,
-      handleLyricTouchStart,
-      handleWheel,
-      handleSkipPlay,
-      handleSkipMouseEnter,
-      handleSkipMouseLeave,
       lyric,
-      lrcStyles,
       lrcFontSize,
       isShowLrcSelectContent,
-      isShowLyricProgressSetting,
-      isZoomActiveLrc,
-      isStopScroll,
-      isAmllStyle,
       amllLines,
       amllCurrentTime,
       handleAmllLineClick,

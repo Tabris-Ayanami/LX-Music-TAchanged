@@ -12,8 +12,9 @@ const localMusicSource = read('src', 'renderer', 'views', 'LocalMusic', 'index.v
 const listSource = read('src', 'renderer', 'views', 'List', 'MusicList', 'index.vue')
 const actionsSource = read('src', 'renderer', 'components', 'localMusic', 'LocalTrackActions.vue')
 const editorSource = read('src', 'renderer', 'components', 'localMusic', 'MetadataEditModal.vue')
+const lyricsPanelSource = read('src', 'renderer', 'components', 'localMusic', 'LyricsMatchPanel.vue')
 const metadataSource = read('src', 'main', 'modules', 'localMusicTools', 'metadata.ts')
-const localMusicUtilsSource = read('src', 'renderer', 'utils', 'music.ts')
+const backendSource = read('src', 'renderer', 'backend', 'electron.ts')
 const packSource = read('build-config', 'build-pack.js')
 
 const loadTs = relativePath => {
@@ -37,7 +38,7 @@ test('RG-058: spatial local tracks open the shared local-track context actions',
   )
   assert.match(localMusicSource, /<LocalTrackActions[^>]+with-menu/m)
   assert.match(listSource, /<LocalTrackActions[^>]+:list-id="listId"/m)
-  assert.match(actionsSource, /buildLocalTrackMenuItems\(\{ hasLyrics:/m)
+  assert.match(actionsSource, /buildLocalTrackMenuItems\(\{ canRemoveFromList:/m)
 })
 
 test('RG-059: metadata writes remain in main process and use verified copy-and-swap', () => {
@@ -53,21 +54,29 @@ test('RG-060: embedded lyric writes use TagLib and can restore the original audi
   assert.match(metadataSource, /readLocalEmbeddedLyrics\(tempPath\)/m)
   assert.match(metadataSource, /rename\(backupPath, filePath\)/m)
   assert.match(
-    localMusicUtilsSource,
-    /const key = `\$\{path}:\$\{stats\.mtimeMs}:\$\{stats\.size}`/m,
-    'The renderer metadata cache must invalidate after in-place tag writes',
+    backendSource,
+    /read: async\(filePath, signal\) => call\(\(\) => legacyIpc\.readLocalMetadata\(filePath\), signal\)/m,
+    'Metadata reads must stay uncached so in-place tag writes are immediately visible',
   )
 })
 
-test('local track menus expose one canonical action order and one lyric action', () => {
+test('local track menus expose one canonical action order without a separate lyric action', () => {
   const { buildLocalTrackMenuItems } = loadTs('src/renderer/components/localMusic/localTrackMenu.ts')
   assert.deepEqual(
-    buildLocalTrackMenuItems({ hasLyrics: false, canRemoveFromList: false }).map(item => item.action),
-    ['play', 'playLater', 'addTo', 'editMetadata', 'matchLyrics', 'revealFile', 'copyName'],
+    buildLocalTrackMenuItems({ canRemoveFromList: false }).map(item => item.action),
+    ['play', 'playLater', 'addTo', 'editMetadata', 'revealFile', 'copyName'],
   )
-  assert.equal(buildLocalTrackMenuItems({ hasLyrics: true, canRemoveFromList: false })[4].name, '重新匹配歌词')
-  assert.equal(buildLocalTrackMenuItems({ hasLyrics: true, canRemoveFromList: true }).at(-1).action, 'remove')
+  assert.equal(buildLocalTrackMenuItems({ canRemoveFromList: true }).at(-1).action, 'remove')
+  assert.doesNotMatch(actionsSource, /重新匹配歌词|匹配歌词/)
   assert.doesNotMatch(listSource, /const localActions = \[[\s\S]*重新匹配歌词/m)
+})
+
+test('lyrics panel loads embedded lyrics on first activation', () => {
+  assert.match(
+    lyricsPanelSource,
+    /watch\(\(\) => props\.active[\s\S]*?\{ immediate: true \}\)/m,
+    'The panel mounts while already active, so the watch must run immediately to load embedded lyrics',
+  )
 })
 
 test('metadata editor exposes immersive information, lyrics, and read-only file sections', () => {

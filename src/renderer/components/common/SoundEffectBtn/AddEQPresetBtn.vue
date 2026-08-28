@@ -1,14 +1,17 @@
 <template>
-  <base-btn min :class="[$style.newPreset, {[$style.editing]: isEditing}]" :aria-label="$t('player__sound_effect_biquad_filter_save_btn')" @click="handleEditing($event)">
-    <svg-icon name="plus" />
+  <RackEngravedBtn :class="[$style.newPreset, {[$style.editing]: isEditing}]" :aria-label="$t('player__sound_effect_biquad_filter_save_btn')" @click="handleEditing($event)">
+    <span :class="$style.addLabel">
+      <span :class="$style.plus" aria-hidden="true">+</span>{{ $t('player__sound_effect_preset_add_btn') }}
+    </span>
     <base-input ref="input" :class="$style.newPresetInput" :value="newPresetName" :placeholder="$t('player__sound_effect_biquad_filter_save_input')" @keyup.enter="handleSave($event)" @blur="handleSave($event)" />
-  </base-btn>
+  </RackEngravedBtn>
 </template>
 
 <script setup>
 import { ref, nextTick } from '@common/utils/vueTools'
 import { appSetting } from '@renderer/store/setting'
 import { saveUserEQPreset } from '@renderer/store/soundEffect'
+import RackEngravedBtn from './RackEngravedBtn.vue'
 
 const isEditing = ref(false)
 const input = ref(false)
@@ -16,7 +19,6 @@ const newPresetName = ref('')
 
 const handleEditing = () => {
   if (isEditing.value) return
-  // if (!this.newPresetName) this.newPresetName = this.listName
   isEditing.value = true
   void nextTick(() => {
     input.value.$el.focus()
@@ -50,50 +52,59 @@ const handleSave = (event) => {
 <style lang="less" module>
 @import '@renderer/assets/styles/layout.less';
 
+@monoFont: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+
 .newPreset {
   position: relative;
-  border: 1px dashed var(--color-primary-font-hover);
-  // background-color: var(--color-main-background);
-  color: var(--color-primary-font-hover);
-  opacity: .7;
-  height: 22px;
+  padding: 5px 12px;
 
   &.editing {
-    opacity: 1;
-    width: 90px;
+    min-width: 90px;
 
-    svg {
+    .addLabel {
       display: none;
     }
-    .newPresetInput {
-      display: block;
-    }
   }
 
-  :global {
-    .svg-icon {
-      vertical-align: 0;
-    }
-  }
-}
-.newPresetInput {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  // line-height: 16px;
-  background: none !important;
-  font-size: 12px;
-  text-align: center;
-  font-family: inherit;
-  box-sizing: border-box;
-  padding: 0 3px;
-  border-radius: 0;
-  display: none;
-  &::placeholder {
+  // 提高优先级覆盖 base-input 自带 display:inline-block（样式注入顺序不可靠）
+  .newPresetInput {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0 3px;
+    border: none;
+    border-radius: inherit;
+    background: none !important;
+    color: inherit;
     font-size: 12px;
+    text-align: center;
+    font-family: inherit;
+    box-sizing: border-box;
+
+    &::placeholder {
+      font-size: 12px;
+    }
+  }
+
+  &.editing .newPresetInput {
+    display: block;
   }
 }
 
+.addLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.plus {
+  font-family: @monoFont;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
 </style>

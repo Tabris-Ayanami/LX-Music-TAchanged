@@ -37,7 +37,7 @@ transition(@before-enter="handleBeforeEnter" @enter="handleEnter" @after-enter="
             play-bar(v-if="visibled && layoutStyle != 'pixel'")
 
       transition(name="motion-fade")
-        LyricPlayer(v-if="visibled")
+        LyricPlayer(v-if="visibled && contentReady")
       music-comment(v-if="visibled" :class="$style.comment" :show="isShowPlayComment" :music-info="playMusicInfo.musicInfo" @close="hideComment")
       div(v-if="layoutStyle == 'pixel'" :class="$style.pixelEcho" :style="pixelEchoStyle" aria-hidden="true")
     div(v-if="visibled && layoutStyle == 'pixel' && !isImmersive" :class="$style.pixelControlZone" @touchstart="showPixelControls")
@@ -55,7 +55,7 @@ transition(@before-enter="handleBeforeEnter" @enter="handleEnter" @after-enter="
     transition(name="motion-fade")
       ImmersiveLyrics(v-if="visibled && isImmersive" @close="hideImmersive")
     transition(name="motion-fade")
-      common-audio-visualizer(v-if="appSetting['common.isShowAnimation'] && appSetting['player.audioVisualization'] && visibled && !isImmersive")
+      common-audio-visualizer(v-if="appSetting['common.isShowAnimation'] && appSetting['player.audioVisualization'] && visibled && contentReady && !isImmersive")
 </template>
 
 
@@ -340,31 +340,35 @@ const hideFloatingIslandShell = () => {
   }
 }
 
-const createShellElement = snapshot => {
+const createShellElement = (snapshot, targetRect) => {
   const shell = document.createElement('div')
   setStyles(shell, {
     position: 'fixed',
-    ...getRectStyles(snapshot.shellRect),
+    ...getRectStyles(targetRect),
     borderRadius: snapshot.shellRadius || '22px',
     overflow: 'hidden',
-    border: `1px solid ${snapshot.shellBorderColor || 'var(--shell-stroke, rgba(255, 255, 255, 0.18))'}`,
-    ...getShellVisualStyles(snapshot),
+    border: '1px solid ' + (snapshot.shellBorderColor || 'var(--shell-stroke, rgba(255, 255, 255, 0.18))'),
+    ...withoutBackdropFilter(getShellVisualStyles(snapshot)),
+    transformOrigin: '0 0',
+    transform: 'translateZ(0)',
     contain: 'paint',
     willChange: 'transform, border-radius, opacity',
-    transform: 'translateZ(0)',
   })
   return shell
 }
 
-const createCoverElement = snapshot => {
-  if (!snapshot.coverRect) return null
+const createCoverElement = (snapshot, targetRect) => {
+  if (!snapshot.coverRect || !targetRect) return null
   const sourceImage = snapshot.coverImage
   let cover
   if (sourceImage?.complete && sourceImage.naturalWidth) {
     const canvas = document.createElement('canvas')
     const pixelRatio = Math.min(window.devicePixelRatio || 1, 2)
-    canvas.width = Math.max(1, Math.round(snapshot.coverRect.width * pixelRatio))
-    canvas.height = Math.max(1, Math.round(snapshot.coverRect.height * pixelRatio))
+    // 按起点/终点中更大的尺寸绘制，封面在飞行放大时保持清晰
+    const drawWidth = Math.max(snapshot.coverRect.width, targetRect.width)
+    const drawHeight = Math.max(snapshot.coverRect.height, targetRect.height)
+    canvas.width = Math.max(1, Math.round(drawWidth * pixelRatio))
+    canvas.height = Math.max(1, Math.round(drawHeight * pixelRatio))
     canvas.getContext('2d')?.drawImage(sourceImage, 0, 0, canvas.width, canvas.height)
     cover = canvas
   } else {
@@ -385,14 +389,15 @@ const createCoverElement = snapshot => {
   }
   setStyles(cover, {
     position: 'fixed',
-    ...getRectStyles(snapshot.coverRect),
+    ...getRectStyles(targetRect),
     borderRadius: snapshot.coverRadius || '10px',
     overflow: 'hidden',
     objectFit: 'cover',
     boxShadow: '0 18px 48px rgba(0, 0, 0, 0.24)',
+    transformOrigin: '0 0',
+    transform: 'translateZ(0)',
     contain: 'paint',
     willChange: 'transform, border-radius, opacity',
-    transform: snapshot.coverTransform || 'translateZ(0)',
   })
   return cover
 }
@@ -407,6 +412,44 @@ const toAnimationPromise = async animation => {
   })
 }
 
+const shouldReduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches || !appSetting['common.isShowAnimation']
+
+// 飞行元素固定在目标矩形上，起点用 translate+scale 表达，
+// 全程只跑 transform/border-radius/opacity 动画，避免 left/top/width/height 带来的逐帧布局
+const IDENTITY_TRANSFORM = 'translate(0px, 0px) scale(1, 1)'
+
+const getFlipTransform = (fromRect, toRect) => {
+  const sx = fromRect.width / toRect.width
+  const sy = fromRect.height / toRect.height
+  const dx = fromRect.left - toRect.left
+  const dy = fromRect.top - toRect.top
+  return 'translate(' + dx + 'px, ' + dy + 'px) scale(' + sx + ', ' + sy + ')'
+}
+
+const getCompensatedRadius = (radius, fromRect, toRect) => {
+  const value = parseFloat(radius)
+  if (!value || !isFinite(value)) return radius
+  const scale = Math.sqrt((fromRect.width * fromRect.height) / (toRect.width * toRect.height))
+  if (!scale || !isFinite(scale)) return radius
+  return (value / scale).toFixed(2) + 'px'
+}
+
+const composeFlipWithTransform = (flipTransform, extraTransform) => {
+  if (!extraTransform || extraTransform == 'none') return flipTransform
+  try {
+    return new DOMMatrix(flipTransform).multiply(new DOMMatrix(extraTransform)).toString()
+  } catch {
+    return flipTransform
+  }
+}
+
+// 飞行层不参与背景模糊，避免动画期间逐帧重采样模糊
+const withoutBackdropFilter = visual => ({
+  ...visual,
+  backdropFilter: 'none',
+  WebkitBackdropFilter: 'none',
+})
+
 const animateFallback = (el, opening, done) => {
   cancelActivePlayDetailTransition?.()
   if (!el.animate) {
@@ -416,7 +459,7 @@ const animateFallback = (el, opening, done) => {
   }
   cleanupContentStyle(el)
   el.style.willChange = 'opacity, transform'
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches || !appSetting['common.isShowAnimation']
+  const reduceMotion = shouldReduceMotion()
   const frames = reduceMotion
     ? opening
       ? [{ opacity: 0 }, { opacity: 1 }]
@@ -456,7 +499,7 @@ const animateFallback = (el, opening, done) => {
 const animatePlayDetail = (el, opening, done) => {
   cancelActivePlayDetailTransition?.()
   cancelActivePlayDetailTransition = null
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches || !appSetting['common.isShowAnimation']
+  const reduceMotion = shouldReduceMotion()
   if (!el.animate || reduceMotion) {
     animateFallback(el, opening, done)
     return
@@ -473,13 +516,12 @@ const animatePlayDetail = (el, opening, done) => {
   const artworkTargetRect = artworkElement?.getBoundingClientRect()
   const shellTargetRadius = getComputedStyle(el).borderRadius || '18px'
   const artworkTargetRadius = artworkElement ? getComputedStyle(artworkElement).borderRadius || '28px' : '28px'
-  const shellTargetVisual = getShellVisualStylesFromElement(el)
+  const shellTargetVisual = withoutBackdropFilter(getShellVisualStylesFromElement(el))
+  const islandVisual = withoutBackdropFilter(getShellVisualStyles(snapshot))
   const layer = createMotionLayer()
-  const shell = createShellElement(snapshot)
-  const cover = createCoverElement(snapshot)
+  const shell = createShellElement(snapshot, shellTargetRect)
   const floatingIslandShell = opening ? null : hideFloatingIslandShell()
   layer.appendChild(shell)
-  if (cover) layer.appendChild(cover)
 
   cleanupContentStyle(el)
   el.style.willChange = 'opacity, transform'
@@ -499,23 +541,28 @@ const animatePlayDetail = (el, opening, done) => {
     fill: 'both',
   })
 
+  // FLIP：外壳从浮岛位置（translate+scale 表达）形变到全屏，
+  // 只动画 transform/圆角/透明度，几何变化全部交给合成器
+  const shellStartTransform = getFlipTransform(snapshot.shellRect, shellTargetRect)
+  const shellStartRadius = getCompensatedRadius(snapshot.shellRadius || '22px', snapshot.shellRect, shellTargetRect)
+
   const shellFrames = opening
     ? [
         {
-          ...getRectStyles(snapshot.shellRect),
-          borderRadius: snapshot.shellRadius || '22px',
-          ...getShellVisualStyles(snapshot),
+          transform: shellStartTransform,
+          borderRadius: shellStartRadius,
+          ...islandVisual,
           opacity: 1,
         },
         {
-          ...getRectStyles(shellTargetRect),
+          transform: IDENTITY_TRANSFORM,
           borderRadius: shellTargetRadius,
           ...shellTargetVisual,
           opacity: 1,
           offset: 0.92,
         },
         {
-          ...getRectStyles(shellTargetRect),
+          transform: IDENTITY_TRANSFORM,
           borderRadius: shellTargetRadius,
           ...shellTargetVisual,
           opacity: 0,
@@ -524,15 +571,15 @@ const animatePlayDetail = (el, opening, done) => {
       ]
     : [
         {
-          ...getRectStyles(shellTargetRect),
+          transform: IDENTITY_TRANSFORM,
           borderRadius: shellTargetRadius,
           ...shellTargetVisual,
           opacity: 1,
         },
         {
-          ...getRectStyles(snapshot.shellRect),
-          borderRadius: snapshot.shellRadius || '22px',
-          ...getShellVisualStyles(snapshot),
+          transform: shellStartTransform,
+          borderRadius: shellStartRadius,
+          ...islandVisual,
           opacity: 1,
         },
       ]
@@ -553,51 +600,55 @@ const animatePlayDetail = (el, opening, done) => {
     }, PLAYER_FLOATING_REVEAL_DELAY)
   }
 
-  if (cover && artworkTargetRect?.width && artworkTargetRect?.height) {
-    const coverFrames = opening
-      ? [
-          {
-            ...getRectStyles(snapshot.coverRect),
-            borderRadius: snapshot.coverRadius || '10px',
-            opacity: 1,
-            transform: getCoverTransform(snapshot.coverTransform),
-          },
-          {
-            ...getRectStyles(artworkTargetRect),
-            borderRadius: artworkTargetRadius,
-            opacity: 1,
-            offset: 0.9,
-            transform: 'translateZ(0)',
-          },
-          {
-            ...getRectStyles(artworkTargetRect),
-            borderRadius: artworkTargetRadius,
-            opacity: 0,
-            offset: 1,
-            transform: 'translateZ(0)',
-          },
-        ]
-      : [
-          {
-            ...getRectStyles(artworkTargetRect),
-            borderRadius: artworkTargetRadius,
-            opacity: 0.84,
-            transform: 'translateZ(0)',
-          },
-          {
-            ...getRectStyles(snapshot.coverRect),
-            borderRadius: snapshot.coverRadius || '10px',
-            opacity: 1,
-            transform: getCoverTransform(snapshot.coverTransform),
-          },
-        ]
+  if (artworkTargetRect?.width && artworkTargetRect?.height) {
+    const cover = createCoverElement(snapshot, artworkTargetRect)
+    if (cover) {
+      layer.appendChild(cover)
+      const coverStartTransform = composeFlipWithTransform(
+        getFlipTransform(snapshot.coverRect, artworkTargetRect),
+        getCoverTransform(snapshot.coverTransform),
+      )
+      const coverStartRadius = getCompensatedRadius(snapshot.coverRadius || '10px', snapshot.coverRect, artworkTargetRect)
+      const coverFrames = opening
+        ? [
+            {
+              transform: coverStartTransform,
+              borderRadius: coverStartRadius,
+              opacity: 1,
+            },
+            {
+              transform: IDENTITY_TRANSFORM,
+              borderRadius: artworkTargetRadius,
+              opacity: 1,
+              offset: 0.9,
+            },
+            {
+              transform: IDENTITY_TRANSFORM,
+              borderRadius: artworkTargetRadius,
+              opacity: 0,
+              offset: 1,
+            },
+          ]
+        : [
+            {
+              transform: IDENTITY_TRANSFORM,
+              borderRadius: artworkTargetRadius,
+              opacity: 0.84,
+            },
+            {
+              transform: coverStartTransform,
+              borderRadius: coverStartRadius,
+              opacity: 1,
+            },
+          ]
 
-    const coverAnimation = cover.animate(coverFrames, {
-      duration: PLAYER_SHELL_DURATION,
-      easing: PLAYER_MOTION_EASING,
-      fill: 'both',
-    })
-    animations.push(coverAnimation)
+      const coverAnimation = cover.animate(coverFrames, {
+        duration: PLAYER_SHELL_DURATION,
+        easing: PLAYER_MOTION_EASING,
+        fill: 'both',
+      })
+      animations.push(coverAnimation)
+    }
   }
 
   let finished = false
@@ -635,6 +686,7 @@ export default {
   },
   setup() {
     const visibled = ref(false)
+    const contentReady = ref(false)
     const isImmersive = ref(false)
     const pixelControlsVisible = ref(false)
     const artworkVideoFailed = ref(false)
@@ -644,6 +696,17 @@ export default {
     let clickTime = 0
     let colorTaskId = 0
     let pixelControlTimer = null
+
+    let contentReadyTimer = null
+    // 重型内容（AMLL 歌词、频谱动画）延迟到外壳动画已铺满屏幕后再挂载，
+    // 避免点击瞬间与过渡动画争抢 CPU/GPU
+    const armContentReady = () => {
+      window.clearTimeout(contentReadyTimer)
+      const delay = shouldReduceMotion() ? 48 : Math.round(PLAYER_SHELL_DURATION * 0.55)
+      contentReadyTimer = window.setTimeout(() => {
+        contentReady.value = true
+      }, delay)
+    }
 
     const hide = () => {
       setShowPlayerDetail(false)
@@ -700,6 +763,9 @@ export default {
         pixelControlTimer = null
       }
       visibled.value = false
+      window.clearTimeout(contentReadyTimer)
+      contentReadyTimer = null
+      contentReady.value = false
 
       unregisterAutoHideMounse()
       clearPlayDetailOrigin()
@@ -712,6 +778,7 @@ export default {
 
     const handleEnter = (el, done) => {
       animatePlayDetail(el, true, done)
+      armContentReady()
     }
 
     const handleBeforeLeave = el => {
@@ -741,6 +808,7 @@ export default {
       cancelActivePlayDetailTransition?.()
       document.removeEventListener('keydown', handleDetailKeydown, true)
       if (pixelControlTimer != null) window.clearTimeout(pixelControlTimer)
+      window.clearTimeout(contentReadyTimer)
     })
 
     const detailStyle = computed(() => ({
@@ -891,6 +959,7 @@ export default {
       handleLeave,
       handleAfterLeave,
       visibled,
+      contentReady,
       isFullscreen,
       fullscreenExit() {
         void backend.platform.setFullscreen(false).then((fullscreen) => {

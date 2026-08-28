@@ -3,25 +3,33 @@ dt#play_detail(v-if="!embedded") {{ $t('setting__play_detail') }}
 dd(v-else)
   h3#appearance_play_detail(:class="$style.embeddedTitle") {{ $t('setting__play_detail') }}
 dd
-  h3#play_detail_lyric_style {{ $t('setting__play_detail_lyric_style') }}
-  div
-    base-checkbox.gap-left(id="setting_play_detail_lyric_style_classic" :model-value="appSetting['playDetail.lyricStyle']" need value="classic" :label="$t('setting__play_detail_lyric_style_classic')" @update:model-value="updateSetting({ 'playDetail.lyricStyle': $event })")
-    base-checkbox.gap-left(id="setting_play_detail_lyric_style_amll" :model-value="appSetting['playDetail.lyricStyle']" need value="amll" :label="$t('setting__play_detail_lyric_style_amll')" @update:model-value="updateSetting({ 'playDetail.lyricStyle': $event })")
-
-dd(v-if="appSetting['playDetail.lyricStyle'] == 'classic'")
   h3#play_detail_align {{ $t('setting__play_detail_align') }}
   div
     base-checkbox.gap-left(id="setting_play_detail_align_left" :model-value="appSetting['playDetail.style.align']" need value="left" :label="$t('setting__play_detail_align_left')" @update:model-value="updateSetting({ 'playDetail.style.align': $event })")
     base-checkbox.gap-left(id="setting_play_detail_align_center" :model-value="appSetting['playDetail.style.align']" need value="center" :label="$t('setting__play_detail_align_center')" @update:model-value="updateSetting({ 'playDetail.style.align': $event })")
     base-checkbox.gap-left(id="setting_play_detail_align_right" :model-value="appSetting['playDetail.style.align']" need value="right" :label="$t('setting__play_detail_align_right')" @update:model-value="updateSetting({ 'playDetail.style.align': $event })")
 
-dd(v-if="appSetting['playDetail.lyricStyle'] == 'classic'")
+dd
   .gap-top
     base-checkbox(id="setting_play_detail_font_zoom_enable" :model-value="appSetting['playDetail.isZoomActiveLrc']" :label="$t('setting__play_detail_font_zoom')" @update:model-value="updateSetting({'playDetail.isZoomActiveLrc': $event})")
+  //- 延迟滚动和进度条设置已由 AMLL 样式替代，保留以备将来恢复
+  //- .gap-top
+  //-   base-checkbox(id="setting_play_detail_lyric_delayScroll" :model-value="appSetting['playDetail.isDelayScroll']" :label="$t('setting__play_detail_lyric_delay_scroll')" @update:model-value="updateSetting({ 'playDetail.isDelayScroll': $event })")
+  //- .gap-top
+  //-   base-checkbox(id="setting_play_detail_lyric_progress_enable" :model-value="appSetting['playDetail.isShowLyricProgressSetting']" :label="$t('setting__play_detail_lyric_progress')" @update:model-value="updateSetting({'playDetail.isShowLyricProgressSetting': $event})")
+
+dd
   .gap-top
-    base-checkbox(id="setting_play_detail_lyric_delayScroll" :model-value="appSetting['playDetail.isDelayScroll']" :label="$t('setting__play_detail_lyric_delay_scroll')" @update:model-value="updateSetting({ 'playDetail.isDelayScroll': $event })")
+    base-checkbox(id="setting_play_detail_amll_blur" :model-value="appSetting['playDetail.amll.enableBlur']" :label="$t('setting__play_detail_amll_blur')" @update:model-value="updateSetting({ 'playDetail.amll.enableBlur': $event })")
   .gap-top
-    base-checkbox(id="setting_play_detail_lyric_progress_enable" :model-value="appSetting['playDetail.isShowLyricProgressSetting']" :label="$t('setting__play_detail_lyric_progress')" @update:model-value="updateSetting({'playDetail.isShowLyricProgressSetting': $event})")
+    base-checkbox(id="setting_play_detail_amll_spring" :model-value="appSetting['playDetail.amll.enableSpring']" :label="$t('setting__play_detail_amll_spring')" @update:model-value="updateSetting({ 'playDetail.amll.enableSpring': $event })")
+
+dd
+  h3#play_detail_amll_anchor {{ $t('setting__play_detail_amll_anchor') }}
+  div
+    base-checkbox.gap-left(id="setting_play_detail_amll_anchor_top" :model-value="appSetting['playDetail.amll.alignAnchor']" need value="top" :label="$t('setting__play_detail_amll_anchor_top')" @update:model-value="updateSetting({ 'playDetail.amll.alignAnchor': $event })")
+    base-checkbox.gap-left(id="setting_play_detail_amll_anchor_center" :model-value="appSetting['playDetail.amll.alignAnchor']" need value="center" :label="$t('setting__play_detail_amll_anchor_center')" @update:model-value="updateSetting({ 'playDetail.amll.alignAnchor': $event })")
+    base-checkbox.gap-left(id="setting_play_detail_amll_anchor_bottom" :model-value="appSetting['playDetail.amll.alignAnchor']" need value="bottom" :label="$t('setting__play_detail_amll_anchor_bottom')" @update:model-value="updateSetting({ 'playDetail.amll.alignAnchor': $event })")
 
 dd
   h3#play_detail_layout {{ $t('setting__play_detail_layout') }}

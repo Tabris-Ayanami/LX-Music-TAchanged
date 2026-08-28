@@ -1,7 +1,7 @@
 <template>
   <teleport to="#root">
     <div ref="dom_menu" :class="$style.container" :style="menuStyles" :aria-hidden="!modelValue">
-      <div v-if="appSetting['playDetail.lyricStyle'] != 'amll'" :class="$style.group">
+      <div :class="$style.group">
         <div :class="$style.subGroup">
           <div :class="$style.title">{{ $t('lyric_menu__align') }}</div>
         </div>
@@ -9,6 +9,16 @@
           <button :class="[$style.btn, { [$style.active]: appSetting['playDetail.style.align'] == 'left' }]" ignore-tip :aria-label="$t('lyric_menu__align_left')" @click="setFontAlign('left')">{{ $t('lyric_menu__align_left') }}</button>
           <button :class="[$style.btn, { [$style.active]: appSetting['playDetail.style.align'] == 'center' }]" ignore-tip :aria-label="$t('lyric_menu__align_center')" @click="setFontAlign('center')">{{ $t('lyric_menu__align_center') }}</button>
           <button :class="[$style.btn, { [$style.active]: appSetting['playDetail.style.align'] == 'right' }]" ignore-tip :aria-label="$t('lyric_menu__align_right')" @click="setFontAlign('right')">{{ $t('lyric_menu__align_right') }}</button>
+        </div>
+      </div>
+      <div :class="$style.group">
+        <div :class="$style.subGroup">
+          <div :class="$style.title">{{ $t('lyric_menu__lrc_position') }}</div>
+        </div>
+        <div :class="$style.subGroup">
+          <button :class="[$style.btn, { [$style.active]: appSetting['playDetail.amll.alignPosition'] == 0.3 }]" ignore-tip :aria-label="$t('lyric_menu__position_top')" @click="setLrcPosition(0.3)">{{ $t('lyric_menu__position_top') }}</button>
+          <button :class="[$style.btn, { [$style.active]: appSetting['playDetail.amll.alignPosition'] == 0.5 }]" ignore-tip :aria-label="$t('lyric_menu__position_center')" @click="setLrcPosition(0.5)">{{ $t('lyric_menu__position_center') }}</button>
+          <button :class="[$style.btn, { [$style.active]: appSetting['playDetail.amll.alignPosition'] == 0.7 }]" ignore-tip :aria-label="$t('lyric_menu__position_bottom')" @click="setLrcPosition(0.7)">{{ $t('lyric_menu__position_bottom') }}</button>
         </div>
       </div>
       <div :class="$style.group">
@@ -52,7 +62,7 @@ import { computed, ref, watch } from '@common/utils/vueTools'
 import useMenuLocation from '@renderer/utils/compositions/useMenuLocation'
 import { debounce } from '@common/utils/common'
 import { saveLyricEdited, removeLyricEdited } from '@renderer/utils/ipc'
-import { appSetting, setPlayDetailLyricFont, setPlayDetailLyricAlign } from '@renderer/store/setting'
+import { appSetting, updateSetting, setPlayDetailLyricFont, setPlayDetailLyricAlign } from '@renderer/store/setting'
 
 const offsetTagRxp = /(?:^|\n)\s*\[offset:\s*(\S+(?:\d+)*)\s*\]/
 const offsetTagAllRxp = /(^|\n)\s*\[offset:\s*(\S+(?:\d+)*)\s*\]/g
@@ -107,6 +117,11 @@ export default {
     const setFontAlign = val => {
       if (appSetting['playDetail.style.align'] == val) return
       setPlayDetailLyricAlign(val)
+    }
+
+    const setLrcPosition = val => {
+      if (appSetting['playDetail.amll.alignPosition'] == val) return
+      updateSetting({ 'playDetail.amll.alignPosition': val })
     }
 
     const fontSizeUp = step => {
@@ -203,6 +218,7 @@ export default {
       setOffset,
       offsetReset,
       setFontAlign,
+      setLrcPosition,
       offsetDisabled,
     }
   },

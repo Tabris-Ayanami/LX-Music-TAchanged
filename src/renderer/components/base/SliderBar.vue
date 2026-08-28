@@ -2,8 +2,8 @@
   <div :class="[$style.sliderContent, { [$style.disabled]: disabled, [$style.dragging]: isDragging }, className]">
     <div :class="[$style.slider]">
       <div ref="dom_sliderBar" :class="$style.sliderBar" :style="{ transform: `scaleX(${(value - min) / (max - min) || 0})` }" />
-      <div :class="$style.sliderThumb" :style="{ left: `${ratio * 100}%` }" />
     </div>
+    <div :class="$style.sliderThumb" :style="{ '--slider-ratio': ratio }" />
     <div
       :class="$style.sliderMask"
       role="slider"
@@ -157,6 +157,7 @@ export default {
 @import '@renderer/assets/styles/layout.less';
 
 .sliderContent {
+  container-type: inline-size;
   flex: none;
   position: relative;
   width: 100px;
@@ -177,7 +178,7 @@ export default {
 
     .sliderThumb {
       opacity: 1;
-      transform: translateX(-50%) scale(1);
+      transform: var(--slider-thumb-shift) scale(1);
     }
   }
   &.disabled {
@@ -224,19 +225,18 @@ export default {
 }
 
 .sliderThumb {
+  --slider-thumb-shift: translateX(calc(var(--slider-ratio, 0) * (100cqw - var(--slider-thumb-width, 12px)))) translateY(-50%);
   position: absolute;
+  left: 0;
   top: 50%;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
+  width: var(--slider-thumb-width, 12px);
+  height: var(--slider-thumb-height, 12px);
+  border-radius: var(--slider-thumb-radius, 50%);
   opacity: 0;
-  transform: translateX(-50%) scale(.76);
   background: var(--slider-thumb-color, var(--color-primary));
-  box-shadow:
-    0 0 0 2px var(--shell-surface-elevated, var(--color-main-background)),
-    0 2px 8px rgba(0, 0, 0, .2);
+  box-shadow: var(--slider-thumb-shadow, 0 0 0 2px var(--shell-surface-elevated, var(--color-main-background)), 0 2px 8px rgba(0, 0, 0, .2));
+  transform: var(--slider-thumb-shift) scale(.76);
   transition: opacity @transition-fast, transform @transition-fast;
-  translate: 0 -50%;
   pointer-events: none;
 }
 

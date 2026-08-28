@@ -335,11 +335,6 @@ declare global {
       'playDetail.isZoomActiveLrc': boolean
 
       /**
-       * 播放详情页-是否允许通过歌词调整播放进度
-       */
-      'playDetail.isShowLyricProgressSetting': boolean
-
-      /**
        * 播放详情页-歌词字体大小
        */
       'playDetail.style.fontSize': number
@@ -350,14 +345,24 @@ declare global {
       'playDetail.style.align': 'center' | 'left' | 'right'
 
       /**
-       * 播放详情页-歌词样式
+       * 播放详情页-Apple Music 样式歌词当前行位置（0-1）
        */
-      'playDetail.lyricStyle': 'classic' | 'amll'
+      'playDetail.amll.alignPosition': number
 
       /**
-       * 播放详情页-是否延迟桌面歌词滚动
+       * 播放详情页-Apple Music 样式歌词是否启用模糊效果
        */
-      'playDetail.isDelayScroll': boolean
+      'playDetail.amll.enableBlur': boolean
+
+      /**
+       * 播放详情页-Apple Music 样式歌词是否启用弹簧动画
+       */
+      'playDetail.amll.enableSpring': boolean
+
+      /**
+       * 播放详情页-Apple Music 样式歌词对齐锚点
+       */
+      'playDetail.amll.alignAnchor': 'top' | 'center' | 'bottom'
 
       /**
        * 沉浸模式歌词效果

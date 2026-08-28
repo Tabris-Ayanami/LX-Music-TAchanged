@@ -17,7 +17,6 @@
     @saved="handleSaved"
     @lyrics-applied="handleLyricsApplied"
   />
-  <LyricsMatchModal v-if="track" v-model:show="lyricsVisible" :music-info="track" @applied="handleLyricsApplied" />
 </template>
 
 <script setup lang="ts">
@@ -30,7 +29,6 @@ import { addTempPlayList, setMusicInfo } from '@renderer/store/player/action'
 import { playMusicInfo } from '@renderer/store/player/state'
 import { backend } from '@renderer/backend'
 import MetadataEditModal from './MetadataEditModal.vue'
-import LyricsMatchModal from './LyricsMatchModal.vue'
 import { buildLocalTrackMenuItems, type LocalTrackMenuItem } from './localTrackMenu'
 
 const props = withDefaults(defineProps<{ withMenu?: boolean, listId?: string, canRemoveFromList?: boolean, teleportTarget?: string }>(), {
@@ -47,12 +45,11 @@ const track = ref<LX.Music.MusicInfoLocal | null>(null)
 const menuVisible = ref(false)
 const metadataVisible = ref(false)
 const metadataReadOnly = ref(false)
-const lyricsVisible = ref(false)
 const addVisible = ref(false)
 const hasLyrics = ref(false)
 const menuLocation = reactive({ x: 0, y: 0 })
 const lyricStatus = computed(() => hasLyrics.value ? '已匹配 / 已缓存' : '未匹配')
-const menus = computed(() => buildLocalTrackMenuItems({ hasLyrics: hasLyrics.value, canRemoveFromList: props.canRemoveFromList }))
+const menus = computed(() => buildLocalTrackMenuItems({ canRemoveFromList: props.canRemoveFromList }))
 
 const refreshLyricStatus = async() => {
   if (!track.value) return
@@ -86,10 +83,6 @@ const openMetadata = (value?: LX.Music.MusicInfoLocal, readOnly = false) => {
     metadataVisible.value = true
   }
 }
-const openLyrics = (_force = false, value?: LX.Music.MusicInfoLocal) => {
-  if (value) setTrack(value)
-  if (track.value) lyricsVisible.value = true
-}
 const handleMenuClick = (item: LocalTrackMenuItem | null) => {
   menuVisible.value = false
   if (!item || !track.value) return
@@ -105,9 +98,6 @@ const handleMenuClick = (item: LocalTrackMenuItem | null) => {
       break
     case 'editMetadata':
       openMetadata()
-      break
-    case 'matchLyrics':
-      openLyrics(true)
       break
     case 'revealFile':
       backend.platform.revealInFileManager(track.value.meta.filePath)
@@ -141,5 +131,5 @@ const handleLyricsApplied = () => {
   hasLyrics.value = true
 }
 
-defineExpose({ showMenu, openMetadata, openLyrics })
+defineExpose({ showMenu, openMetadata })
 </script>

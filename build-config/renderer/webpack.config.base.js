@@ -30,6 +30,10 @@ module.exports = {
       '@lyric': path.join(__dirname, '../../src/renderer-lyric'),
       '@static': path.join(__dirname, '../../src/static'),
       '@common': path.join(__dirname, '../../src/common'),
+      // babel 的 transform-modules-umd 会把 .vue 脚本的 import 编译成 require()，
+      // 导致解析到该包的 cjs 构建，其内部 __toESM(require("@ungap/structured-clone"), 1)
+      // 的 default 是模块对象而非函数，setLyricLines 会抛 "is not a function"。强制走 ESM 构建。
+      '@applemusic-like-lyrics/core$': path.join(__dirname, '../../node_modules/@applemusic-like-lyrics/core/dist/amll-core.mjs'),
     },
     extensions: ['.tsx', '.ts', '.js', '.json', '.node'],
   },

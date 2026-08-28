@@ -79,7 +79,7 @@ export default (setting: any): Partial<LX.AppSetting> => {
     setting['player.autoSkipOnError'] = setting.player?.autoSkipOnError
 
     setting['playDetail.isZoomActiveLrc'] = setting.playDetail?.isZoomActiveLrc
-    setting['playDetail.isShowLyricProgressSetting'] = setting.playDetail?.isShowLyricProgressSetting
+    // setting['playDetail.isShowLyricProgressSetting'] = setting.playDetail?.isShowLyricProgressSetting
     setting['playDetail.style.fontSize'] = setting.playDetail?.style?.fontSize
     setting['playDetail.style.align'] = setting.playDetail?.style?.align
     setting['playDetail.immersiveEffect'] = setting.playDetail?.immersiveEffect ?? 'classic'

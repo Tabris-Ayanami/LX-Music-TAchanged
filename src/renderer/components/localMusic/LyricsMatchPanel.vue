@@ -78,10 +78,8 @@ import { backend } from '@renderer/backend'
 const props = withDefaults(defineProps<{
   active: boolean
   musicInfo: LX.Music.MusicInfoLocal
-  startMode?: 'current' | 'search'
   readOnly?: boolean
 }>(), {
-  startMode: 'current',
   readOnly: false,
 })
 const emit = defineEmits<{ applied: [] }>()
@@ -94,7 +92,7 @@ const candidates = ref<LyricsCandidate[]>([])
 const selected = ref<LyricsCandidate | null>(null)
 const selectedLyrics = ref<RichLyrics | null>(null)
 const currentLyric = ref('')
-const mode = ref<'current' | 'search'>(props.startMode)
+const mode = ref<'current' | 'search'>('current')
 let searchId = 0
 let previewId = 0
 
@@ -218,14 +216,13 @@ defineExpose({ canOverwrite, overwriteLabel, overwrite })
 
 watch(() => props.active, active => {
   if (active) {
-    mode.value = props.startMode
-    if (mode.value == 'search') void load()
-    else void loadCurrent()
+    mode.value = 'current'
+    void loadCurrent()
   } else {
     searchId++
     previewId++
   }
-})
+}, { immediate: true })
 </script>
 
 <style lang="less" module>

@@ -448,6 +448,12 @@ const isTogglePlayActive = computed(() => currentTogglePlayMode.value != 'none')
 
 .volumeSlider {
   width: 100% !important;
+  // 与时间进度条一致的白色药丸手柄
+  --slider-thumb-width: 12px;
+  --slider-thumb-height: 10px;
+  --slider-thumb-radius: 999px;
+  --slider-thumb-color: rgba(255, 255, 255, .96);
+  --slider-thumb-shadow: 0 1px 3px rgba(0, 0, 0, .22), 0 0 0 .5px rgba(0, 0, 0, .14);
 }
 
 .volumeValue {

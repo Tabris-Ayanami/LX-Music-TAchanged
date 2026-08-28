@@ -1,23 +1,26 @@
 <template>
-  <div :class="$style.contnet">
-    <div class="player__sound_effect_title" :class="$style.header">
+  <div :class="$style.content">
+    <div :class="$style.header">
       <h3>
         {{ $t('player__sound_effect_pitch_shifter') }}
         <svg-icon class="help-icon" name="information-slab-circle-outline" :aria-label="$t('player__sound_effect_pitch_shifter_tip')" />
       </h3>
-      <base-btn min @click="handleSetPreset(1)">{{ $t('player__sound_effect_pitch_shifter_reset_btn') }}</base-btn>
+      <RackEngravedBtn @click="handleSetPreset(1)">{{ $t('player__sound_effect_pitch_shifter_reset_btn') }}</RackEngravedBtn>
     </div>
-    <div :class="$style.eqList">
-      <div :class="$style.eqItem">
-        <span :class="$style.label">{{ playbackRate.toFixed(2) }}x</span>
-        <base-slider-bar :class="$style.slider" :value="playbackRate * 100" :min="50" :max="150" @change="handleUpdatePlaybackRate" />
-      </div>
+    <div :class="$style.faderRow">
+      <RackFader
+        direction="horizontal"
+        :class="$style.fader"
+        :value="playbackRate * 100"
+        :min="50"
+        :max="150"
+        :step="1"
+        :center-value="100"
+        :aria-label="$t('player__sound_effect_pitch_shifter')"
+        @change="handleUpdatePlaybackRate"
+      />
+      <span :class="$style.lcd">{{ playbackRate.toFixed(2) }}x</span>
     </div>
-    <!-- <div :class="$style.saveList">
-      <base-btn v-for="num in semitones" :key="num" min @click="handleSetSemitones(num)">{{ $t(`player__sound_effect_pitch_shifter_preset_semitones`, { num: num > 0 ? `+${num}` : num }) }}</base-btn>
-      <base-btn v-for="item in userPresetList" :key="item.id" min @click="handleSetPreset(item.playbackRate)" @contextmenu="handleRemovePreset(item.id)">{{ item.name }}</base-btn>
-      <AddPitchShifterPresetBtn v-if="userPresetList.length < 31" />
-    </div> -->
   </div>
 </template>
 
@@ -25,16 +28,8 @@
 import { computed } from '@common/utils/vueTools'
 import { setMediaDeviceId } from '@renderer/plugins/player'
 import { appSetting, saveMediaDeviceId, updateSetting } from '@renderer/store/setting'
-// import AddPitchShifterPresetBtn from './AddPitchShifterPresetBtn.vue'
-// import { getUserPitchShifterPresetList, removeUserPitchShifterPreset } from '@renderer/store/soundEffect'
-// import { semitones } from '@renderer/plugins/player'
-
-// const setting = reactive({
-//   enabled: false,
-//   soundR: 5,
-//   speed: 25,
-// })
-
+import RackEngravedBtn from './RackEngravedBtn.vue'
+import RackFader from './RackFader.vue'
 
 const playbackRate = computed(() => appSetting['player.soundEffect.pitchShifter.playbackRate'])
 
@@ -46,112 +41,81 @@ const handleSetPreset = async(value) => {
   updateSetting({ 'player.soundEffect.pitchShifter.playbackRate': value })
 }
 
-// const handleSetSemitones = (value) => {
-//   // https://zpl.fi/pitch-shifting-in-web-audio-api/
-//   handleSetPreset(2 ** (value / 12))
-// }
-
 const handleUpdatePlaybackRate = (value) => {
   value = parseFloat((Math.round(value) / 100).toFixed(2))
   void handleSetPreset(value)
 }
-
-
-// const userPresetList = ref([])
-
-// const handleRemovePreset = id => {
-//   removeUserPitchShifterPreset(id)
-// }
-
-// onMounted(() => {
-//   getUserPitchShifterPresetList().then(list => {
-//     userPresetList.value = list
-//   })
-// })
-
-
 </script>
 
 <style lang="less" module>
 @import '@renderer/assets/styles/layout.less';
-.contnet {
-  padding-top: 15px;
-  position: relative;
+
+@monoFont: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+
+.content {
   display: flex;
   flex-flow: column nowrap;
-  gap: 8px;
-  min-height: 0;
-  flex: none;
-  &:before {
-    .mixin-after();
-    position: absolute;
-    top: 0;
-    height: 1px;
-    width: 100%;
-    border-top: 1px dashed var(--color-primary-light-100-alpha-700);
-  }
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--shell-divider);
+  border-radius: 12px;
+  background: var(--shell-surface-strong);
+  box-shadow: inset 0 1px 0 var(--shell-edge-light), inset 0 1px 4px var(--shell-edge-shadow);
 }
+
 .header {
   display: flex;
   flex-flow: row nowrap;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 5px;
-  // padding-top: 5px;
-}
-.eqList {
-  display: flex;
-  flex-flow: column nowrap;
-  gap: 15px;
-  width: 100%;
-}
-.eqItem {
-  display: flex;
-  flex-flow: row nowrap;
-  gap: 8px;
-}
-.label {
-  flex: none;
-  // width: 50px;
-  font-size: 12px;
-}
-.value {
-  flex: none;
-  width: 40px;
-  font-size: 12px;
-  text-align: center;
-
-  &.active {
-    color: var(--color-primary-font);
-  }
-}
-
-.footer {
-  display: flex;
-  flex-flow: row nowrap;
-  // justify-content: space-between;
-  justify-content: center;
-  align-items: center;
-  // font-size: 13px;
-  span {
-    line-height: 1.2;
-  }
-}
-
-.slider {
-  flex: auto;
-}
-
-.checkbox {
-  margin-right: 10px;
-  font-size: 13px;
-}
-
-.saveList {
-  display: flex;
-  flex-flow: row wrap;
-  margin-top: 10px;
   gap: 10px;
+
+  h3 {
+    margin: 0;
+    color: var(--shell-muted);
+    font-size: 13px;
+    font-weight: 600;
+  }
 }
 
+.faderRow {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: 12px;
+
+  .fader {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+.lcd {
+  flex: none;
+  min-width: 52px;
+  padding: 2px 6px;
+  border: 1px solid var(--shell-divider);
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(0deg, rgba(70, 90, 60, .06) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, color-mix(in srgb, #e6ecdd 92%, var(--color-primary) 8%), color-mix(in srgb, #c9d4bd 90%, var(--color-primary) 10%));
+  box-shadow: inset 0 1px 2px rgba(60, 80, 50, .28), inset 0 -1px 0 rgba(255, 255, 255, .45), 0 1px 0 var(--shell-edge-light);
+  color: color-mix(in srgb, #2e3d28 82%, var(--color-primary) 18%);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .5);
+  font-family: @monoFont;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-align: center;
+  white-space: nowrap;
+
+  :global(.themeShellDark) & {
+    background:
+      repeating-linear-gradient(0deg, color-mix(in srgb, var(--color-primary) 7%, transparent) 0 1px, transparent 1px 3px),
+      linear-gradient(180deg, #10160f, #0a0e09);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, .8), inset 0 -1px 0 rgba(255, 255, 255, .08), 0 1px 0 var(--shell-edge-light);
+    color: color-mix(in srgb, var(--color-primary) 62%, #e8f0dd 38%);
+    text-shadow: 0 0 6px color-mix(in srgb, var(--color-primary) 45%, transparent);
+  }
+}
 </style>
