@@ -21,6 +21,11 @@ const patchs = [
     '"default": "./lib/core.js"',
     '"default": "./lib/index.js"',
   ],
+  [
+    path.join(rootPath, './node_modules/@neteasecloudmusicapienhanced/api/module/login_qr_check.js'),
+    '  } catch (error) {\n    return {\n      status: 200,\n      body: {},\n      cookie: result.cookie,\n    }\n  }',
+    '  } catch (error) {\n    return {\n      status: 200,\n      body: {},\n      cookie: [],\n    }\n  }',
+  ],
 ]
 
 ;(async() => {
