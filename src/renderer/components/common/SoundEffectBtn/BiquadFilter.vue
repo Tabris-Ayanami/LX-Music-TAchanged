@@ -81,7 +81,10 @@ const selectedPreset = computed(() => {
   if (selectedPresetKey.value.startsWith('builtin:')) {
     return freqsPreset.find(item => getPresetKey(item) == selectedPresetKey.value) ?? null
   }
-  return userPresetList.value.find(item => getPresetKey(item) == selectedPresetKey.value) ?? null
+  for (const preset of userPresetList.value) {
+    if (getPresetKey(preset) == selectedPresetKey.value) return preset
+  }
+  return null
 })
 
 // 重置基准值：选中预设时的原始数值（保存后更新为当前数值）
@@ -139,7 +142,7 @@ const isPresetActive = item => {
   return freqs.every(key => appSetting[`player.soundEffect.biquadFilter.hz${key}`] == item[`hz${key}`])
 }
 
-const userPresetList = ref(/** @type {LX.SoundEffect.EQPreset[]} */ ([]))
+const userPresetList = ref([])
 
 const handleRemovePreset = id => {
   if (selectedPresetKey.value == `user:${id}`) selectedPresetKey.value = ''

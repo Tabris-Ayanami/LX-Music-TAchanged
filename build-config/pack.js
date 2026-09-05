@@ -20,6 +20,10 @@ const { Worker, isMainThread, parentPort } = require('worker_threads')
 
 function build() {
   console.time('build')
+  const buildInfo = {
+    version: require('../package.json').version,
+    commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+  }
   del.sync(['dist/**', 'build/**'])
 
   const spinners = new Spinnies({ color: 'blue' })
@@ -36,10 +40,7 @@ function build() {
   //   process.exit()
   // })
   function handleSuccess() {
-    fs.writeFileSync('dist/build-info.json', JSON.stringify({
-      version: require('../package.json').version,
-      commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
-    }, null, 2) + '\n')
+    fs.writeFileSync('dist/build-info.json', JSON.stringify(buildInfo, null, 2) + '\n')
     process.stdout.write('\x1B[2J\x1B[0f')
     console.log(`\n\n${results}`)
     console.log(`${okayLog}take it away ${chalk.yellow('`electron-builder`')}\n`)
