@@ -99,3 +99,32 @@ native-core/target/
 
 # Local app data / portable mode
 portable/
+
+# Local design notes, work logs and development-tool state
+/doc/
+/docs/
+/design-system/
+/memory/
+/.codex/
+/.codeartsdoer/
+/.opensquilla/
+/.superpowers/
+/.vscode/
+/AGENTS.md
+/agent.md
+/SOUL.md
+/USER.md
+/TOOLS.md
+/IDENTITY.md
+/HEARTBEAT.md
+/MEMORY.md
+/*改动汇总*.md
+/*改造汇总*.md
+
+# Local verification profiles and one-off probes
+/.*-profile*/
+/.baseline-*/
+/.*-capture-profile*/
+/.local-warmup-*/
+/dist-*/
+/electron-env-check.cjs
