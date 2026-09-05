@@ -74,7 +74,8 @@ material-modal(
 </template>
 
 <script>
-import { computed, onBeforeUnmount, onDeactivated, ref } from '@common/utils/vueTools'
+import { onDeactivated } from 'vue'
+import { computed, onBeforeUnmount, ref } from '@common/utils/vueTools'
 import { appSetting, mergeSetting, updateSetting } from '@renderer/store/setting'
 import { clearBiliAccount, getBiliAccount, setBiliCookie } from '@renderer/utils/ipc'
 import music from '@renderer/utils/musicSdk'
