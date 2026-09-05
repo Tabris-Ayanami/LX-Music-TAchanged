@@ -37,7 +37,12 @@ const options = {
     'node_modules/better-sqlite3/package.json',
     'node_modules/better-sqlite3/build/Release/better_sqlite3.node',
     ...collectDependencyFiles(path.join(__dirname, '../node_modules/bindings')),
-    ...ncmApiFiles,
+    // Preserve Node's installed dependency layout: the packager may hoist
+    // nested modules, which makes path-based inclusion globs miss them.
+    ...ncmApiFiles.map(pattern => {
+      const directory = pattern.slice(0, -5)
+      return { from: directory, to: directory, filter: ['**/*', '!node_modules/**/*'] }
+    }),
     'node_modules/electron-font-manager/index.js',
     'node_modules/electron-font-manager/package.json',
     'node_modules/electron-font-manager/build/Release/font_manager.node',

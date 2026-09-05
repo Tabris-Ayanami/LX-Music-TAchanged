@@ -29,9 +29,9 @@ module.exports = (packagePath, rootDir = path.resolve(__dirname, '..')) => {
       ...Object.keys(info.peerDependencies ?? {}),
     ])
     for (const name of names) {
-      if (isBuiltin(name)) continue
       const dependency = findDependency(name, dir)
       if (dependency) collect(dependency)
+      else if (isBuiltin(name)) continue
       else if (info.dependencies?.[name] && !info.optionalDependencies?.[name]) {
         throw new Error(`Missing required dependency ${name} of ${info.name}`)
       }

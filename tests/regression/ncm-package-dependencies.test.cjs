@@ -23,11 +23,12 @@ test('dependency collection handles builtins, nested packages, export maps and m
     fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify(json))
     return dir
   }
-  const entry = writePackage('node_modules/api', { name: 'api', dependencies: { fs: '*', child: '1' }, optionalDependencies: { absent: '1' } })
+  const entry = writePackage('node_modules/api', { name: 'api', dependencies: { fs: '*', child: '1', punycode: '2' }, optionalDependencies: { absent: '1' } })
   writePackage('node_modules/api/node_modules/child', { name: 'child', exports: { import: './index.mjs' }, dependencies: { leaf: '1' } })
   writePackage('node_modules/leaf', { name: 'leaf' })
+  writePackage('node_modules/punycode', { name: 'punycode' })
   const files = collectDependencyFiles(entry, fixture)
-  assert.deepEqual(files.sort(), ['node_modules/api/**/*', 'node_modules/api/node_modules/child/**/*', 'node_modules/leaf/**/*'].sort())
+  assert.deepEqual(files.sort(), ['node_modules/api/**/*', 'node_modules/api/node_modules/child/**/*', 'node_modules/leaf/**/*', 'node_modules/punycode/**/*'].sort())
 })
 
 test('missing required package stops packaging instead of producing a broken installer', t => {
