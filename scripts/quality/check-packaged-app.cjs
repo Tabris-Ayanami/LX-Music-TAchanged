@@ -20,6 +20,34 @@ Module._resolveFilename = function(request, ...args) {
 console.log = console.warn = console.error = () => {}
 ;(async() => {
   const appRequire = createRequire(path.join(archive, 'dist/main.js'))
+  // Match the webpack-ignored imports used by the local metadata editor.
+  const loaderPath = path.join(archive, 'dist/taglib-package-probe.cjs')
+  const loader = new Module(loaderPath)
+  loader.filename = loaderPath
+  loader._compile("module.exports = async() => ({ simple: await import('taglib-wasm/simple'), full: await import('taglib-wasm') })", loaderPath)
+  const { simple, full } = await loader.exports()
+  const taglib = await full.TagLib.initialize()
+  for (const extension of ['mp3', 'flac']) {
+    const filePath = path.join(process.cwd(), 'metadata-fixture.' + extension)
+    const [metadata, cover, pictures] = await Promise.all([
+      simple.readMetadata(filePath), simple.readCoverArt(filePath), simple.readPictureMetadata(filePath),
+    ])
+    assert.equal(metadata.tags.title[0], 'Packaged metadata fixture')
+    assert(metadata.properties.duration > 0)
+    assert(!cover?.length)
+    assert.equal(pictures.length, 0)
+    await simple.applyTagsToFile(filePath, { title: '编辑后的标题', artist: ['测试歌手'], album: '测试专辑' })
+    const edited = await simple.readMetadata(filePath)
+    assert.equal(edited.tags.title[0], '编辑后的标题')
+    assert.equal(edited.tags.artist[0], '测试歌手')
+    assert.equal(edited.tags.album[0], '测试专辑')
+    const lyric = '[00:00.00]打包后歌词读写测试'
+    await taglib.edit(filePath, file => file.setLyrics([{ text: lyric, description: 'LX-TA synchronized lyrics' }]))
+    const verified = await simple.readMetadata(filePath)
+    assert.equal(verified.tags.lyrics[0].text, lyric)
+    assert.equal(verified.tags.title[0], '编辑后的标题')
+  }
+  process.stdout.write('Packaged MP3/FLAC metadata and embedded lyrics read/write passed\n')
   const Database = appRequire('better-sqlite3')
   const database = new Database(':memory:')
   assert.equal(database.prepare('SELECT 1 AS value').get().value, 1)
@@ -44,10 +72,16 @@ console.log = console.warn = console.error = () => {}
 const checkPackagedApp = (appDir, { live = false } = {}) => {
   const archive = path.join(appDir, 'resources', 'app.asar')
   const files = asar.listPackage(archive).map(file => file.replaceAll('\\', '/'))
-  for (const entry of ['node_modules/@neteasecloudmusicapienhanced/api/package.json', 'node_modules/qrcode/package.json', 'dist/main.js']) {
+  for (const entry of [
+    'node_modules/@neteasecloudmusicapienhanced/api/package.json', 'node_modules/qrcode/package.json', 'dist/main.js',
+    'node_modules/taglib-wasm/package.json', 'node_modules/taglib-wasm/dist/simple.js',
+    'node_modules/taglib-wasm/dist/index.js', 'node_modules/taglib-wasm/dist/taglib-web.wasm',
+    'node_modules/@msgpack/msgpack/package.json',
+  ]) {
     assert(files.includes(`/${entry}`), `Missing packaged file: ${entry}`)
   }
   assert(!files.some(file => /^\/(?:src|tests|docs|\.git)(?:\/|$)/.test(file)), 'Project sources were included in app.asar')
+  assert(!files.some(file => /\/(?:agents?\.md|\.codex)(?:\/|$)/i.test(file)), 'Agent instructions were included in app.asar')
   const version = JSON.parse(asar.extractFile(archive, 'package.json')).version
   assert.equal(version, require('../../package.json').version, 'Packaged version differs from the source version')
   const buildInfo = JSON.parse(asar.extractFile(archive, 'dist/build-info.json'))
@@ -61,7 +95,19 @@ const checkPackagedApp = (appDir, { live = false } = {}) => {
 
   const runtime = fs.mkdtempSync(path.join(os.tmpdir(), 'lxta-package-check-'))
   try {
-    const result = spawnSync(path.join(appDir, 'LX-TA.exe'), ['-e', probe, archive, live ? 'live' : 'offline'], {
+    // ESM imports bypass Module._resolveFilename. Copy the archive outside the
+    // checkout so a missing package cannot silently resolve from dev node_modules.
+    const isolatedArchive = path.join(runtime, 'app.asar')
+    fs.copyFileSync(archive, isolatedArchive)
+    if (fs.existsSync(archive + '.unpacked')) fs.cpSync(archive + '.unpacked', isolatedArchive + '.unpacked', { recursive: true })
+    for (const extension of ['mp3', 'flac']) {
+      const fixture = spawnSync(ffmpeg, [
+        '-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=1',
+        '-metadata', 'title=Packaged metadata fixture', path.join(runtime, 'metadata-fixture.' + extension),
+      ], { encoding: 'utf8', timeout: 10000, windowsHide: true })
+      assert.equal(fixture.status, 0, fixture.error?.message || fixture.stderr || 'Cannot create metadata fixture')
+    }
+    const result = spawnSync(path.join(appDir, 'LX-TA.exe'), ['-e', probe, isolatedArchive, live ? 'live' : 'offline'], {
       cwd: runtime,
       env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', NODE_PATH: '', TEMP: runtime, TMP: runtime },
       encoding: 'utf8', timeout: 30000, windowsHide: true,

@@ -41,7 +41,11 @@ const options = {
     // nested modules, which makes path-based inclusion globs miss them.
     ...ncmApiFiles.map(pattern => {
       const directory = pattern.slice(0, -5)
-      return { from: directory, to: directory, filter: ['**/*', '!node_modules/**/*'] }
+      return {
+        from: directory,
+        to: directory,
+        filter: ['**/*', '!node_modules/**/*', '!**/{AGENTS,agents,AGENT,agent,CLAUDE,claude}.md', '!**/.codex{,/**/*}'],
+      }
     }),
     'node_modules/electron-font-manager/index.js',
     'node_modules/electron-font-manager/package.json',
@@ -49,8 +53,18 @@ const options = {
     'node_modules/node-gyp-build',
     'node_modules/bufferutil',
     'node_modules/utf-8-validate',
-    'node_modules/taglib-wasm/**/*',
-    'node_modules/@msgpack/msgpack/**/*',
+    // String include globs cannot override the node_modules exclusion above
+    // during dependency collection. Explicit file sets keep the ESM/WASM runtime.
+    {
+      from: 'node_modules/taglib-wasm',
+      to: 'node_modules/taglib-wasm',
+      filter: ['package.json', 'LICENSE', 'dist/**/*', '!**/*.map', '!**/*.d.ts'],
+    },
+    {
+      from: 'node_modules/@msgpack/msgpack',
+      to: 'node_modules/@msgpack/msgpack',
+      filter: ['package.json', 'LICENSE', 'dist.cjs/**/*', 'dist.esm/**/*', '!**/*.map', '!**/*.d.ts'],
+    },
     'build/Release/qrc_decode.node',
     'dist/**/*',
     '!dist/**/*.map',
@@ -60,6 +74,7 @@ const options = {
   },
   asarUnpack: [
     'node_modules/taglib-wasm/**/*',
+    'node_modules/@msgpack/msgpack/**/*',
   ],
   extraResources: [
     './licenses',
