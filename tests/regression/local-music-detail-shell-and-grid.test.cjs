@@ -74,7 +74,7 @@ test('RG-041: local library management lives in settings', () => {
   )
   assert.match(
     settingLocalLibrarySource,
-    /歌曲总数[\s\S]*添加文件夹[\s\S]*重新扫描[\s\S]*添加的文件夹/m,
+    /歌曲总数[\s\S]*添加文件夹[\s\S]*重新扫描[\s\S]*扫描到的子文件夹/m,
     'The local music library setting should show stats, folders, and scan actions',
   )
   assert.match(
@@ -84,7 +84,7 @@ test('RG-041: local library management lives in settings', () => {
   )
   assert.match(
     localMusicUtilsSource,
-    /export const rescanLocalMusicLibrary = async\(\) => \{[\s\S]*getLocalMusicLibraryFolders\(\)[\s\S]*collectLocalMusicFilesFromFolders\(folders\)[\s\S]*overwriteListMusics/m,
+    /export const rescanLocalMusicLibrary = async\(\) => \{[\s\S]*getLocalMusicLibraryFolders\(\)[\s\S]*collectLocalMusicFilesFromFolders\(rootFolders\)[\s\S]*overwriteListMusics/m,
     'Local library rescan should rebuild the local music list from the registered folders',
   )
   assert.match(

@@ -6,6 +6,22 @@ Project versioning adheres to [Semantic Versioning](http://semver.org/).
 Commit convention is based on [Conventional Commits](http://conventionalcommits.org).
 Change log format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [2.1.0](https://github.com/Tabris-Ayanami/LX-Music-TAchanged/releases/tag/v2.1) - 2026-09-05
+
+### 修复
+
+- 修复正式安装包缺少网易云 API 和二维码依赖，导致扫码登录不可用的问题。
+- 修复依赖收集误包含项目目录，导致安装包异常膨胀的问题。
+- 修复关闭、刷新登录二维码或离开账号设置后，旧请求继续轮询、覆盖新二维码的问题。
+- 随安装包提供 FFmpeg，修复安装后因工作目录不同而无法转码的问题。
+- 修复原生下载转码期间可能重复轮询并重复处理同一任务的问题。
+
+### 优化
+
+- 沉浸模式按需加载，减少普通界面启动时加载的可视化模块。
+- 播放响度采样复用缓冲区，减少长时间播放时的临时内存分配。
+- 增加安装包依赖隔离、二维码生成、数据库与 FFmpeg 检查。
+
 ## [2.12.1](https://github.com/lyswhut/lx-music-desktop/compare/v2.12.0...v2.12.1) - 2026-02-16
 
 我们很高兴地宣布新项目 Any Listen 的桌面版已发布，目前已支持列表跟随本地文件自动更新、加载并播放WebDAV上的歌曲等功能，更多功能仍在积极开发中，桌面版与Web版将同步更新。

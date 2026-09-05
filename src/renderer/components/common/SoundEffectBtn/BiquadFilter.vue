@@ -139,7 +139,7 @@ const isPresetActive = item => {
   return freqs.every(key => appSetting[`player.soundEffect.biquadFilter.hz${key}`] == item[`hz${key}`])
 }
 
-const userPresetList = ref([])
+const userPresetList = ref(/** @type {LX.SoundEffect.EQPreset[]} */ ([]))
 
 const handleRemovePreset = id => {
   if (selectedPresetKey.value == `user:${id}`) selectedPresetKey.value = ''

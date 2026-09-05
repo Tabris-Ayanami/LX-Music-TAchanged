@@ -59,8 +59,6 @@ const COOKIE_ATTR_KEYS_LOWER: ReadonlySet<string> = new Set(
  */
 export const extractLoginCookie = (setCookieText: string): string => {
   const record = parseCookieToRecord(setCookieText)
-  for (const key of Object.keys(record)) {
-    if (COOKIE_ATTR_KEYS_LOWER.has(key.toLowerCase())) delete record[key]
-  }
-  return recordToCookieString(record)
+  const credentials = Object.fromEntries(Object.entries(record).filter(([key]) => !COOKIE_ATTR_KEYS_LOWER.has(key.toLowerCase())))
+  return recordToCookieString(credentials)
 }

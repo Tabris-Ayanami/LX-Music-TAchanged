@@ -30,7 +30,7 @@ test('RG-054: immersive mode avoids duplicate and off-screen media work', () => 
   )
   assert.match(
     sourcePanel,
-    /const getSearchResults = \(\) => \{[\s\S]*searchPromise = biliSearch[\s\S]*const requestKey = getSearchKey\(\)[\s\S]*if \(requestKey != getSearchKey\(\)\) return/m,
+    /const getSearchResults = \(\) => \{[\s\S]*searchPromise = providerPromise[\s\S]*const requestKey = getLyricKey\(\)[\s\S]*if \(requestKey != getLyricKey\(\)\) return/m,
     'The source panel should share searches and reject stale track responses',
   )
   assert.match(

@@ -26,7 +26,7 @@ test('artwork UI path uses ArtworkService with a legacy fallback', () => {
   assert.match(localMusic, /backend\.artwork\.getLocalTrackArtwork\(\{ filePath: musicInfo\.meta\.filePath, size: 512 \}\)/)
   assert.doesNotMatch(localMusic, /window\.lx\.worker\.main\.getMusicFilePic/)
   assert.match(adapter, /window\.lxData\.appSetting\['backend\.artwork'] == 'native'/)
-  assert.match(adapter, /window\.lx\.worker\.main\.getMusicFilePic\(request\.filePath\)/)
+  assert.match(adapter, /legacyIpc\.getLegacyArtworkPath\(request\.filePath\)/)
 })
 
 test('native transport is framed, versioned, supervised, and bounded', () => {

@@ -11,7 +11,7 @@ const Module = require('node:module')
 const ts = require('typescript')
 const { generate, formats } = require('./media-fixtures.cjs')
 
-const executable = path.resolve(__dirname, '../../native-core/target/debug/lx-native-core.exe')
+const executable = process.env.LX_NATIVE_CORE_PATH || path.resolve(__dirname, '../../native-core/target/debug/lx-native-core.exe')
 const sourceRoot = path.resolve(__dirname, '../../src')
 const kgShimPath = path.join(os.tmpdir(), 'lx-native-core-kg-shim.cjs')
 const kgSource = fsSync.readFileSync(path.join(sourceRoot, 'common/utils/lyricUtils/kg.js'), 'utf8')

@@ -1,10 +1,14 @@
 const fs = require('fs').promises
+const { Arch } = require('builder-util')
 
 // https://github.com/electron-userland/electron-builder/issues/4630
 // https://github.com/electron-userland/electron-builder/issues/4630#issuecomment-782020139
 
 module.exports = async(context) => {
   const { electronPlatformName, appOutDir } = context
+  if (electronPlatformName == 'win32' && context.arch == Arch.x64) {
+    require('../scripts/quality/check-packaged-app.cjs').checkPackagedApp(appOutDir)
+  }
   if (electronPlatformName !== 'darwin') return
   const {
     productFilename,

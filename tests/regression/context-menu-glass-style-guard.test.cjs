@@ -18,12 +18,12 @@ test('RG-029: context menus use a readable macOS-style blurred glass shell', () 
     )
     assert.match(
       source,
-      /border: 1px solid rgba\(255, 255, 255, 0\.42\);/m,
+      /border: 1px solid var\(--shell-(?:elevated-border|control-border),/m,
       'Context menu shells should keep a visible glass border',
     )
     assert.match(
       source,
-      /color-mix\(in srgb, var\(--color-primary\) 16%, rgba\(255, 255, 255, 0\.995\)\)/m,
+      /var\(--shell-popover, var\(--shell-card-strong\)\)|color-mix\(in srgb, var\(--shell-card-strong,/m,
       'Context menu shells should keep a high-opacity white material fill for readability over lyrics and artwork',
     )
   }

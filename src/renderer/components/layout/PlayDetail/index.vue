@@ -60,6 +60,7 @@ transition(@before-enter="handleBeforeEnter" @enter="handleEnter" @after-enter="
 
 
 <script>
+import { defineAsyncComponent } from 'vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from '@common/utils/vueTools'
 import { isFullscreen } from '@renderer/store'
 import {
@@ -80,7 +81,6 @@ import FluidBackground from './FluidBackground.vue'
 import MusicComment from './components/MusicComment/index.vue'
 import PlayQueueBtn from './components/PlayQueueBtn.vue'
 import ControlBtnsRightHeader from './ControlBtnsRightHeader.vue'
-import ImmersiveLyrics from './ImmersiveLyrics.vue'
 import DynamicArtworkVideo from '@renderer/components/player/DynamicArtworkVideo.vue'
 import { registerAutoHideMounse, unregisterAutoHideMounse } from './autoHideMounse'
 import { appSetting, updateSetting } from '@renderer/store/setting'
@@ -88,6 +88,9 @@ import { dialog } from '@renderer/plugins/Dialog'
 import { backend } from '@renderer/backend'
 import { clearPlayDetailOrigin, getPlayDetailOrigin } from '@renderer/utils/playDetailTransition'
 import { dynamicCoverUrl, dynamicCoverUrlPixel, dynamicCoverPoster, loadDynamicCover, resetDynamicCover } from '@renderer/store/player/dynamicCover'
+
+// Load the React/Three.js visualizer stack only when immersive mode is opened.
+const ImmersiveLyrics = defineAsyncComponent(async() => import(/* webpackChunkName: 'play-detail-immersive' */ './ImmersiveLyrics.vue'))
 
 const PLAYER_SHELL_DURATION = 480
 const PLAYER_CONTENT_DURATION = 240

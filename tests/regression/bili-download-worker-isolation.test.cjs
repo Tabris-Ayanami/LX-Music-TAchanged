@@ -6,6 +6,7 @@ const path = require('node:path')
 const rootDir = path.resolve(__dirname, '..', '..')
 const downloadUtilsSource = fs.readFileSync(path.join(rootDir, 'src', 'renderer', 'worker', 'download', 'utils.ts'), 'utf8')
 const downloadModalSource = fs.readFileSync(path.join(rootDir, 'src', 'renderer', 'components', 'common', 'DownloadModal.vue'), 'utf8')
+const downloadWorkerSource = fs.readFileSync(path.join(rootDir, 'src', 'renderer', 'worker', 'download', 'download.ts'), 'utf8')
 
 test('RG-043: Bilibili download support does not break the shared download worker', () => {
   assert.doesNotMatch(
@@ -14,9 +15,9 @@ test('RG-043: Bilibili download support does not break the shared download worke
     'The shared download worker should not let webpack parse the ffmpeg installer package',
   )
   assert.match(
-    downloadUtilsSource,
-    /__non_webpack_require__\('@ffmpeg-installer\/ffmpeg'\)/m,
-    'ffmpeg should be loaded through runtime require only when a conversion is actually needed',
+    downloadWorkerSource,
+    /convertAudio: \(request: LX\.Download\.AudioConvertRequest\) => Promise<void>[\s\S]*convertAudio\(\{/m,
+    'Conversion should be delegated to the main-process download service',
   )
   assert.match(
     downloadModalSource,

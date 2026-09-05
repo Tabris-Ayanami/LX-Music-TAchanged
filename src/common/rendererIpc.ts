@@ -55,7 +55,6 @@ export const rendererOff = (name: string, listener: (...args: any[]) => any) => 
     getHostBridge().ipc.off(subscriptionId)
     if (!subscriptions?.length) wrappersByListener?.delete(listener)
     if (!wrappersByListener?.size) listenerWrappers.delete(name)
-    return
   }
 }
 

@@ -57,7 +57,10 @@ const resolveExecutable = () => {
 
 export const resolveFfmpeg = () => {
   if (globalThis.process.env.LX_NATIVE_FFMPEG_PATH) return path.resolve(globalThis.process.env.LX_NATIVE_FFMPEG_PATH)
-  const candidate = path.join(process.cwd(), 'node_modules', '@ffmpeg-installer', 'win32-x64', 'ffmpeg.exe')
+  const executable = process.platform == 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
+  const candidate = app.isPackaged
+    ? path.join(process.resourcesPath, 'ffmpeg', executable)
+    : path.join(process.cwd(), 'node_modules', '@ffmpeg-installer', `${process.platform}-${process.arch}`, executable)
   return existsSync(candidate) ? candidate : null
 }
 

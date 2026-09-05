@@ -10,7 +10,7 @@ const navBarSource = fs.readFileSync(navBarPath, 'utf8')
 test('RG-007: sidebar collapse keeps a fixed icon column and only collapses the label lane', () => {
   assert.match(
     navBarSource,
-    /\.menu \{[\s\S]*--sidebar-nav-rail: var\(--sidebar-icon-lane, 44px\);[\s\S]*--sidebar-nav-height: var\(--sidebar-item-height, 40px\);[\s\S]*--sidebar-nav-radius: var\(--sidebar-item-radius, 12px\);[\s\S]*--sidebar-nav-glyph: var\(--sidebar-icon-glyph-size, 16px\);[\s\S]*--sidebar-motion-duration: \.46s;[\s\S]*--sidebar-motion-curve: cubic-bezier\(\.2, 0, 0, 1\);[\s\S]*margin-left: 0;[\s\S]*padding: 0;/,
+    /\.menu \{[\s\S]*--sidebar-nav-rail: var\(--sidebar-icon-lane, 44px\);[\s\S]*--sidebar-nav-height: var\(--sidebar-item-height, 40px\);[\s\S]*--sidebar-nav-radius: var\(--sidebar-item-radius, 12px\);[\s\S]*--sidebar-nav-glyph: var\(--sidebar-icon-glyph-size, 16px\);[\s\S]*--sidebar-motion-duration: \.28s;[\s\S]*--sidebar-motion-curve: var\(--motion-ease-drawer\);[\s\S]*margin-left: 0;[\s\S]*padding: 0;/,
     'Sidebar nav should define shared geometry tokens for expanded and collapsed states',
   )
   assert.match(
@@ -105,7 +105,7 @@ test('RG-007: sidebar collapse keeps a fixed icon column and only collapses the 
   )
   assert.match(
     navBarSource,
-    /\.label \{[\s\S]*transition: max-width var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\), opacity \.28s ease, transform var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\);/m,
+    /\.label \{[\s\S]*transition: max-width var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\), opacity \.2s var\(--motion-ease-out\), transform var\(--sidebar-motion-duration\) var\(--sidebar-motion-curve\);/m,
     'Sidebar label collapse should use the shared slower motion curve instead of snapping away',
   )
 })

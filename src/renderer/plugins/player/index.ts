@@ -15,6 +15,7 @@ let audioContext: AudioContext
 let mediaSource: AudioNode
 let deckGains: [GainNode, GainNode]
 let deckAnalysers: [AnalyserNode, AnalyserNode]
+const deckRmsBuffers: [Float32Array<ArrayBuffer> | null, Float32Array<ArrayBuffer> | null] = [null, null]
 let analyser: AnalyserNode
 // https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext
 // https://benzleung.gitbooks.io/web-audio-api-mini-guide/content/chapter5-1.html
@@ -795,7 +796,11 @@ export const getDuration = () => getActiveDeck()?.duration ?? 0
 const readDeckRms = (index: 0 | 1) => {
   const sourceAnalyser = deckAnalysers?.[index]
   if (!sourceAnalyser) return 0
-  const buffer = new Float32Array(sourceAnalyser.fftSize)
+  let buffer = deckRmsBuffers[index]
+  if (!buffer || buffer.length != sourceAnalyser.fftSize) {
+    buffer = new Float32Array(sourceAnalyser.fftSize)
+    deckRmsBuffers[index] = buffer
+  }
   sourceAnalyser.getFloatTimeDomainData(buffer)
   let sum = 0
   for (const sample of buffer) sum += sample * sample

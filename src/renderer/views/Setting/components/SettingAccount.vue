@@ -74,7 +74,7 @@ material-modal(
 </template>
 
 <script>
-import { computed, onBeforeUnmount, ref } from '@common/utils/vueTools'
+import { computed, onBeforeUnmount, onDeactivated, ref } from '@common/utils/vueTools'
 import { appSetting, mergeSetting, updateSetting } from '@renderer/store/setting'
 import { clearBiliAccount, getBiliAccount, setBiliCookie } from '@renderer/utils/ipc'
 import music from '@renderer/utils/musicSdk'
@@ -160,6 +160,8 @@ export default {
     const wyQrImg = ref('')
     const wyQrText = ref('')
     let wyQrTimer = null
+    let wyQrGeneration = 0
+    const isWyQrCurrent = generation => wyQrShow.value && generation == wyQrGeneration
     const activeAccountTab = ref('wy')
     const accountTabs = computed(() => [
       {
@@ -201,16 +203,19 @@ export default {
       wyQrText.value = message || window.i18n.t('setting__account_wy_test_failed')
     }
 
-    const pollWyQrLogin = async unikey => {
+    const pollWyQrLogin = async(unikey, generation) => {
+      if (!isWyQrCurrent(generation)) return
       stopWyQrTimer()
       let result
       try {
         result = await music.wy.account.checkQrLogin(unikey)
       } catch (err) {
+        if (!isWyQrCurrent(generation)) return
         console.warn(err)
         wyQrText.value = window.i18n.t('setting__account_wy_test_failed')
         return
       }
+      if (!isWyQrCurrent(generation)) return
       if (result.code == 803) {
         if (!result.cookie) {
           console.warn('[wy] qr login succeeded but cookie is empty')
@@ -220,6 +225,7 @@ export default {
         wyCookie.value = result.cookie
         syncSetting('account.wy.cookie', result.cookie)
         const info = await music.wy.account.getAccountInfo()
+        if (!isWyQrCurrent(generation)) return
         wyStatus.value = formatWyStatus(info)
         wyQrText.value = window.i18n.t('setting__account_wy_qr_success')
         wyQrImg.value = ''
@@ -239,20 +245,24 @@ export default {
         return
       }
       wyQrTimer = setTimeout(() => {
-        void pollWyQrLogin(unikey)
+        void pollWyQrLogin(unikey, generation)
       }, 2000)
     }
 
     const refreshWyQrLogin = async() => {
+      const generation = ++wyQrGeneration
       stopWyQrTimer()
+      if (!wyQrShow.value) return
       wyQrImg.value = ''
       wyQrText.value = ''
       try {
         const info = await music.wy.account.createQrLogin()
+        if (!isWyQrCurrent(generation)) return
         wyQrImg.value = info.qrimg
         wyQrText.value = window.i18n.t('setting__account_wy_qr_waiting')
-        await pollWyQrLogin(info.unikey)
+        await pollWyQrLogin(info.unikey, generation)
       } catch (err) {
+        if (!isWyQrCurrent(generation)) return
         console.log(err)
         setWyQrError(window.i18n.t('setting__account_wy_test_failed'))
       }
@@ -264,6 +274,7 @@ export default {
     }
 
     const closeWyQrLogin = () => {
+      ++wyQrGeneration
       stopWyQrTimer()
       wyQrShow.value = false
       wyQrImg.value = ''
@@ -311,7 +322,8 @@ export default {
       }
     }
 
-    onBeforeUnmount(stopWyQrTimer)
+    onBeforeUnmount(closeWyQrLogin)
+    onDeactivated(closeWyQrLogin)
 
     return {
       appSetting,

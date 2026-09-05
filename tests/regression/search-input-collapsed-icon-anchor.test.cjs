@@ -24,16 +24,15 @@ test('collapsed search icon anchors to the right semicircle center without a cir
     /\.gooLayerButton\s*\{[\s\S]*?transform:\s*translateX\(-48px\) scale\(\.4\);/m,
     'The gooey ball should start from the same right-anchored position as the collapsed icon',
   )
-  // small toolbar pill: 150px wide, radius 20.5 -> right semicircle center at 129.5px;
-  // 38px button natural left edge is 150, so -39.5px puts the icon center on 129.5.
+  // Compact toolbar geometry uses the 30px icon lane and its shared goo offset.
   assert.match(
     searchInputSource,
-    /\.searchBtn\s*\{[\s\S]*?width:\s*38px;[\s\S]*?transform:\s*translateX\(-39\.5px\);/m,
+    /\.searchBtn\s*\{[\s\S]*?width:\s*30px;[\s\S]*?transform:\s*translateX\(-31\.5px\);/m,
     'The small toolbar icon should anchor to the small pill right semicircle center',
   )
   assert.match(
     searchInputSource,
-    /\.gooLayerButton\s*\{[\s\S]*?width:\s*38px;[\s\S]*?transform:\s*translateX\(-39\.5px\) scale\(\.4\);/m,
+    /\.gooLayerButton\s*\{[\s\S]*?width:\s*30px;[\s\S]*?transform:\s*translateX\(-31\.5px\) scale\(\.4\);/m,
     'The small gooey ball should start from the same collapsed position',
   )
 })

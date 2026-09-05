@@ -6,34 +6,8 @@ const path = require('node:path')
 const beforePack = require('./build-before-pack')
 const afterPack = require('./build-after-pack')
 const patchDependencies = require('./dependencies-patch')
+const collectDependencyFiles = require('./collect-dependency-files')
 const nativeCorePath = path.join(__dirname, '../native-core/target/release/lx-native-core.exe')
-
-const collectDependencyFiles = (packagePath, visited = new Set()) => {
-  const packageJsonPath = path.join(packagePath, 'package.json')
-  if (visited.has(packageJsonPath) || !fs.existsSync(packageJsonPath)) return []
-  visited.add(packageJsonPath)
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
-  const files = [path.relative(path.join(__dirname, '..'), `${packagePath}/**/*`).replaceAll('\\', '/')]
-  const dependencyNames = new Set([
-    ...Object.keys(packageJson.dependencies ?? {}),
-    ...Object.keys(packageJson.optionalDependencies ?? {}),
-    ...Object.keys(packageJson.peerDependencies ?? {}),
-  ])
-  for (const dependencyName of dependencyNames) {
-    let dependencyEntry
-    try {
-      dependencyEntry = require.resolve(dependencyName, { paths: [packagePath] })
-    } catch {
-      continue
-    }
-    let dependencyPath = path.dirname(dependencyEntry)
-    while (dependencyPath !== path.dirname(dependencyPath) && !fs.existsSync(path.join(dependencyPath, 'package.json'))) {
-      dependencyPath = path.dirname(dependencyPath)
-    }
-    files.push(...collectDependencyFiles(dependencyPath, visited))
-  }
-  return files
-}
 
 const ncmApiFiles = collectDependencyFiles(path.join(__dirname, '../node_modules/@neteasecloudmusicapienhanced/api'))
 
@@ -319,6 +293,11 @@ const build = async(target, arch, packageType, publishType) => {
   }
   const targetInfo = createTarget[target](arch, packageType)
   const includeNativeCore = target == 'win' && ['x64', 'x86_64'].includes(arch) && fs.existsSync(nativeCorePath)
+  const platform = { win: 'win32', mac: 'darwin', linux: 'linux' }[target]
+  const ffmpegName = target == 'win' ? 'ffmpeg.exe' : 'ffmpeg'
+  const ffmpegArch = arch == 'x86_64' ? 'x64' : arch == 'x86' ? 'ia32' : arch
+  const ffmpegPath = path.join(__dirname, '..', 'node_modules', '@ffmpeg-installer', `${platform}-${ffmpegArch}`, ffmpegName)
+  if (target == 'win' && arch == 'x64' && !fs.existsSync(ffmpegPath)) throw new Error('Missing ffmpeg executable for Windows x64 packaging')
   // Promise is returned
   await builder.build({
     ...targetInfo.buildOptions,
@@ -333,6 +312,7 @@ const build = async(target, arch, packageType, publishType) => {
       extraResources: [
         ...options.extraResources,
         ...(includeNativeCore ? [{ from: nativeCorePath, to: 'native-core/lx-native-core.exe' }] : []),
+        ...(fs.existsSync(ffmpegPath) ? [{ from: ffmpegPath, to: `ffmpeg/${ffmpegName}` }] : []),
       ],
     },
   })

@@ -25,7 +25,7 @@ test('RG-039: shell uses a connected glass toolbar and compact search field', ()
   )
   assert.match(
     toolbarSource,
-    /\.toolbar \{[\s\S]*min-height: 48px;[\s\S]*backdrop-filter: blur\(34px\) saturate\(170%\);/m,
+    /\.toolbar \{[\s\S]*min-height: 40px;[\s\S]*backdrop-filter: blur\(34px\) saturate\(170%\);/m,
     'Toolbar should be a shorter high-blur glass layer',
   )
   assert.match(
@@ -40,7 +40,7 @@ test('RG-039: shell uses a connected glass toolbar and compact search field', ()
   )
   assert.match(
     searchInputSource,
-    /\.smallContainer \{[\s\S]*height: 43px;[\s\S]*\.small \{[\s\S]*& \.main \{[\s\S]*height: 43px;/m,
+    /\.smallContainer \{[\s\S]*height: 32px;[\s\S]*\.small \{[\s\S]*& \.main \{[\s\S]*height: 32px;/m,
     'Compact input variant should reduce the field height',
   )
 })

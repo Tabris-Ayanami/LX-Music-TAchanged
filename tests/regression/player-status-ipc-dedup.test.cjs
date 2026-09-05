@@ -9,7 +9,7 @@ const rootDir = path.resolve(__dirname, '..', '..')
 const read = (...parts) => fs.readFileSync(path.join(rootDir, ...parts), 'utf8')
 
 test('player status IPC drops unchanged fields before crossing the renderer boundary', () => {
-  const source = read('src', 'renderer', 'utils', 'ipc.ts')
+  const source = read('src', 'renderer', 'utils', 'ipc.ts').replaceAll('\r\n', '\n')
 
   assert.match(
     source,

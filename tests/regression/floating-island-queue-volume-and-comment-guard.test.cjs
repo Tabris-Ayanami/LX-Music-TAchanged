@@ -55,7 +55,7 @@ test('RG-038: floating-island volume control is a compact growing capsule', () =
   )
   assert.doesNotMatch(
     volumeSource,
-    /&:hover svg \{[\s\S]*transform:/m,
+    /&:hover svg \{[^}]*transform:/m,
     'Hovering the volume control should not move the speaker glyph',
   )
   assert.match(

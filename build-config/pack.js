@@ -4,6 +4,8 @@ const chalk = require('chalk')
 const del = require('del')
 const webpack = require('webpack')
 const Spinnies = require('spinnies')
+const fs = require('node:fs')
+const { execFileSync } = require('node:child_process')
 
 const mainConfig = './main/webpack.config.prod'
 const rendererConfig = './renderer/webpack.config.prod'
@@ -34,6 +36,10 @@ function build() {
   //   process.exit()
   // })
   function handleSuccess() {
+    fs.writeFileSync('dist/build-info.json', JSON.stringify({
+      version: require('../package.json').version,
+      commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+    }, null, 2) + '\n')
     process.stdout.write('\x1B[2J\x1B[0f')
     console.log(`\n\n${results}`)
     console.log(`${okayLog}take it away ${chalk.yellow('`electron-builder`')}\n`)

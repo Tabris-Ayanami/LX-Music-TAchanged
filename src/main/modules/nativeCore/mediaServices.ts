@@ -213,7 +213,7 @@ export const readMetadataForLibraryBatch = async(filePaths: string[]): Promise<A
     }))
   } catch (error) {
     console.warn(JSON.stringify({ level: 'warn', event: 'library_metadata_batch_fallback', component: 'native-core', message: error instanceof Error ? error.message : String(error) }))
-    return Promise.all(filePaths.map(filePath => readMetadataForLibrary(filePath).catch(() => null)))
+    return Promise.all(filePaths.map(async filePath => readMetadataForLibrary(filePath).catch(() => null)))
   }
 }
 

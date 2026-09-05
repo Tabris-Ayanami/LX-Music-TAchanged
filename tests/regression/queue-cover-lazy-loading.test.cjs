@@ -17,7 +17,7 @@ test('RG-041: queue cover thumbnails keep lazy loading without leaving local cov
   )
   assert.match(
     downloadMusicSource,
-    /pathToFileURL\(pic\)\.href/m,
+    /getHostBridge\(\)\.platform\.pathToFileURL\(pic\)/m,
     'Downloaded local-file covers should be converted to file URLs before reaching image tags',
   )
   assert.match(

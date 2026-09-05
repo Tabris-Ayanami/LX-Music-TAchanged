@@ -19,13 +19,13 @@ test('RG-014: selection, menu, and modal surfaces stay opaque enough to avoid ov
   )
   assert.match(
     selectionSource,
-    /background:\s*var\(--shell-card-strong, var\(--color-main-background\)\);/m,
+    /var\(--shell-popover, var\(--shell-card-strong, var\(--color-main-background\)\)\)/m,
     'Selection popup should use the current shell surface instead of a transparent background',
   )
   assert.match(
     selectionSource,
-    /background-color:\s*var\(--shell-card-strong, color-mix\(in srgb, var\(--color-primary\) 10%, rgba\(255, 255, 255, 0\.985\)\)\);/m,
-    'Selection items should keep their current shell-backed surface',
+    /background-color:\s*var\(--shell-list-hover, var\(--color-list-hover-background\)\);/m,
+    'Selection items should use the themed hover surface above the opaque popup',
   )
   assert.match(
     selectionSource,
@@ -36,7 +36,7 @@ test('RG-014: selection, menu, and modal surfaces stay opaque enough to avoid ov
   for (const [name, source] of [['menu', menuSource], ['modal', modalSource]]) {
     assert.match(
       source,
-      /linear-gradient\(\s*180deg,\s*color-mix\(in srgb, var\(--color-primary\) 16%, rgba\(255, 255, 255, 0\.995\)\),\s*color-mix\(in srgb, var\(--color-primary\) 24%, rgba\(255, 255, 255, 0\.99\)\)\s*\)/m,
+      /var\(--shell-(?:popover|modal), var\(--shell-card-strong/m,
       `${name} surfaces should stay opaque enough to avoid overlapping underlying content`,
     )
     assert.match(
@@ -59,12 +59,12 @@ test('RG-015: list hover states stay explicit in every affected list view', () =
     const label = parts.slice(-3).join('/')
     assert.match(
       source,
-      /:global\(\.list-item\)[\s\S]*&:hover\s*\{[\s\S]*background-color:\s*color-mix\(in srgb, var\(--color-primary\) 34%, rgba\(255, 255, 255, 0\.94\)\) !important;/m,
+      /:global\(\.list-item\)[\s\S]*&:hover\s*\{[\s\S]*background-color:\s*var\(--shell-list-hover, var\(--color-list-hover-background\)\) !important;/m,
       `${label} should keep a direct, visible hover surface on list rows`,
     )
     assert.match(
       source,
-      /&\.active\s*\{[\s\S]*background-color:\s*color-mix\(in srgb, var\(--color-primary\) 44%, rgba\(255, 255, 255, 0\.92\)\) !important;/m,
+      /&\.active\s*\{[\s\S]*background-color:\s*var\(--shell-list-active, var\(--color-list-active-background\)\) !important;/m,
       `${label} should keep a stronger active surface than the hover state`,
     )
   }

@@ -52,8 +52,8 @@ test('RG-008: sidebar brand keeps a fixed logo lane while only collapsing the te
   )
   assert.match(
     asideSource,
-    /\.panel \{[\s\S]*--sidebar-motion-duration: \.46s;[\s\S]*--sidebar-motion-curve: cubic-bezier\(\.2, 0, 0, 1\);/m,
-    'Sidebar panel should expose a shared slower motion curve for collapse animation',
+    /\.panel \{[\s\S]*--sidebar-motion-duration: \.28s;[\s\S]*--sidebar-motion-curve: var\(--motion-ease-drawer\);/m,
+    'Sidebar panel should expose the shared drawer motion curve for collapse animation',
   )
   assert.match(
     asideSource,
@@ -72,7 +72,7 @@ test('RG-008: sidebar brand keeps a fixed logo lane while only collapsing the te
   )
   assert.match(
     appSource,
-    /#left \{[\s\S]*contain: layout style;[\s\S]*transition: width \.46s cubic-bezier\(\.2, 0, 0, 1\);/m,
-    'Outer sidebar shell should avoid paint containment and use the same slower width animation curve',
+    /#left \{[\s\S]*contain: layout style;[\s\S]*transition: width \.28s var\(--motion-ease-drawer\);/m,
+    'Outer sidebar shell should avoid paint containment and share the drawer width animation curve',
   )
 })

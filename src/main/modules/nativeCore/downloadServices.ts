@@ -116,7 +116,7 @@ const scheduleNativePoll = () => {
   }, DOWNLOAD_POLL_MS)
 }
 
-type NativeDownloadStatus = { jobId: string, state: string, total: number, downloaded: number, bytesPerSecond: number, statusCode?: number, error?: string }
+interface NativeDownloadStatus { jobId: string, state: string, total: number, downloaded: number, bytesPerSecond: number, statusCode?: number, error?: string }
 
 const handleNativeStatus = async(task: NativeTask, status: NativeDownloadStatus) => {
   if (nativeTasks.get(task.request.taskId) != task) return
@@ -171,6 +171,11 @@ const handleNativeStatus = async(task: NativeTask, status: NativeDownloadStatus)
   clearNativeTask(task)
 }
 
+const finishNativePoll = () => {
+  nativePollInFlight = false
+  scheduleNativePoll()
+}
+
 const pollNativeTasks = async(): Promise<void> => {
   if (nativePollInFlight || !nativeTasks.size) return
   nativePollInFlight = true
@@ -178,6 +183,12 @@ const pollNativeTasks = async(): Promise<void> => {
   let statuses: NativeDownloadStatus[]
   try {
     statuses = await getNativeCoreSupervisor().call<NativeDownloadStatus[]>('download.http.status_many', { jobIds: tasks.map(task => task.jobId) }, undefined, 10_000)
+    const statusByJobId = new Map(statuses.map(status => [status.jobId, status]))
+    await Promise.all(tasks.map(async task => {
+      const status = statusByJobId.get(task.jobId)
+      if (status) await handleNativeStatus(task, status)
+      else if (nativeTasks.get(task.request.taskId) == task) clearNativeTask(task)
+    }))
   } catch (error) {
     for (const task of tasks) {
       if (nativeTasks.get(task.request.taskId) == task && !task.removed) {
@@ -185,17 +196,9 @@ const pollNativeTasks = async(): Promise<void> => {
       }
       clearNativeTask(task)
     }
-    nativePollInFlight = false
-    return
+  } finally {
+    finishNativePoll()
   }
-  nativePollInFlight = false
-  const statusByJobId = new Map(statuses.map(status => [status.jobId, status]))
-  await Promise.all(tasks.map(async task => {
-    const status = statusByJobId.get(task.jobId)
-    if (status) await handleNativeStatus(task, status)
-    else if (nativeTasks.get(task.request.taskId) == task) clearNativeTask(task)
-  }))
-  scheduleNativePoll()
 }
 
 const cancelNativeTask = async(task: NativeTask) => {
