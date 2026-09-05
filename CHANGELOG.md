@@ -15,6 +15,7 @@ Change log format is based on [Keep a Changelog](http://keepachangelog.com/).
 - 修复关闭、刷新登录二维码或离开账号设置后，旧请求继续轮询、覆盖新二维码的问题。
 - 随安装包提供 FFmpeg，修复安装后因工作目录不同而无法转码的问题。
 - 修复原生下载转码期间可能重复轮询并重复处理同一任务的问题。
+- 补齐 SQLite 的运行依赖，修复全新用户数据目录下隐藏启动崩溃的问题。
 
 ### 优化
 

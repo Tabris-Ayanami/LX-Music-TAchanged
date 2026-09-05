@@ -36,6 +36,7 @@ const options = {
     'node_modules/better-sqlite3/lib',
     'node_modules/better-sqlite3/package.json',
     'node_modules/better-sqlite3/build/Release/better_sqlite3.node',
+    ...collectDependencyFiles(path.join(__dirname, '../node_modules/bindings')),
     ...ncmApiFiles,
     'node_modules/electron-font-manager/index.js',
     'node_modules/electron-font-manager/package.json',
